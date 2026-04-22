@@ -1462,8 +1462,9 @@
       <div class="screen-panel">
         <div class="eyebrow">Setup</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Choose Player Count</h1>
-        <p class="subtitle">Green is always assigned as the first human. Additional humans follow turn order: Green → Red → Blue → Yellow. Remaining colors become bots.</p>
+        <p class="subtitle">Choose how many humans play offline, then choose which colors those humans control. Any unselected colors are filled by bots.</p>
         <div id="playerCountChoices" class="choice-grid"></div>
+        <div id="offlineTeamChoices" class="summary-list" style="margin-top:14px;"></div>
         <div class="screen-actions">
           <button id="playerCountBackBtn" class="ghost">Back</button>
           <button id="playerCountNextBtn" class="primary">Continue</button>
@@ -1754,10 +1755,12 @@
       botTurnPending: false,
       tutorialEntry: 'flow',
       botStatusText: '',
+      boardPerspective: 'green',
       matchConfig: {
         playerCount: 1,
         botDifficulty: 'medium',
-        controlMap: getControlMapForPlayerCount(1)
+        controlMap: getControlMapForPlayerCount(1),
+        humanTeams: ['green']
       }
     };
 
@@ -1779,6 +1782,7 @@
       menuSummaryDifficulty: document.getElementById('menuSummaryDifficulty'),
       menuSummaryControl: document.getElementById('menuSummaryControl'),
       playerCountChoices: document.getElementById('playerCountChoices'),
+      offlineTeamChoices: document.getElementById('offlineTeamChoices'),
       difficultyChoices: document.getElementById('difficultyChoices'),
       playerCountBackBtn: document.getElementById('playerCountBackBtn'),
       playerCountNextBtn: document.getElementById('playerCountNextBtn'),
@@ -2112,6 +2116,15 @@
       return controlMap;
     }
 
+    function getControlMapForHumanTeams(humanTeams) {
+      const selected = new Set(humanTeams || []);
+      const controlMap = {};
+      PLAYERS.forEach(team => {
+        controlMap[team] = selected.has(team) ? 'human' : 'bot';
+      });
+      return controlMap;
+    }
+
     function getControlSummaryText(controlMap) {
       return PLAYERS.map(team => `${TEAM_LABEL[team]} ${controlMap[team]}`).join(', ');
     }
@@ -2317,22 +2330,44 @@
       for (let row = 4; row < 8; row++) b[row][1] = makePiece('yellow', 'pawn');
     }
 
+    // Board rotation is view-only. Canonical board coordinates and rules stay unchanged.
+    function getPerspectiveTeam() {
+      if (appState.playMode === 'online' && appState.online.localTeam) return appState.online.localTeam;
+      if (appState.playMode === 'offline') {
+        if (appState.matchConfig.playerCount === 1) return appState.matchConfig.humanTeams?.[0] || 'green';
+        const current = getCurrentTeam();
+        if (!isBotPlayer(current)) return current;
+        return appState.matchConfig.humanTeams?.[0] || 'green';
+      }
+      return 'green';
+    }
+
+    function canonicalFromView(viewRow, viewCol, perspectiveTeam = getPerspectiveTeam()) {
+      if (perspectiveTeam === 'blue') return { row: 7 - viewRow, col: 7 - viewCol };
+      if (perspectiveTeam === 'red') return { row: 7 - viewCol, col: viewRow };
+      if (perspectiveTeam === 'yellow') return { row: viewCol, col: 7 - viewRow };
+      return { row: viewRow, col: viewCol };
+    }
+
     function buildBoardGrid() {
+      const perspectiveTeam = getPerspectiveTeam();
       ui.boardGrid.innerHTML = '';
-      for (let row = ROWS - 1; row >= 0; row--) {
+      for (let viewRow = ROWS - 1; viewRow >= 0; viewRow--) {
         const coord = document.createElement('div');
         coord.className = 'coord';
-        coord.textContent = row + 1;
+        const canonicalLeft = canonicalFromView(viewRow, 0, perspectiveTeam);
+        coord.textContent = canonicalLeft.row + 1;
         ui.boardGrid.appendChild(coord);
 
-        for (let col = 0; col < COLS; col++) {
+        for (let viewCol = 0; viewCol < COLS; viewCol++) {
           const cell = document.createElement('button');
           cell.type = 'button';
-          cell.className = `cell ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
-          cell.dataset.row = row;
-          cell.dataset.col = col;
-          cell.setAttribute('aria-label', `Cell ${toCoord(row, col)}`);
-          cell.addEventListener('click', () => handleCellClick(row, col));
+          const canonical = canonicalFromView(viewRow, viewCol, perspectiveTeam);
+          cell.className = `cell ${(canonical.row + canonical.col) % 2 === 0 ? 'light' : 'dark'}`;
+          cell.dataset.row = canonical.row;
+          cell.dataset.col = canonical.col;
+          cell.setAttribute('aria-label', `Cell ${toCoord(canonical.row, canonical.col)}`);
+          cell.addEventListener('click', () => handleCellClick(canonical.row, canonical.col));
           ui.boardGrid.appendChild(cell);
         }
       }
@@ -2342,10 +2377,11 @@
       corner.textContent = '·';
       ui.boardGrid.appendChild(corner);
 
-      for (let col = 0; col < COLS; col++) {
+      for (let viewCol = 0; viewCol < COLS; viewCol++) {
         const coord = document.createElement('div');
         coord.className = 'coord';
-        coord.textContent = String.fromCharCode(97 + col);
+        const canonicalBottom = canonicalFromView(0, viewCol, perspectiveTeam);
+        coord.textContent = String.fromCharCode(97 + canonicalBottom.col);
         ui.boardGrid.appendChild(coord);
       }
     }
@@ -2400,7 +2436,9 @@
       state.dice.lockedDieIndex = null;
       sound.playSelectSound();
 
-      if (availableDice.length === 1) {
+      const sameValueDice = availableDice.length === 2 && state.dice.values[availableDice[0]] === state.dice.values[availableDice[1]];
+      if (availableDice.length === 1 || sameValueDice) {
+        // UX optimization: when both dice are functionally identical, auto-select the first unused die.
         chooseDieForSelection(availableDice[0]);
       } else {
         render();
@@ -3153,32 +3191,50 @@
 
       if (!state.dice.rolled) {
         appState.botStatusText = `${TEAM_LABEL[team]} bot rolled the dice.`;
-        rollDice();
+        if (appState.playMode === 'online') {
+          OnlineMatchController.requestRoll();
+        } else {
+          rollDice();
+        }
         return;
       }
 
       const actions = getAllLegalActionsForTeam(team, state);
       if (!actions.length) {
-        pushLog(`${TEAM_LABEL[team]} bot had no legal action and ended the turn.`);
-        advanceTurn();
+        if (appState.playMode === 'online') {
+          OnlineMatchController.requestEndTurn();
+        } else {
+          pushLog(`${TEAM_LABEL[team]} bot had no legal action and ended the turn.`);
+          advanceTurn();
+        }
         return;
       }
 
       const chosen = chooseBotAction(actions, appState.matchConfig.botDifficulty);
       if (!chosen) {
-        advanceTurn();
+        if (appState.playMode === 'online') OnlineMatchController.requestEndTurn();
+        else advanceTurn();
         return;
       }
 
       appState.botStatusText = `${TEAM_LABEL[team]} bot plays ${PIECE_NAME[chosen.movingType]} ${toCoord(chosen.fromRow, chosen.fromCol)} → ${toCoord(chosen.toRow, chosen.toCol)}.`;
-      applyMoveAction(chosen, {
-        forcePromotionDecision: chosen.promotionDecision,
-        forcePromotionType: chosen.promotionType
-      });
+      if (appState.playMode === 'online') {
+        OnlineMatchController.requestMove(chosen);
+      } else {
+        applyMoveAction(chosen, {
+          forcePromotionDecision: chosen.promotionDecision,
+          forcePromotionType: chosen.promotionType
+        });
+      }
     }
 
     function render() {
       if (appState.screen !== 'game') return;
+      const perspective = getPerspectiveTeam();
+      if (appState.boardPerspective !== perspective) {
+        appState.boardPerspective = perspective;
+        buildBoardGrid();
+      }
       renderBoard();
       renderStatus();
       renderDice();
@@ -3535,6 +3591,17 @@
     .net-pill.warn { color: var(--red-2); border-color: rgba(216,91,98,0.28); background: rgba(216,91,98,0.14); }
     @media (max-width: 900px) {
       .flow-grid, .lobby-grid { grid-template-columns: 1fr; }
+      .screen-panel { padding: 20px; border-radius: 24px; }
+      .lobby-share-row { grid-template-columns: 1fr; }
+      .screen-actions { grid-template-columns: 1fr; }
+      button { min-height: 44px; }
+    }
+    @media (max-width: 640px) {
+      .menu-grid { grid-template-columns: 1fr; }
+      #boardGrid { grid-template-columns: 24px repeat(8, min(10.8vw, 48px)); grid-template-rows: repeat(8, min(10.8vw, 48px)) 24px; }
+      .cell { width: min(10.8vw, 48px); height: min(10.8vw, 48px); }
+      .piece { width: calc(min(10.8vw, 48px) - 10px); height: calc(min(10.8vw, 48px) - 10px); }
+      .slot-card { padding: 10px; }
     }
   `;
   document.head.appendChild(extraStyle);
@@ -3614,6 +3681,7 @@
               <div class="summary-item"><span>Room ID</span><strong id="lobbyRoomCodeValue">-</strong></div>
               <div class="summary-item"><span>Required Humans</span><strong id="lobbySeatCountValue">-</strong></div>
               <div class="summary-item"><span>Your Team</span><strong id="lobbyLocalTeamValue">Waiting</strong></div>
+              <div id="lobbyTeamChoices" class="summary-item" style="display:block;"></div>
             </div>
             <div class="inline-field">
               <label for="lobbyShareLinkInput">Share link</label>
@@ -3657,6 +3725,7 @@
     serverUrlInput: document.getElementById('serverUrlInput'),
     joinRoomCodeInput: document.getElementById('joinRoomCodeInput'),
     playerNameInput: document.getElementById('playerNameInput'),
+    onlinePreferredTeamChoices: document.getElementById('onlinePreferredTeamChoices'),
     createRoomBtn: document.getElementById('createRoomBtn'),
     joinRoomBtn: document.getElementById('joinRoomBtn'),
     onlineSetupBackBtn: document.getElementById('onlineSetupBackBtn'),
@@ -3666,6 +3735,7 @@
     lobbyRoomCodeValue: document.getElementById('lobbyRoomCodeValue'),
     lobbySeatCountValue: document.getElementById('lobbySeatCountValue'),
     lobbyLocalTeamValue: document.getElementById('lobbyLocalTeamValue'),
+    lobbyTeamChoices: document.getElementById('lobbyTeamChoices'),
     lobbyShareLinkInput: document.getElementById('lobbyShareLinkInput'),
     copyRoomLinkBtn: document.getElementById('copyRoomLinkBtn'),
     copyRoomCodeBtn: document.getElementById('copyRoomCodeBtn'),
@@ -3679,8 +3749,19 @@
   });
 
   const PRODUCTION_WS_URL = 'wss://chaturanga-game.onrender.com';
+
+  function sanitizeServerUrl(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return '';
+    if (/^wss?:\/\//i.test(value)) return value;
+    if (/^https?:\/\//i.test(value)) {
+      return value.replace(/^http/i, 'ws');
+    }
+    return `wss://${value.replace(/^\/+/, '')}`;
+  }
+
   const defaultServerUrl = (() => {
-    const saved = localStorage.getItem('chaturanga_server_url');
+    const saved = sanitizeServerUrl(localStorage.getItem('chaturanga_server_url'));
     if (saved) return saved;
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       return 'ws://localhost:8080';
@@ -3699,17 +3780,20 @@
       isHost: false,
       localPlayerId: '',
       localName: 'Player',
+      preferredTeam: 'green',
       localTeam: null,
-      roomState: null
+      roomState: null,
+      errorText: ''
     }
   });
 
-  appState.matchConfig.playerCount = 2;
-  appState.matchConfig.controlMap = getControlMapForPlayerCount(2);
+  appState.matchConfig.playerCount = 1;
+  appState.matchConfig.humanTeams = ['green'];
+  appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
 
   const params = new URLSearchParams(location.search);
   const autoRoomId = (params.get('room') || '').trim().toUpperCase();
-  const urlServer = (params.get('server') || '').trim();
+  const urlServer = sanitizeServerUrl(params.get('server'));
   if (urlServer) {
     appState.online.serverUrl = urlServer;
     localStorage.setItem('chaturanga_server_url', urlServer);
@@ -3733,16 +3817,97 @@
     });
   }
 
+  // Offline color selection keeps rules untouched by only changing who controls each team.
+  function syncOfflineHumanTeams() {
+    const needed = appState.matchConfig.playerCount;
+    const existing = (appState.matchConfig.humanTeams || []).filter(team => PLAYERS.includes(team));
+    const unique = [];
+    existing.forEach(team => { if (!unique.includes(team)) unique.push(team); });
+    while (unique.length < needed) {
+      const next = PLAYERS.find(team => !unique.includes(team));
+      if (!next) break;
+      unique.push(next);
+    }
+    appState.matchConfig.humanTeams = unique.slice(0, needed);
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
+  }
+
+  function renderOnlinePreferredTeamChoices() {
+    const containers = [ui.onlinePreferredTeamChoices, ui.lobbyTeamChoices].filter(Boolean);
+    containers.forEach(container => {
+      container.innerHTML = '';
+      PLAYERS.forEach(team => {
+        const roomPlayers = appState.online.roomState?.players || [];
+        const occupiedByOther = roomPlayers.some(player => player.team === team && player.id !== appState.online.localPlayerId);
+        const selected = appState.online.preferredTeam === team || appState.online.localTeam === team;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = selected ? 'primary' : 'secondary';
+        btn.style.padding = '8px 10px';
+        btn.textContent = TEAM_LABEL[team] + (occupiedByOther ? ' · Taken' : '');
+        btn.disabled = occupiedByOther;
+        btn.addEventListener('click', () => {
+          primeAudioAndPlayButton();
+          appState.online.preferredTeam = team;
+          renderOnlinePreferredTeamChoices();
+          if (appState.online.roomState) OnlineLobbyController.setPreferredTeam(team);
+        });
+        container.appendChild(btn);
+      });
+    });
+  }
+
+  function renderOfflineTeamChoices() {
+    syncOfflineHumanTeams();
+    ui.offlineTeamChoices.innerHTML = '';
+    const title = document.createElement('div');
+    title.className = 'summary-item';
+    title.innerHTML = `<span>Choose Human Color${appState.matchConfig.playerCount > 1 ? 's' : ''}</span><strong>${appState.matchConfig.humanTeams.map(t => TEAM_LABEL[t]).join(', ')}</strong>`;
+    ui.offlineTeamChoices.appendChild(title);
+
+    const wrap = document.createElement('div');
+    wrap.style.display = 'grid';
+    wrap.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
+    wrap.style.gap = '8px';
+
+    PLAYERS.forEach(team => {
+      const selected = appState.matchConfig.humanTeams.includes(team);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = selected ? 'primary' : 'secondary';
+      btn.style.padding = '10px 8px';
+      btn.textContent = TEAM_LABEL[team];
+      btn.addEventListener('click', () => {
+        primeAudioAndPlayButton();
+        if (selected && appState.matchConfig.humanTeams.length > 1) {
+          appState.matchConfig.humanTeams = appState.matchConfig.humanTeams.filter(entry => entry !== team);
+        } else if (!selected) {
+          if (appState.matchConfig.humanTeams.length >= appState.matchConfig.playerCount) {
+            appState.matchConfig.humanTeams.shift();
+          }
+          appState.matchConfig.humanTeams.push(team);
+        }
+        syncOfflineHumanTeams();
+        renderOfflineTeamChoices();
+        renderAppScreen();
+      });
+      wrap.appendChild(btn);
+    });
+    ui.offlineTeamChoices.appendChild(wrap);
+  }
+
   const originalBuildSetupChoices = buildSetupChoices;
   buildSetupChoices = function () {
     originalBuildSetupChoices();
     makeCardChoice(ui.playerCountChoices, [
-      { value: 2, title: '2 Player', meta: '2 humans + 2 bots', description: 'Green and Red are human. Blue and Yellow stay as bots.' },
-      { value: 3, title: '3 Player', meta: '3 humans + 1 bot', description: 'Green, Red, and Blue are human. Yellow stays as the only bot.' },
-      { value: 4, title: '4 Player', meta: '4 humans + 0 bots', description: 'All four seats are human. No offline bots are added.' }
+      { value: 1, title: '1 Player', meta: '1 human + 3 bots', description: 'Choose any one color as human. Remaining colors are bots.' },
+      { value: 2, title: '2 Player', meta: '2 humans + 2 bots', description: 'Choose any two human colors. Other colors remain bots.' },
+      { value: 3, title: '3 Player', meta: '3 humans + 1 bot', description: 'Choose any three human colors. One color remains a bot.' },
+      { value: 4, title: '4 Player', meta: '4 humans + 0 bots', description: 'All four colors are controlled by humans.' }
     ], appState.matchConfig.playerCount, value => {
       appState.matchConfig.playerCount = value;
-      appState.matchConfig.controlMap = getControlMapForPlayerCount(value);
+      syncOfflineHumanTeams();
+      renderOfflineTeamChoices();
       renderAppScreen();
       buildSetupChoices();
     });
@@ -3765,6 +3930,9 @@
       renderAppScreen();
       buildSetupChoices();
     });
+
+    renderOfflineTeamChoices();
+    renderOnlinePreferredTeamChoices();
   };
 
   const originalGetGameSummaryText = getGameSummaryText;
@@ -3823,7 +3991,14 @@
   };
 
   const originalMaybeRunBotTurn = maybeRunBotTurn;
-  maybeRunBotTurn = function () { if (appState.playMode === 'online') return; return originalMaybeRunBotTurn(); };
+  maybeRunBotTurn = function () {
+    if (appState.playMode === 'online') {
+      const localIsHost = !!appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId && player.isHost);
+      if (!localIsHost) return;
+      return originalMaybeRunBotTurn();
+    }
+    return originalMaybeRunBotTurn();
+  };
   const originalHandleCellClick = handleCellClick;
   handleCellClick = function (row, col) { if (appState.playMode === 'online' && !OnlineMatchController.isLocalTurn()) return; return originalHandleCellClick(row, col); };
   const originalExecuteMove = executeMove;
@@ -3838,7 +4013,7 @@
   declinePromotion = function () { if (appState.playMode === 'online') return OnlineMatchController.requestPromotion('decline'); return originalDeclinePromotion(); };
 
   function setControlMapForOnline(roomState) {
-    const humans = roomState.players.slice(0, roomState.seatCount).map(p => p.team);
+    const humans = roomState.players.map(p => p.team);
     const controlMap = {};
     PLAYERS.forEach(team => controlMap[team] = humans.includes(team) ? 'human' : 'bot');
     appState.matchConfig.controlMap = controlMap;
@@ -3892,30 +4067,70 @@
     return name;
   }
 
+  function setOnlineError(message) {
+    appState.online.errorText = message || '';
+    if (appState.online.errorText) {
+      ui.lobbyStatusText.textContent = appState.online.errorText;
+    }
+  }
+
   const MultiplayerService = {
     socket: null,
     connect() {
-      const serverUrl = (ui.serverUrlInput.value || appState.online.serverUrl || '').trim();
-      if (!serverUrl) { alert('Server URL is required for online play.'); return false; }
+      const serverUrl = sanitizeServerUrl(ui.serverUrlInput.value || appState.online.serverUrl || '');
+      if (!serverUrl) {
+        setOnlineError('Server URL is required for online play.');
+        return false;
+      }
       appState.online.serverUrl = serverUrl;
+      ui.serverUrlInput.value = serverUrl;
       localStorage.setItem('chaturanga_server_url', serverUrl);
       if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) return true;
-      try { this.socket = new WebSocket(serverUrl); }
-      catch (error) { alert(`Could not connect to ${serverUrl}`); return false; }
-      this.socket.addEventListener('open', () => { appState.online.connected = true; renderLobby(); });
-      this.socket.addEventListener('close', () => { appState.online.connected = false; renderLobby(); });
-      this.socket.addEventListener('error', () => { appState.online.connected = false; renderLobby(); });
+      try {
+        this.socket = new WebSocket(serverUrl);
+      } catch (error) {
+        setOnlineError(`Could not connect to ${serverUrl}`);
+        return false;
+      }
+      this.socket.addEventListener('open', () => {
+        appState.online.connected = true;
+        setOnlineError('');
+        renderLobby();
+      });
+      this.socket.addEventListener('close', () => {
+        appState.online.connected = false;
+        if (appState.playMode === 'online') setOnlineError('Connection closed. Check server URL or Render service status.');
+        renderLobby();
+      });
+      this.socket.addEventListener('error', () => {
+        appState.online.connected = false;
+        setOnlineError('Connection failed. Confirm the WebSocket URL and backend deployment health.');
+        renderLobby();
+      });
       this.socket.addEventListener('message', event => {
-        let payload = null;
-        try { payload = JSON.parse(event.data); } catch (error) { return; }
-        OnlineLobbyController.handleMessage(payload);
-        OnlineMatchController.handleMessage(payload);
+        let packet = null;
+        try {
+          packet = JSON.parse(event.data);
+        } catch (error) {
+          setOnlineError('Invalid server response: could not parse JSON.');
+          return;
+        }
+        if (!packet || typeof packet.type !== 'string') {
+          setOnlineError('Invalid server response: missing message type.');
+          return;
+        }
+        const payload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
+        OnlineLobbyController.handleMessage({ type: packet.type, payload });
+        OnlineMatchController.handleMessage({ type: packet.type, payload });
       });
       return true;
     },
-    send(type, data = {}) {
-      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return false;
-      this.socket.send(JSON.stringify({ type, ...data }));
+    send(type, payload = {}) {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        setOnlineError(`Could not send ${type}: socket is not connected.`);
+        return false;
+      }
+      this.socket.send(JSON.stringify({ type, payload }));
       return true;
     },
     disconnect() {
@@ -3928,7 +4143,8 @@
   const OfflineController = {
     start() {
       appState.playMode = 'offline';
-      appState.matchConfig.controlMap = getControlMapForPlayerCount(appState.matchConfig.playerCount);
+      syncOfflineHumanTeams();
+      appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
       beginMatchFlowFromTutorialOriginal();
     }
   };
@@ -3939,7 +4155,7 @@
       if (!MultiplayerService.connect()) return;
       appState.playMode = 'online';
       appState.online.isHost = true;
-      const sendWhenOpen = () => MultiplayerService.send('create_room', { seatCount: appState.online.seatCount, playerName: name, botDifficulty: appState.matchConfig.botDifficulty });
+      const sendWhenOpen = () => MultiplayerService.send('create_room', { seatCount: appState.online.seatCount, playerName: name, botDifficulty: appState.matchConfig.botDifficulty, preferredTeam: appState.online.preferredTeam });
       if (MultiplayerService.socket.readyState === WebSocket.OPEN) sendWhenOpen();
       else MultiplayerService.socket.addEventListener('open', sendWhenOpen, { once: true });
     },
@@ -3950,11 +4166,15 @@
       appState.playMode = 'online';
       appState.online.isHost = false;
       appState.online.roomId = roomId.toUpperCase();
-      const sendWhenOpen = () => MultiplayerService.send('join_room', { roomId: appState.online.roomId, playerName: name });
+      const sendWhenOpen = () => MultiplayerService.send('join_room', { roomId: appState.online.roomId, playerName: name, preferredTeam: appState.online.preferredTeam });
       if (MultiplayerService.socket.readyState === WebSocket.OPEN) sendWhenOpen();
       else MultiplayerService.socket.addEventListener('open', sendWhenOpen, { once: true });
     },
     setReady(ready) { MultiplayerService.send('set_ready', { roomId: appState.online.roomId, ready }); },
+    setPreferredTeam(team) {
+      appState.online.preferredTeam = team;
+      MultiplayerService.send('set_team_preference', { roomId: appState.online.roomId, team });
+    },
     leaveRoom() {
       MultiplayerService.send('leave_room', { roomId: appState.online.roomId });
       MultiplayerService.disconnect();
@@ -3966,56 +4186,103 @@
       renderAppScreen();
     },
     handleMessage(payload) {
-      if (payload.type === 'room_state') {
-        appState.online.roomId = payload.room.roomId;
-        appState.online.roomState = payload.room;
-        appState.online.localPlayerId = payload.localPlayerId || appState.online.localPlayerId;
-        appState.online.localTeam = payload.localTeam || appState.online.localTeam;
-        updateShareLink(payload.room.roomId);
-        renderLobby();
-        if (!payload.room.matchStarted && appState.screen !== 'lobby') setScreen('lobby');
+      if (payload.type === 'room_joined') {
+        appState.online.roomId = (payload.payload?.roomId || '').toUpperCase();
+        setScreen('lobby');
       }
-      if (payload.type === 'countdown') showCountdown(payload.seconds);
-      if (payload.type === 'error_notice') alert(payload.message);
+      if (payload.type === 'room_state') {
+        const data = payload.payload || {};
+        if (!data.room || !data.room.roomId) {
+          setOnlineError('Invalid server response: room_state missing room details.');
+          return;
+        }
+        appState.online.roomId = data.room.roomId;
+        appState.online.roomState = data.room;
+        appState.online.localPlayerId = data.localPlayerId || appState.online.localPlayerId;
+        appState.online.localTeam = data.localTeam || appState.online.localTeam;
+        if (appState.online.localTeam) appState.online.preferredTeam = appState.online.localTeam;
+        const me = data.room?.players?.find(player => player.id === appState.online.localPlayerId);
+        appState.online.isHost = !!me?.isHost;
+        updateShareLink(data.room.roomId);
+        renderLobby();
+        if (!data.room.matchStarted && appState.screen !== 'lobby') setScreen('lobby');
+      }
+      if (payload.type === 'countdown') showCountdown(payload.payload?.seconds ?? 0);
+      if (payload.type === 'error_notice') {
+        const msg = payload.payload?.message || 'Server error.';
+        setOnlineError(msg);
+        alert(msg);
+      }
     }
   };
 
   const OnlineMatchController = {
+    // Online turn ownership: only the local team may act, except host proxy for bot teams.
     isLocalTurn() {
       if (appState.playMode !== 'online') return !isBotPlayer(getCurrentTeam());
+      const team = getCurrentTeam();
+      const localIsHost = !!appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId && player.isHost);
       if (!appState.online.localTeam) return false;
-      if (state.awaitingPromotion && state.awaitingPromotion.team) return state.awaitingPromotion.team === appState.online.localTeam;
-      return getCurrentTeam() === appState.online.localTeam && !state.gameOver;
+      if (state.awaitingPromotion && state.awaitingPromotion.team) {
+        return state.awaitingPromotion.team === appState.online.localTeam || (localIsHost && isBotPlayer(state.awaitingPromotion.team));
+      }
+      return (team === appState.online.localTeam || (localIsHost && isBotPlayer(team))) && !state.gameOver;
     },
-    requestRoll() { if (this.isLocalTurn()) MultiplayerService.send('roll_dice', { roomId: appState.online.roomId }); },
+    requestRoll() {
+      if (this.isLocalTurn()) MultiplayerService.send('roll_dice', { roomId: appState.online.roomId, actorTeam: getCurrentTeam() });
+    },
     requestMove(move) {
       if (!this.isLocalTurn()) return;
-      MultiplayerService.send('make_move', { roomId: appState.online.roomId, move: { fromRow: move.fromRow, fromCol: move.fromCol, toRow: move.toRow, toCol: move.toCol, dieIndex: move.dieIndex } });
+      MultiplayerService.send('make_move', { roomId: appState.online.roomId, actorTeam: getCurrentTeam(), move: { fromRow: move.fromRow, fromCol: move.fromCol, toRow: move.toRow, toCol: move.toCol, dieIndex: move.dieIndex } });
       clearSelection();
       render();
     },
-    requestEndTurn() { if (this.isLocalTurn()) MultiplayerService.send('end_turn', { roomId: appState.online.roomId }); },
-    requestPromotion(decision) { MultiplayerService.send('promotion_decision', { roomId: appState.online.roomId, decision }); },
+    requestEndTurn() { if (this.isLocalTurn()) MultiplayerService.send('end_turn', { roomId: appState.online.roomId, actorTeam: getCurrentTeam() }); },
+    requestPromotion(decision) { MultiplayerService.send('promotion_decision', { roomId: appState.online.roomId, actorTeam: getCurrentTeam(), decision }); },
     handleMessage(payload) {
       if (payload.type === 'match_started') {
+        const data = payload.payload || {};
         hideCountdown();
         appState.playMode = 'online';
-        appState.online.roomId = payload.roomId;
-        appState.online.localPlayerId = payload.localPlayerId || appState.online.localPlayerId;
-        appState.online.localTeam = payload.localTeam || appState.online.localTeam;
-        appState.online.roomState = payload.roomState || appState.online.roomState;
-        setControlMapForOnline(payload.roomState);
-        replaceStateFromSnapshot(payload.snapshot);
+        appState.online.roomId = data.roomId || appState.online.roomId;
+        appState.online.localPlayerId = data.localPlayerId || appState.online.localPlayerId;
+        appState.online.localTeam = data.localTeam || appState.online.localTeam;
+        if (appState.online.localTeam) appState.online.preferredTeam = appState.online.localTeam;
+        const me = data.room?.players?.find(player => player.id === appState.online.localPlayerId);
+        appState.online.isHost = !!me?.isHost;
+        appState.online.roomState = data.roomState || appState.online.roomState;
+        if (appState.online.roomState) setControlMapForOnline(appState.online.roomState);
+        resetGame();
         setScreen('game');
         renderAppScreen();
       }
       if (payload.type === 'match_state') {
-        if (payload.roomState) {
-          appState.online.roomState = payload.roomState;
-          appState.online.localTeam = payload.localTeam || appState.online.localTeam;
-          setControlMapForOnline(payload.roomState);
+        const data = payload.payload || {};
+        if (data.roomState) {
+          appState.online.roomState = data.roomState;
+          appState.online.localTeam = data.localTeam || appState.online.localTeam;
+          if (appState.online.localTeam) appState.online.preferredTeam = appState.online.localTeam;
+          setControlMapForOnline(data.roomState);
         }
-        replaceStateFromSnapshot(payload.snapshot);
+        const action = data.action || {};
+        if (action.type === 'roll_dice' && Array.isArray(action.dice) && action.dice.length === 2) {
+          state.dice.values = [...action.dice];
+          state.dice.used = [false, false];
+          state.dice.rolled = true;
+          state.dice.lockedDieIndex = null;
+          clearSelection();
+          pushLog(`${TEAM_LABEL[action.actorTeam]} rolled ${action.dice[0]} and ${action.dice[1]}.`);
+        }
+        if (action.type === 'make_move' && action.move) {
+          applyMoveAction(action.move);
+        }
+        if (action.type === 'promotion_decision') {
+          if (action.decision === 'confirm') originalConfirmPromotion();
+          if (action.decision === 'decline') originalDeclinePromotion();
+        }
+        if (action.type === 'end_turn') {
+          advanceTurn();
+        }
         renderAppScreen();
       }
     }
@@ -4031,7 +4298,10 @@
     const roomState = appState.online.roomState;
     ui.lobbyConnectionPill.textContent = appState.online.connected ? 'Connected' : 'Disconnected';
     ui.lobbyConnectionPill.className = `net-pill ${appState.online.connected ? 'live' : 'warn'}`;
-    if (!roomState) return;
+    if (!roomState) {
+      if (appState.online.errorText) ui.lobbyStatusText.textContent = appState.online.errorText;
+      return;
+    }
     const localPlayer = roomState.players.find(player => player.id === appState.online.localPlayerId);
     const everyonePresent = roomState.players.length === roomState.seatCount;
     const everyoneReady = everyonePresent && roomState.players.every(player => !!player.ready);
@@ -4040,10 +4310,11 @@
     ui.lobbySeatCountValue.textContent = `${roomState.seatCount} humans`;
     ui.lobbyLocalTeamValue.textContent = localPlayer ? TEAM_LABEL[localPlayer.team] : 'Waiting';
     ui.lobbyShareLinkInput.value = updateShareLink(roomState.roomId);
-    ui.lobbyStatusText.textContent = roomState.matchStarted ? 'Match already started.' : everyoneReady ? 'All players ready. Countdown should begin.' : everyonePresent ? 'All slots filled. Waiting for ready checks.' : `Waiting for ${roomState.seatCount - roomState.players.length} more player(s).`;
+    ui.lobbyStatusText.textContent = appState.online.errorText || (roomState.matchStarted ? 'Match already started.' : everyoneReady ? 'All players ready. Countdown should begin.' : everyonePresent ? 'All slots filled. Waiting for ready checks.' : `Waiting for ${roomState.seatCount - roomState.players.length} more player(s).`);
+    renderOnlinePreferredTeamChoices();
     ui.toggleReadyBtn.textContent = localPlayer && localPlayer.ready ? 'Unready' : 'Ready';
     ui.lobbyPlayerSlots.innerHTML = '';
-    PLAYERS.slice(0, roomState.seatCount).forEach(team => {
+    PLAYERS.forEach(team => {
       const player = roomState.players.find(entry => entry.team === team);
       const slot = document.createElement('div');
       slot.className = `slot-card ${player ? '' : 'slot-empty'}`;
