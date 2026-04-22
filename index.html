@@ -1,0 +1,4107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chaturanga v2 - 4 Player Dice Chess</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #0e1118;
+      --bg-1: #151b27;
+      --bg-2: #1a2232;
+      --surface: rgba(24, 31, 46, 0.9);
+      --surface-2: rgba(32, 41, 60, 0.88);
+      --surface-3: rgba(14, 18, 28, 0.84);
+      --panel-border: rgba(240, 215, 165, 0.16);
+      --panel-border-strong: rgba(240, 215, 165, 0.26);
+      --text: #f4efe5;
+      --text-soft: #d8d2c8;
+      --muted: #a59b8b;
+      --gold: #dfbf7a;
+      --gold-soft: rgba(223, 191, 122, 0.18);
+      --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.45);
+      --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.34);
+      --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.24);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --transition-fast: 140ms cubic-bezier(.2,.8,.2,1);
+      --transition-med: 220ms cubic-bezier(.2,.8,.2,1);
+      --cell-light: #d8bf98;
+      --cell-light-2: #c9a877;
+      --cell-dark: #7b5639;
+      --cell-dark-2: #65452f;
+      --selected: #f8d469;
+      --selected-ring: rgba(248, 212, 105, 0.72);
+      --possible: #4ad78c;
+      --possible-ring: rgba(74, 215, 140, 0.72);
+      --capture: #ff7b7b;
+      --capture-ring: rgba(255, 123, 123, 0.72);
+      --last-move: rgba(107, 168, 255, 0.58);
+      --focus: #8ec5ff;
+      --disabled: #596273;
+      --green: #2ba66a;
+      --green-2: #75db9e;
+      --red: #d85b62;
+      --red-2: #ff9ea3;
+      --blue: #5890f6;
+      --blue-2: #a8c4ff;
+      --yellow: #d7a21e;
+      --yellow-2: #ffd56f;
+      --team-green-bg: linear-gradient(180deg, rgba(43,166,106,0.22), rgba(16,57,39,0.92));
+      --team-red-bg: linear-gradient(180deg, rgba(216,91,98,0.22), rgba(73,27,31,0.92));
+      --team-blue-bg: linear-gradient(180deg, rgba(88,144,246,0.22), rgba(26,43,77,0.92));
+      --team-yellow-bg: linear-gradient(180deg, rgba(215,162,30,0.24), rgba(79,54,16,0.96));
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(244, 203, 118, 0.09), transparent 30%),
+        radial-gradient(circle at left 20% bottom 10%, rgba(92, 125, 194, 0.14), transparent 32%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-0) 55%, #0b0d13 100%);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      background:
+        linear-gradient(90deg, transparent 0 49.5%, rgba(255,255,255,0.04) 49.5% 50.5%, transparent 50.5% 100%),
+        linear-gradient(transparent 0 49.5%, rgba(255,255,255,0.03) 49.5% 50.5%, transparent 50.5% 100%);
+      background-size: 72px 72px;
+      mask-image: radial-gradient(circle at center, black, transparent 85%);
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    button:focus-visible,
+    .cell:focus-visible,
+    .pill:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    h1, h2, h3, h4, p { margin: 0; }
+
+    .hidden { display: none !important; }
+
+    .app-view {
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    .screen {
+      min-height: 100vh;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    .screen-panel {
+      width: min(980px, 100%);
+      border-radius: 32px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+        rgba(16, 22, 34, 0.94);
+      box-shadow: var(--shadow-lg);
+      padding: 28px;
+      backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at top right, rgba(223,191,122,0.12), transparent 28%),
+        linear-gradient(135deg, rgba(255,255,255,0.05), transparent 35%);
+      pointer-events: none;
+    }
+
+    .screen-panel > * { position: relative; z-index: 1; }
+
+    .hero {
+      display: grid;
+      gap: 18px;
+      text-align: center;
+      place-items: center;
+      padding: 36px 18px;
+    }
+
+    .logo-mark {
+      width: 92px;
+      height: 92px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      color: var(--gold);
+      border: 1px solid rgba(223,191,122,0.28);
+      background:
+        radial-gradient(circle at top, rgba(223,191,122,0.18), transparent 55%),
+        rgba(255,255,255,0.03);
+      box-shadow: 0 0 0 8px rgba(255,255,255,0.02), var(--shadow-sm);
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+
+    .hero p {
+      max-width: 720px;
+      color: var(--text-soft);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.04);
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 10px;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+    }
+
+    .menu-card,
+    .config-card,
+    .tutorial-card,
+    .loading-card {
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      padding: 20px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .menu-actions,
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-soft);
+      font-size: 0.92rem;
+    }
+
+    .summary-item strong {
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .choice-card {
+      display: grid;
+      gap: 10px;
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      text-align: left;
+    }
+
+    .choice-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(223,191,122,0.22);
+      background: rgba(255,255,255,0.045);
+    }
+
+    .choice-card.selected {
+      border-color: rgba(142,197,255,0.38);
+      box-shadow: 0 0 0 2px rgba(142,197,255,0.16), inset 0 1px 0 rgba(255,255,255,0.04);
+      background: linear-gradient(180deg, rgba(88,144,246,0.12), rgba(255,255,255,0.04));
+    }
+
+    .choice-card h3 {
+      font-size: 1.08rem;
+      margin: 0;
+    }
+
+    .choice-card p {
+      color: var(--text-soft);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .choice-meta {
+      color: var(--gold);
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .screen-actions {
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .tutorial-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .tutorial-step {
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      display: grid;
+      gap: 8px;
+    }
+
+    .tutorial-step h4 {
+      font-size: 1rem;
+    }
+
+    .tutorial-step p {
+      color: var(--text-soft);
+      line-height: 1.55;
+      font-size: 0.9rem;
+    }
+
+    .loading-wrap {
+      display: grid;
+      place-items: center;
+      gap: 18px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.12);
+      border-top-color: var(--gold);
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .splash-prompt {
+      margin-top: 14px;
+      color: var(--muted);
+      letter-spacing: 0.14em;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      animation: pulse 1.35s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    button {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 0.96rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      color: #fbfbfe;
+      cursor: pointer;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+      box-shadow: var(--shadow-sm);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border-color: rgba(255,255,255,0.1);
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px) scale(0.99);
+    }
+
+    button.primary {
+      background: linear-gradient(180deg, #3f8cff, #2259c7);
+      border-color: rgba(169, 205, 255, 0.24);
+    }
+
+    button.secondary {
+      background: linear-gradient(180deg, #45516a, #293245);
+      border-color: rgba(200, 214, 241, 0.14);
+    }
+
+    button.warn {
+      background: linear-gradient(180deg, #b65339, #7f2f1f);
+      border-color: rgba(255, 188, 162, 0.18);
+    }
+
+    button.subtle {
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border-color: rgba(255,255,255,0.1);
+    }
+
+    button.ghost {
+      background: rgba(255,255,255,0.02);
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    button:disabled {
+      background: linear-gradient(180deg, rgba(89, 98, 115, 0.8), rgba(63, 70, 83, 0.8));
+      border-color: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.58);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .app-shell {
+      width: min(1520px, calc(100vw - 32px));
+      margin: 16px auto;
+      padding: 14px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(10px);
+    }
+
+    .game-topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 8px 8px 18px;
+    }
+
+    .game-topbar h2 {
+      font-size: 1.15rem;
+      margin: 0;
+    }
+
+    .game-topbar p {
+      color: var(--text-soft);
+      font-size: 0.88rem;
+      line-height: 1.45;
+      margin-top: 6px;
+    }
+
+    .game-top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .game-top-actions button {
+      width: auto;
+      min-width: 150px;
+    }
+
+    .config-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .config-pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-soft);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 320px minmax(600px, 1fr) 340px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)),
+        var(--surface);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      padding: 18px;
+      backdrop-filter: blur(16px);
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.08), transparent 35%),
+        radial-gradient(circle at top right, rgba(223, 191, 122, 0.1), transparent 28%);
+      opacity: 0.8;
+    }
+
+    .panel > * { position: relative; z-index: 1; }
+
+    .panel-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel-header h2 {
+      font-size: 1.22rem;
+      line-height: 1.1;
+      letter-spacing: 0.01em;
+    }
+
+    .subtitle {
+      color: var(--text-soft);
+      font-size: 0.93rem;
+      line-height: 1.45;
+      margin-top: 8px;
+    }
+
+    .board-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .status-card {
+      width: 100%;
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--panel-border-strong);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+        rgba(17, 23, 35, 0.9);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .status-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .status-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .turn-mark {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.05), 0 0 22px currentColor;
+      flex: 0 0 auto;
+    }
+
+    .status-heading {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+
+    .status-player {
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: 0.01em;
+    }
+
+    .status-body {
+      color: var(--text-soft);
+      font-size: 0.97rem;
+      line-height: 1.5;
+    }
+
+    .status-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .meta-chip {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-soft);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .board-shell {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 12px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top, rgba(223, 191, 122, 0.16), transparent 36%),
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015)),
+        rgba(14, 18, 28, 0.92);
+      border: 1px solid rgba(223, 191, 122, 0.18);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .board-frame {
+      position: relative;
+      padding: 14px;
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, #6a5136 0%, #3e2e20 50%, #2a1e15 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 16px 28px rgba(0,0,0,0.34);
+    }
+
+    .board-frame::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 18px;
+      border: 1px solid rgba(223, 191, 122, 0.3);
+      pointer-events: none;
+    }
+
+    .board-frame::after {
+      content: "✦";
+      position: absolute;
+      top: 10px;
+      right: 16px;
+      color: rgba(223,191,122,0.55);
+      font-size: 18px;
+      letter-spacing: 0.2em;
+      pointer-events: none;
+    }
+
+    #boardGrid {
+      display: grid;
+      grid-template-columns: 34px repeat(8, 72px);
+      grid-template-rows: repeat(8, 72px) 34px;
+      gap: 0;
+      user-select: none;
+    }
+
+    .coord {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #edd8b5;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+    }
+
+    .coord.corner { color: transparent; }
+
+    .cell {
+      width: 72px;
+      height: 72px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform var(--transition-fast), filter var(--transition-fast), box-shadow var(--transition-fast);
+      border: 1px solid rgba(21, 14, 10, 0.7);
+      overflow: hidden;
+      padding: 0;
+      appearance: none;
+    }
+
+    .cell::before,
+    .cell::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .cell.light {
+      background:
+        linear-gradient(180deg, var(--cell-light), var(--cell-light-2)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 3px, rgba(0,0,0,0.02) 3px 6px);
+    }
+
+    .cell.dark {
+      background:
+        linear-gradient(180deg, var(--cell-dark), var(--cell-dark-2)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 3px, rgba(0,0,0,0.04) 3px 6px);
+    }
+
+    .cell::before {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.1), transparent 30%, transparent 70%, rgba(0,0,0,0.12)),
+        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 46%);
+      opacity: 1;
+    }
+
+    .cell::after {
+      inset: 4px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      opacity: 0;
+    }
+
+    .cell:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      z-index: 2;
+    }
+
+    .cell:disabled {
+      cursor: default;
+    }
+
+    .cell.selected::after {
+      opacity: 1;
+      border-color: var(--selected-ring);
+      box-shadow: inset 0 0 0 2px var(--selected), 0 0 22px rgba(248,212,105,0.22);
+    }
+
+    .cell.possible::after {
+      opacity: 1;
+      border-color: rgba(74,215,140,0.28);
+      box-shadow: inset 0 0 0 2px var(--possible), 0 0 0 1px rgba(0,0,0,0.08);
+    }
+
+    .cell.capture::after {
+      opacity: 1;
+      border-color: rgba(255,123,123,0.3);
+      box-shadow: inset 0 0 0 2px var(--capture), 0 0 0 1px rgba(0,0,0,0.08);
+    }
+
+    .cell.last-from::after,
+    .cell.last-to::after {
+      opacity: 1;
+      border-color: rgba(107, 168, 255, 0.25);
+      box-shadow: inset 0 0 0 2px var(--last-move);
+    }
+
+    .cell.possible .move-dot,
+    .cell.capture .capture-ring {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .move-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(16, 35, 25, 0.36);
+      box-shadow: 0 0 0 6px rgba(74, 215, 140, 0.22);
+      backdrop-filter: blur(2px);
+    }
+
+    .capture-ring {
+      inset: 8px;
+      border-radius: 14px;
+      border: 3px solid rgba(255,255,255,0.72);
+      box-shadow: inset 0 0 0 3px rgba(179, 35, 35, 0.34), 0 0 0 5px rgba(255,123,123,0.2);
+    }
+
+    .piece {
+      --piece-color: #fff;
+      --piece-bg: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+      width: 58px;
+      height: 58px;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: var(--piece-bg);
+      color: var(--piece-color);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        inset 0 -10px 16px rgba(0,0,0,0.2),
+        0 8px 18px rgba(0,0,0,0.28);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+    }
+
+    .cell:hover:not(:disabled) .piece {
+      transform: translateY(-1px) scale(1.015);
+    }
+
+    .piece::before {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      pointer-events: none;
+    }
+
+    .piece::after {
+      content: "";
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      right: 8px;
+      height: 38%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0));
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .piece.green { --piece-color: var(--green-2); --piece-bg: var(--team-green-bg); }
+    .piece.red { --piece-color: var(--red-2); --piece-bg: var(--team-red-bg); }
+    .piece.blue { --piece-color: var(--blue-2); --piece-bg: var(--team-blue-bg); }
+    .piece.yellow { --piece-color: var(--yellow-2); --piece-bg: var(--team-yellow-bg); }
+
+    .piece.royal {
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -10px 16px rgba(0,0,0,0.2),
+        0 8px 18px rgba(0,0,0,0.28),
+        0 0 0 2px rgba(223,191,122,0.35),
+        0 0 18px rgba(223,191,122,0.22);
+    }
+
+    .piece .glyph {
+      font-size: 24px;
+      line-height: 1;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.32);
+    }
+
+    .piece .tag {
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.12em;
+      font-weight: 900;
+      opacity: 0.92;
+      text-transform: uppercase;
+    }
+
+    .piece .crest {
+      position: absolute;
+      top: -6px;
+      right: -5px;
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 10px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, #f5e5b8, #c89d37);
+      color: #352612;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+    }
+
+    .hud-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .section-card {
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      padding: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .die-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .die-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+        rgba(10, 13, 20, 0.8);
+      padding: 14px 12px;
+      min-height: 134px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .die-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(255,255,255,0.1), transparent 45%);
+      pointer-events: none;
+    }
+
+    .die-card.used {
+      opacity: 0.55;
+      border-style: dashed;
+      transform: scale(0.985);
+      filter: saturate(0.7);
+    }
+
+    .die-card.active {
+      border-color: rgba(142, 197, 255, 0.45);
+      box-shadow: 0 0 0 2px rgba(142,197,255,0.22), var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    .die-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--text-soft);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .die-state {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-soft);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .die-value-wrap {
+      display: grid;
+      place-items: center;
+      gap: 6px;
+      text-align: center;
+    }
+
+    .die-value {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .die-piece {
+      color: var(--text-soft);
+      font-size: 0.87rem;
+      line-height: 1.35;
+      min-height: 36px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .pill-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--text-soft);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .pill-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .pill-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.05), 0 0 16px currentColor;
+    }
+
+    .pill-tag {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+
+    .pill.dead {
+      opacity: 0.42;
+      filter: grayscale(0.35);
+      text-decoration: line-through;
+    }
+
+    .pill.current {
+      border-color: rgba(223,191,122,0.26);
+      background: linear-gradient(180deg, rgba(223,191,122,0.12), rgba(255,255,255,0.04));
+      color: var(--text);
+      box-shadow: 0 0 0 1px rgba(223,191,122,0.12), inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .selection-box {
+      display: grid;
+      gap: 10px;
+    }
+
+    .selection-info {
+      padding: 12px 13px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(8, 11, 18, 0.34);
+      color: var(--text-soft);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      min-height: 66px;
+    }
+
+    .choice-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .choice-bar button {
+      width: auto;
+      min-width: 120px;
+      margin: 0;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+    }
+
+    .log {
+      max-height: 360px;
+      overflow: auto;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(6, 8, 14, 0.42);
+      padding: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(223,191,122,0.4) transparent;
+    }
+
+    .log-entry {
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: var(--text-soft);
+      font-size: 0.88rem;
+      line-height: 1.45;
+      border: 1px solid transparent;
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .log-entry + .log-entry { margin-top: 6px; }
+
+    .log-entry:nth-child(1) {
+      background: rgba(223,191,122,0.08);
+      border-color: rgba(223,191,122,0.12);
+      color: var(--text);
+    }
+
+    .log-entry:nth-child(n+2) { background: rgba(255,255,255,0.025); }
+
+    .rules-list,
+    .legend-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .rules-list li,
+    .legend-list li {
+      position: relative;
+      padding-left: 18px;
+      color: var(--text-soft);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .rules-list li::before,
+    .legend-list li::before {
+      content: "◆";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--gold);
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .mini {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+
+    .piece-guide {
+      display: grid;
+      gap: 8px;
+    }
+
+    .piece-guide-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .guide-badge {
+      min-width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--gold);
+      font-weight: 900;
+    }
+
+    .guide-copy strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 2px;
+      font-size: 0.9rem;
+    }
+
+    .guide-copy span {
+      color: var(--text-soft);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 12, 0.72);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--transition-med), visibility var(--transition-med);
+    }
+
+    .modal-backdrop.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      width: min(460px, 100%);
+      border-radius: 24px;
+      border: 1px solid rgba(223,191,122,0.18);
+      background:
+        radial-gradient(circle at top, rgba(223,191,122,0.13), transparent 40%),
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)),
+        rgba(15, 19, 29, 0.98);
+      box-shadow: var(--shadow-lg);
+      padding: 22px;
+      transform: translateY(14px) scale(0.98);
+      transition: transform var(--transition-med);
+    }
+
+    .modal-backdrop.show .modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-copy {
+      margin-top: 12px;
+      color: var(--text-soft);
+      line-height: 1.55;
+      font-size: 0.96rem;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .team-green { color: var(--green-2); }
+    .team-red { color: var(--red-2); }
+    .team-blue { color: var(--blue-2); }
+    .team-yellow { color: var(--yellow-2); }
+
+    .audio-controls {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .audio-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .audio-label-stack {
+      display: grid;
+      gap: 4px;
+    }
+
+    .audio-title {
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    .audio-subtitle {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.3;
+    }
+
+    .audio-toggle {
+      width: auto;
+      min-width: 96px;
+      padding: 10px 12px;
+      font-size: 0.84rem;
+      box-shadow: none;
+    }
+
+    .audio-slider-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-soft);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .audio-slider {
+      width: 100%;
+      margin: 0;
+      accent-color: #8ec5ff;
+      cursor: pointer;
+    }
+
+    .audio-slider:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .audio-volume-value {
+      min-width: 40px;
+      text-align: right;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .audio-status {
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.35;
+      min-height: 1.1em;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1460px) {
+      .app {
+        grid-template-columns: 300px minmax(560px, 1fr) 320px;
+      }
+      #boardGrid {
+        grid-template-columns: 30px repeat(8, 66px);
+        grid-template-rows: repeat(8, 66px) 30px;
+      }
+      .cell { width: 66px; height: 66px; }
+      .piece { width: 54px; height: 54px; }
+    }
+
+    @media (max-width: 1260px) {
+      .menu-grid,
+      .tutorial-grid {
+        grid-template-columns: 1fr;
+      }
+      .app {
+        grid-template-columns: 1fr;
+      }
+      .board-wrap {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 840px) {
+      .app-shell {
+        width: min(100vw - 16px, 100%);
+        margin: 8px auto;
+        padding: 8px;
+        border-radius: 22px;
+      }
+      .screen { padding: 12px; }
+      .screen-panel { padding: 18px; border-radius: 24px; }
+      .choice-grid,
+      .tutorial-grid,
+      .modal-actions,
+      .die-row {
+        grid-template-columns: 1fr;
+      }
+      .panel,
+      .status-card,
+      .board-shell {
+        border-radius: 20px;
+      }
+      .board-frame {
+        padding: 10px;
+        border-radius: 18px;
+      }
+      #boardGrid {
+        grid-template-columns: 26px repeat(8, min(10.5vw, 56px));
+        grid-template-rows: repeat(8, min(10.5vw, 56px)) 26px;
+      }
+      .cell {
+        width: min(10.5vw, 56px);
+        height: min(10.5vw, 56px);
+      }
+      .piece {
+        width: calc(min(10.5vw, 56px) - 12px);
+        height: calc(min(10.5vw, 56px) - 12px);
+        border-radius: 14px;
+      }
+      .piece .glyph { font-size: 20px; }
+      .piece .tag { font-size: 9px; }
+      .game-top-actions button {
+        min-width: 0;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="appView" class="app-view">
+    <section id="screenSplash" class="screen active" aria-label="Splash screen">
+      <div class="screen-panel hero" id="splashContinueArea" role="button" tabindex="0">
+        <div class="logo-mark">✦</div>
+        <div class="eyebrow">Digital Chaturanga</div>
+        <h1>Chaturanga v2</h1>
+        <p>Four-player dice strategy with modern presentation, guided setup, and rule-respecting computer opponents.</p>
+        <div class="splash-prompt">Tap or click to continue</div>
+      </div>
+    </section>
+
+    <section id="screenMenu" class="screen" aria-label="Main menu">
+      <div class="screen-panel">
+        <div class="menu-grid">
+          <div class="menu-card">
+            <div class="eyebrow">Main Menu</div>
+            <h1 style="font-size:2.3rem; line-height:1.05;">Chaturanga v2</h1>
+            <p class="subtitle" style="max-width:560px;">Set the table, pick how many humans are playing, choose bot strength, and launch straight into the same ruleset you already have.</p>
+            <div class="menu-actions" style="margin-top:22px;">
+              <button id="menuPlayBtn" class="primary">Play Game</button>
+              <button id="menuHowBtn" class="secondary">How to Play</button>
+            </div>
+          </div>
+          <div class="menu-card">
+            <div class="eyebrow">Current Defaults</div>
+            <div class="summary-list">
+              <div class="summary-item"><span>Humans</span><strong id="menuSummaryPlayers">1 Player</strong></div>
+              <div class="summary-item"><span>Bot Difficulty</span><strong id="menuSummaryDifficulty">Medium</strong></div>
+              <div class="summary-item"><span>Control Map</span><strong id="menuSummaryControl">Green human</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenPlayerCount" class="screen" aria-label="Player count selection">
+      <div class="screen-panel">
+        <div class="eyebrow">Setup</div>
+        <h1 style="font-size:2.1rem; line-height:1.08;">Choose Player Count</h1>
+        <p class="subtitle">Green is always assigned as the first human. Additional humans follow turn order: Green → Red → Blue → Yellow. Remaining colors become bots.</p>
+        <div id="playerCountChoices" class="choice-grid"></div>
+        <div class="screen-actions">
+          <button id="playerCountBackBtn" class="ghost">Back</button>
+          <button id="playerCountNextBtn" class="primary">Continue</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenDifficulty" class="screen" aria-label="Difficulty selection">
+      <div class="screen-panel">
+        <div class="eyebrow">Setup</div>
+        <h1 style="font-size:2.1rem; line-height:1.08;">Choose Bot Difficulty</h1>
+        <p class="subtitle">Difficulty changes actual decision quality. Easy is loose and random-heavy. Pro evaluates candidate turns much more carefully.</p>
+        <div id="difficultyChoices" class="choice-grid"></div>
+        <div class="screen-actions">
+          <button id="difficultyBackBtn" class="ghost">Back</button>
+          <button id="difficultyNextBtn" class="primary">Continue</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenTutorial" class="screen" aria-label="Tutorial screen">
+      <div class="screen-panel">
+        <div class="eyebrow">How To Play</div>
+        <h1 style="font-size:2.1rem; line-height:1.08;">Quick Rules & Turn Flow</h1>
+        <p class="subtitle">This explains the current variant only. No rules are changed here. Use it as a fast onboarding pass before the match starts.</p>
+        <div class="tutorial-grid">
+          <div class="tutorial-step">
+            <h4>1. Roll Dice</h4>
+            <p>Each turn starts with two dice. Dice values unlock piece types: 1 or 5 = Pawn or King, 2 = Elephant, 3 = Horse, 4 or 6 = Ship.</p>
+          </div>
+          <div class="tutorial-step">
+            <h4>2. Select a Piece</h4>
+            <p>Pick one of your own pieces that matches an unused die and has at least one legal move. If both dice apply, you choose which die to spend.</p>
+          </div>
+          <div class="tutorial-step">
+            <h4>3. Move or Capture</h4>
+            <p>Green and Blue pawns move vertically. Red and Yellow pawns move horizontally. Captures follow the current live rules only—nothing extra is added.</p>
+          </div>
+          <div class="tutorial-step">
+            <h4>4. Promotion</h4>
+            <p>When a pawn reaches a promotion destination square, it may promote according to the existing destination mapping. Promotion can create non-royal kings.</p>
+          </div>
+          <div class="tutorial-step">
+            <h4>5. Elimination & Victory</h4>
+            <p>A team is eliminated only when it has no kings left on the board. When only one live team remains, that team wins the game.</p>
+          </div>
+          <div class="tutorial-step">
+            <h4>6. Bots</h4>
+            <p>If fewer than four humans are selected, missing colors become bots. Bots roll the same dice, use the same legal move engine, and never cheat.</p>
+          </div>
+        </div>
+        <div class="screen-actions">
+          <button id="tutorialBackBtn" class="ghost">Back</button>
+          <button id="tutorialSkipBtn" class="secondary">Skip Tutorial</button>
+          <button id="tutorialStartBtn" class="primary">Start Game</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenLoading" class="screen" aria-label="Loading screen">
+      <div class="screen-panel loading-card">
+        <div class="loading-wrap">
+          <div class="spinner" aria-hidden="true"></div>
+          <div class="eyebrow">Preparing Match</div>
+          <h1 style="font-size:2rem;">Setting the Board</h1>
+          <p class="subtitle" id="loadingText" style="max-width:560px;">Assigning control map, preparing bot difficulty, and loading the match.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenGame" class="screen" aria-label="Game screen">
+      <div class="app-shell">
+        <div class="game-topbar">
+          <div>
+            <div class="eyebrow">Match</div>
+            <h2>Chaturanga v2</h2>
+            <p id="gameTopSummary">1 human, 3 bots, Medium difficulty.</p>
+            <div id="gameConfigPills" class="config-pills"></div>
+          </div>
+          <div class="game-top-actions">
+            <button id="restartMatchBtn" class="secondary">Restart Match</button>
+            <button id="returnMenuBtn" class="ghost">Return to Menu</button>
+          </div>
+        </div>
+
+        <div class="app">
+          <aside class="panel" aria-label="Turn controls and move log">
+            <div class="panel-header">
+              <div>
+                <div class="eyebrow">Turn Engine</div>
+                <h2>Command Panel</h2>
+                <p class="subtitle">Dice, active players, selection details, and the full move history.</p>
+              </div>
+            </div>
+
+            <div class="hud-grid">
+              <section class="section-card" aria-labelledby="diceHeading">
+                <div class="section-label" id="diceHeading"><span>Dice</span><span>Turn Actions</span></div>
+                <div class="die-row">
+                  <div id="dieCard0" class="die-card" aria-live="polite">
+                    <div class="die-head">
+                      <span>Die 1</span>
+                      <span id="dieState0" class="die-state">Idle</span>
+                    </div>
+                    <div class="die-value-wrap">
+                      <div id="dieValue0" class="die-value">?</div>
+                      <div id="diePiece0" class="die-piece">Roll to activate</div>
+                    </div>
+                  </div>
+                  <div id="dieCard1" class="die-card" aria-live="polite">
+                    <div class="die-head">
+                      <span>Die 2</span>
+                      <span id="dieState1" class="die-state">Idle</span>
+                    </div>
+                    <div class="die-value-wrap">
+                      <div id="dieValue1" class="die-value">?</div>
+                      <div id="diePiece1" class="die-piece">Roll to activate</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="controls">
+                  <button id="rollBtn" class="primary">Roll Dice</button>
+                  <button id="endTurnBtn" class="secondary">End Turn</button>
+                  <button id="newGameBtn" class="warn">New Game</button>
+                </div>
+                <div class="audio-controls" aria-label="Audio controls">
+                  <div class="audio-topline">
+                    <div class="audio-label-stack">
+                      <div class="audio-title">Sound</div>
+                      <div class="audio-subtitle">Short synthesized effects only.</div>
+                    </div>
+                    <button id="audioToggleBtn" class="subtle audio-toggle" type="button" aria-pressed="false">Sound Off</button>
+                  </div>
+                  <div class="audio-slider-row">
+                    <label for="volumeSlider">Volume</label>
+                    <input id="volumeSlider" class="audio-slider" type="range" min="0" max="100" step="1" value="65" disabled />
+                    <div id="volumeValue" class="audio-volume-value">65%</div>
+                  </div>
+                  <div id="audioStatus" class="audio-status">Audio unlocks on your first interaction.</div>
+                </div>
+              </section>
+
+              <section class="section-card" aria-labelledby="playersHeading">
+                <div class="section-label" id="playersHeading"><span>Players</span><span>Alive / Control</span></div>
+                <div id="playerPills" class="pill-row"></div>
+              </section>
+
+              <section class="section-card selection-box" aria-labelledby="selectionHeading">
+                <div class="section-label" id="selectionHeading"><span>Selection</span><span>Piece + Die</span></div>
+                <div id="selectionInfo" class="selection-info">No piece selected.</div>
+                <div id="dieChoiceBar" class="choice-bar"></div>
+              </section>
+
+              <section class="section-card" aria-labelledby="logHeading">
+                <div class="section-label" id="logHeading"><span>Move Log</span><span>Latest First</span></div>
+                <div id="moveLog" class="log" role="log" aria-live="polite"></div>
+              </section>
+            </div>
+          </aside>
+
+          <main class="board-wrap" aria-label="Game board area">
+            <section class="status-card" aria-live="polite">
+              <div class="status-top">
+                <div class="status-title">
+                  <span id="turnMark" class="turn-mark team-green" aria-hidden="true"></span>
+                  <div>
+                    <div class="status-heading">Current Command</div>
+                    <div id="statusPlayer" class="status-player">Green to act</div>
+                  </div>
+                </div>
+                <div id="statusMeta" class="status-meta"></div>
+              </div>
+              <div id="statusBar" class="status-body"></div>
+            </section>
+
+            <section class="board-shell" aria-label="Board presentation">
+              <div class="board-frame">
+                <div id="boardGrid" aria-label="8 by 8 game board"></div>
+              </div>
+            </section>
+          </main>
+
+          <aside class="panel" aria-label="Rules and piece guide">
+            <div class="panel-header">
+              <div>
+                <div class="eyebrow">Reference</div>
+                <h2>Rules Snapshot</h2>
+                <p class="subtitle">Core move rules, dice rules, turn flow, promotion, elimination, and victory are unchanged.</p>
+              </div>
+            </div>
+
+            <div class="hud-grid">
+              <section class="section-card">
+                <div class="section-label"><span>Dice Mapping</span><span>Exact Variant</span></div>
+                <ul class="legend-list">
+                  <li>1 or 5: Pawn or King</li>
+                  <li>2: Elephant</li>
+                  <li>3: Horse</li>
+                  <li>4 or 6: Ship</li>
+                </ul>
+              </section>
+
+              <section class="section-card">
+                <div class="section-label"><span>Variant Notes</span><span>v2 Behavior</span></div>
+                <ul class="rules-list">
+                  <li>Only legal moves count. No fake playable turns.</li>
+                  <li>If a piece matches both dice, you choose which die to consume.</li>
+                  <li>Promotion follows the destination-square mapping for this variant.</li>
+                  <li>Promotion may create extra kings, but only the starting king is royal.</li>
+                  <li>A team is eliminated only when it has no kings left on the board.</li>
+                  <li>Eliminated players are skipped automatically.</li>
+                  <li>If the unused die has no legal move left, the turn auto-ends.</li>
+                  <li>Remaining pieces of an eliminated player are removed immediately.</li>
+                </ul>
+              </section>
+
+              <section class="section-card">
+                <div class="section-label"><span>Piece Guide</span><span>Identity</span></div>
+                <div class="piece-guide">
+                  <div class="piece-guide-row"><div class="guide-badge">K</div><div class="guide-copy"><strong>King</strong><span>Moves 1 square in any direction.</span></div></div>
+                  <div class="piece-guide-row"><div class="guide-badge">E</div><div class="guide-copy"><strong>Elephant</strong><span>Rook-style sliding movement.</span></div></div>
+                  <div class="piece-guide-row"><div class="guide-badge">H</div><div class="guide-copy"><strong>Horse</strong><span>Knight jump movement.</span></div></div>
+                  <div class="piece-guide-row"><div class="guide-badge">S</div><div class="guide-copy"><strong>Ship</strong><span>Two-square diagonal leap.</span></div></div>
+                  <div class="piece-guide-row"><div class="guide-badge">P</div><div class="guide-copy"><strong>Pawn</strong><span>1 forward, diagonal capture.</span></div></div>
+                </div>
+              </section>
+
+              <p class="mini">This variant stays arcade-like. It does not use check or checkmate. A player is eliminated only when that team has no kings left on the board.</p>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalText">
+      <div class="eyebrow">Promotion</div>
+      <h3 id="modalTitle">Pawn Promotion</h3>
+      <p id="modalText" class="modal-copy"></p>
+      <div class="modal-actions">
+        <button id="modalConfirmBtn" class="primary">Confirm</button>
+        <button id="modalCancelBtn" class="secondary">Keep Pawn</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ROWS = 8;
+    const COLS = 8;
+    const PLAYERS = ['green', 'red', 'blue', 'yellow'];
+    const TEAM_LABEL = { green: 'Green', red: 'Red', blue: 'Blue', yellow: 'Yellow' };
+    const TEAM_CLASS = { green: 'team-green', red: 'team-red', blue: 'team-blue', yellow: 'team-yellow' };
+    const PIECE_DISPLAY = {
+      king: { glyph: '♔', tag: 'K' },
+      elephant: { glyph: '♖', tag: 'E' },
+      horse: { glyph: '♘', tag: 'H' },
+      ship: { glyph: '◆', tag: 'S' },
+      pawn: { glyph: '♙', tag: 'P' }
+    };
+    const PIECE_NAME = {
+      king: 'King',
+      elephant: 'Elephant',
+      horse: 'Horse',
+      ship: 'Ship',
+      pawn: 'Pawn'
+    };
+    const PIECE_VALUE = {
+      king: 1200,
+      elephant: 90,
+      horse: 72,
+      ship: 54,
+      pawn: 18
+    };
+    const DICE_ROLLS = {
+      1: ['pawn', 'king'],
+      2: ['elephant'],
+      3: ['horse'],
+      4: ['ship'],
+      5: ['pawn', 'king'],
+      6: ['ship']
+    };
+
+    const appState = {
+      screen: 'splash',
+      splashTimer: null,
+      loadingTimer: null,
+      botTurnPending: false,
+      tutorialEntry: 'flow',
+      botStatusText: '',
+      matchConfig: {
+        playerCount: 1,
+        botDifficulty: 'medium',
+        controlMap: getControlMapForPlayerCount(1)
+      }
+    };
+
+    const ui = {
+      appView: document.getElementById('appView'),
+      screens: {
+        splash: document.getElementById('screenSplash'),
+        menu: document.getElementById('screenMenu'),
+        playerCount: document.getElementById('screenPlayerCount'),
+        difficulty: document.getElementById('screenDifficulty'),
+        tutorial: document.getElementById('screenTutorial'),
+        loading: document.getElementById('screenLoading'),
+        game: document.getElementById('screenGame')
+      },
+      splashContinueArea: document.getElementById('splashContinueArea'),
+      menuPlayBtn: document.getElementById('menuPlayBtn'),
+      menuHowBtn: document.getElementById('menuHowBtn'),
+      menuSummaryPlayers: document.getElementById('menuSummaryPlayers'),
+      menuSummaryDifficulty: document.getElementById('menuSummaryDifficulty'),
+      menuSummaryControl: document.getElementById('menuSummaryControl'),
+      playerCountChoices: document.getElementById('playerCountChoices'),
+      difficultyChoices: document.getElementById('difficultyChoices'),
+      playerCountBackBtn: document.getElementById('playerCountBackBtn'),
+      playerCountNextBtn: document.getElementById('playerCountNextBtn'),
+      difficultyBackBtn: document.getElementById('difficultyBackBtn'),
+      difficultyNextBtn: document.getElementById('difficultyNextBtn'),
+      tutorialBackBtn: document.getElementById('tutorialBackBtn'),
+      tutorialSkipBtn: document.getElementById('tutorialSkipBtn'),
+      tutorialStartBtn: document.getElementById('tutorialStartBtn'),
+      loadingText: document.getElementById('loadingText'),
+      gameTopSummary: document.getElementById('gameTopSummary'),
+      gameConfigPills: document.getElementById('gameConfigPills'),
+      restartMatchBtn: document.getElementById('restartMatchBtn'),
+      returnMenuBtn: document.getElementById('returnMenuBtn'),
+      boardGrid: document.getElementById('boardGrid'),
+      statusBar: document.getElementById('statusBar'),
+      statusPlayer: document.getElementById('statusPlayer'),
+      statusMeta: document.getElementById('statusMeta'),
+      turnMark: document.getElementById('turnMark'),
+      selectionInfo: document.getElementById('selectionInfo'),
+      dieChoiceBar: document.getElementById('dieChoiceBar'),
+      moveLog: document.getElementById('moveLog'),
+      playerPills: document.getElementById('playerPills'),
+      rollBtn: document.getElementById('rollBtn'),
+      endTurnBtn: document.getElementById('endTurnBtn'),
+      newGameBtn: document.getElementById('newGameBtn'),
+      audioToggleBtn: document.getElementById('audioToggleBtn'),
+      volumeSlider: document.getElementById('volumeSlider'),
+      volumeValue: document.getElementById('volumeValue'),
+      audioStatus: document.getElementById('audioStatus'),
+      dieCards: [document.getElementById('dieCard0'), document.getElementById('dieCard1')],
+      dieStates: [document.getElementById('dieState0'), document.getElementById('dieState1')],
+      dieValues: [document.getElementById('dieValue0'), document.getElementById('dieValue1')],
+      diePieces: [document.getElementById('diePiece0'), document.getElementById('diePiece1')],
+      modalBackdrop: document.getElementById('modalBackdrop'),
+      modalTitle: document.getElementById('modalTitle'),
+      modalText: document.getElementById('modalText'),
+      modalConfirmBtn: document.getElementById('modalConfirmBtn'),
+      modalCancelBtn: document.getElementById('modalCancelBtn')
+    };
+
+    const sound = createSoundEngine();
+    const state = createInitialState();
+
+    function createSoundEngine() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const supported = !!AudioContextClass;
+      let audioContext = null;
+      let masterGain = null;
+      let unlocked = false;
+      let enabled = false;
+      let volume = 0.65;
+
+      function initContext() {
+        if (!supported) return false;
+        if (!audioContext) {
+          try {
+            audioContext = new AudioContextClass();
+            masterGain = audioContext.createGain();
+            masterGain.gain.value = volume;
+            masterGain.connect(audioContext.destination);
+          } catch (error) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function updateUiStatus(message) {
+        ui.audioStatus.textContent = message;
+        ui.audioToggleBtn.textContent = enabled ? 'Sound On' : 'Sound Off';
+        ui.audioToggleBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        ui.volumeSlider.disabled = !unlocked || !supported;
+        ui.volumeValue.textContent = `${Math.round(volume * 100)}%`;
+      }
+
+      async function unlock() {
+        if (!supported) {
+          updateUiStatus('Web Audio is not supported in this browser.');
+          return false;
+        }
+        if (!initContext()) {
+          updateUiStatus('Audio could not be initialized.');
+          return false;
+        }
+        try {
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+          }
+          unlocked = audioContext.state === 'running';
+          if (unlocked && !enabled) enabled = true;
+          updateUiStatus(unlocked ? 'Sound ready.' : 'Audio is unavailable.');
+          return unlocked;
+        } catch (error) {
+          updateUiStatus('Audio permission was blocked.');
+          return false;
+        }
+      }
+
+      function setEnabled(nextEnabled) {
+        enabled = !!nextEnabled && supported && unlocked;
+        if (!supported) enabled = false;
+        if (enabled && audioContext && audioContext.state === 'suspended') {
+          audioContext.resume().catch(() => {});
+        }
+        updateUiStatus(!supported ? 'Web Audio is not supported in this browser.' : (unlocked ? (enabled ? 'Sound ready.' : 'Sound muted.') : 'Audio unlocks on your first interaction.'));
+      }
+
+      function toggleEnabled() {
+        setEnabled(!enabled);
+      }
+
+      function setVolume(nextVolume) {
+        volume = Math.max(0, Math.min(1, nextVolume));
+        if (masterGain && audioContext) {
+          masterGain.gain.cancelScheduledValues(audioContext.currentTime);
+          masterGain.gain.setTargetAtTime(volume, audioContext.currentTime, 0.01);
+        }
+        updateUiStatus(!supported ? 'Web Audio is not supported in this browser.' : (enabled ? 'Sound ready.' : (unlocked ? 'Sound muted.' : 'Audio unlocks on your first interaction.')));
+      }
+
+      function makeOscillator(type, frequency, startTime, duration, gainValue, destination, detune = 0) {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(frequency, startTime);
+        if (detune) osc.detune.setValueAtTime(detune, startTime);
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, gainValue), startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.02);
+      }
+
+      function makeNoiseBuffer() {
+        const length = Math.max(1, Math.floor(audioContext.sampleRate * 0.12));
+        const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) {
+          data[i] = (Math.random() * 2 - 1) * (1 - i / length);
+        }
+        return buffer;
+      }
+
+      function playNoiseBurst(startTime, duration, gainValue, highpassFreq = 500) {
+        const source = audioContext.createBufferSource();
+        const filter = audioContext.createBiquadFilter();
+        const gain = audioContext.createGain();
+        source.buffer = makeNoiseBuffer();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(highpassFreq, startTime);
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, gainValue), startTime + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+        source.start(startTime);
+        source.stop(startTime + duration + 0.02);
+      }
+
+      function canPlay() {
+        return supported && unlocked && enabled && audioContext && masterGain;
+      }
+
+      function safePlay(fn) {
+        if (!canPlay()) return;
+        try {
+          fn(audioContext.currentTime);
+        } catch (error) {}
+      }
+
+      function playButtonSound() {
+        safePlay((t) => {
+          makeOscillator('triangle', 520, t, 0.05, 0.035, masterGain);
+          makeOscillator('triangle', 680, t + 0.02, 0.04, 0.025, masterGain);
+        });
+      }
+
+      function playInvalidSound() {
+        safePlay((t) => {
+          makeOscillator('square', 240, t, 0.05, 0.024, masterGain);
+          makeOscillator('square', 190, t + 0.03, 0.07, 0.02, masterGain);
+        });
+      }
+
+      function playSelectSound() {
+        safePlay((t) => {
+          makeOscillator('triangle', 420, t, 0.05, 0.03, masterGain);
+          makeOscillator('sine', 560, t + 0.025, 0.06, 0.02, masterGain);
+        });
+      }
+
+      function playDiceRollSound() {
+        safePlay((t) => {
+          playNoiseBurst(t, 0.055, 0.02, 700);
+          makeOscillator('triangle', 420, t + 0.015, 0.06, 0.03, masterGain);
+          makeOscillator('triangle', 610, t + 0.055, 0.07, 0.028, masterGain);
+          makeOscillator('sine', 780, t + 0.105, 0.08, 0.02, masterGain);
+        });
+      }
+
+      function playMoveSound() {
+        safePlay((t) => {
+          makeOscillator('triangle', 300, t, 0.05, 0.035, masterGain);
+          makeOscillator('sine', 460, t + 0.03, 0.08, 0.024, masterGain);
+        });
+      }
+
+      function playCaptureSound() {
+        safePlay((t) => {
+          playNoiseBurst(t, 0.05, 0.025, 900);
+          makeOscillator('square', 220, t, 0.07, 0.03, masterGain);
+          makeOscillator('triangle', 180, t + 0.025, 0.1, 0.022, masterGain);
+        });
+      }
+
+      function playPromotionPromptSound() {
+        safePlay((t) => {
+          makeOscillator('sine', 500, t, 0.06, 0.028, masterGain);
+          makeOscillator('sine', 630, t + 0.05, 0.07, 0.028, masterGain);
+          makeOscillator('triangle', 790, t + 0.1, 0.11, 0.025, masterGain);
+        });
+      }
+
+      function playPromotionConfirmSound() {
+        safePlay((t) => {
+          makeOscillator('triangle', 430, t, 0.06, 0.03, masterGain);
+          makeOscillator('triangle', 540, t + 0.045, 0.08, 0.028, masterGain);
+          makeOscillator('sine', 720, t + 0.09, 0.12, 0.024, masterGain);
+        });
+      }
+
+      function playModalCloseSound() {
+        safePlay((t) => {
+          makeOscillator('sine', 620, t, 0.04, 0.018, masterGain);
+          makeOscillator('sine', 470, t + 0.025, 0.05, 0.016, masterGain);
+        });
+      }
+
+      function playTurnEndSound() {
+        safePlay((t) => {
+          makeOscillator('triangle', 320, t, 0.05, 0.03, masterGain);
+          makeOscillator('sine', 260, t + 0.05, 0.08, 0.022, masterGain);
+        });
+      }
+
+      function playEliminationSound() {
+        safePlay((t) => {
+          playNoiseBurst(t, 0.045, 0.02, 1000);
+          makeOscillator('square', 210, t, 0.08, 0.024, masterGain);
+          makeOscillator('sawtooth', 160, t + 0.04, 0.16, 0.018, masterGain);
+        });
+      }
+
+      function playVictorySound() {
+        safePlay((t) => {
+          makeOscillator('triangle', 392, t, 0.1, 0.035, masterGain);
+          makeOscillator('triangle', 523.25, t + 0.08, 0.12, 0.03, masterGain);
+          makeOscillator('sine', 659.25, t + 0.18, 0.2, 0.028, masterGain);
+          makeOscillator('sine', 784, t + 0.28, 0.28, 0.024, masterGain);
+        });
+      }
+
+      updateUiStatus(supported ? 'Audio unlocks on your first interaction.' : 'Web Audio is not supported in this browser.');
+
+      return {
+        unlock,
+        setEnabled,
+        toggleEnabled,
+        setVolume,
+        playButtonSound,
+        playInvalidSound,
+        playSelectSound,
+        playDiceRollSound,
+        playMoveSound,
+        playCaptureSound,
+        playPromotionPromptSound,
+        playPromotionConfirmSound,
+        playModalCloseSound,
+        playTurnEndSound,
+        playEliminationSound,
+        playVictorySound
+      };
+    }
+
+    function createInitialState() {
+      return {
+        board: createEmptyBoard(),
+        players: createPlayerState(),
+        currentPlayerIndex: 0,
+        selected: null,
+        legalMoves: [],
+        dice: {
+          values: [null, null],
+          used: [false, false],
+          rolled: false,
+          lockedDieIndex: null
+        },
+        awaitingPromotion: null,
+        gameOver: false,
+        winner: null,
+        moveLog: [],
+        lastMove: null
+      };
+    }
+
+    function createEmptyBoard() {
+      return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    }
+
+    function createPlayerState() {
+      return {
+        green: { alive: true, royalAlive: true },
+        red: { alive: true, royalAlive: true },
+        blue: { alive: true, royalAlive: true },
+        yellow: { alive: true, royalAlive: true }
+      };
+    }
+
+    function makePiece(team, type, isRoyal = false) {
+      return { team, type, isRoyal };
+    }
+
+    function getControlMapForPlayerCount(playerCount) {
+      const controlMap = {};
+      PLAYERS.forEach((team, index) => {
+        controlMap[team] = index < playerCount ? 'human' : 'bot';
+      });
+      return controlMap;
+    }
+
+    function getControlSummaryText(controlMap) {
+      return PLAYERS.map(team => `${TEAM_LABEL[team]} ${controlMap[team]}`).join(', ');
+    }
+
+    function isBotPlayer(team) {
+      return appState.matchConfig.controlMap[team] === 'bot';
+    }
+
+    function unlockAudioFromInteraction() {
+      sound.unlock();
+    }
+
+    function primeAudioAndPlayButton() {
+      sound.unlock();
+      sound.playButtonSound();
+    }
+
+    function setScreen(nextScreen) {
+      appState.screen = nextScreen;
+      Object.entries(ui.screens).forEach(([key, element]) => {
+        element.classList.toggle('active', key === nextScreen);
+      });
+      renderAppScreen();
+      if (nextScreen === 'game') {
+        render();
+      }
+    }
+
+    function renderAppScreen() {
+      ui.menuSummaryPlayers.textContent = `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`;
+      ui.menuSummaryDifficulty.textContent = capitalize(appState.matchConfig.botDifficulty);
+      ui.menuSummaryControl.textContent = getControlSummaryText(appState.matchConfig.controlMap);
+
+      const playerCountButtons = ui.playerCountChoices.querySelectorAll('.choice-card');
+      playerCountButtons.forEach(card => {
+        card.classList.toggle('selected', Number(card.dataset.value) === appState.matchConfig.playerCount);
+      });
+
+      const difficultyButtons = ui.difficultyChoices.querySelectorAll('.choice-card');
+      difficultyButtons.forEach(card => {
+        card.classList.toggle('selected', card.dataset.value === appState.matchConfig.botDifficulty);
+      });
+
+      ui.tutorialBackBtn.textContent = appState.tutorialEntry === 'menu' ? 'Back to Menu' : 'Back';
+      ui.loadingText.textContent = `Preparing a ${appState.matchConfig.playerCount}-player match with ${capitalize(appState.matchConfig.botDifficulty)} bots where needed.`;
+      ui.gameTopSummary.textContent = getGameSummaryText();
+      renderGameConfigPills();
+    }
+
+    function getGameSummaryText() {
+      const humans = Object.values(appState.matchConfig.controlMap).filter(v => v === 'human').length;
+      const bots = 4 - humans;
+      return `${humans} human${humans !== 1 ? 's' : ''}, ${bots} bot${bots !== 1 ? 's' : ''}, ${capitalize(appState.matchConfig.botDifficulty)} difficulty.`;
+    }
+
+    function renderGameConfigPills() {
+      ui.gameConfigPills.innerHTML = '';
+      const pills = [
+        `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`,
+        `${capitalize(appState.matchConfig.botDifficulty)} Bots`
+      ];
+      PLAYERS.forEach(team => {
+        pills.push(`${TEAM_LABEL[team]} ${appState.matchConfig.controlMap[team]}`);
+      });
+      pills.forEach(text => {
+        const div = document.createElement('div');
+        div.className = 'config-pill';
+        div.textContent = text;
+        ui.gameConfigPills.appendChild(div);
+      });
+    }
+
+    function buildSetupChoices() {
+      const playerCountOptions = [
+        { value: 1, title: '1 Player', meta: 'Green human', description: 'Green is human. Red, Blue, and Yellow are bots.' },
+        { value: 2, title: '2 Player', meta: 'Green + Red human', description: 'Green and Red are human. Blue and Yellow are bots.' },
+        { value: 3, title: '3 Player', meta: 'Green + Red + Blue human', description: 'Three humans play. Yellow becomes the only bot.' },
+        { value: 4, title: '4 Player', meta: 'All human', description: 'No bots. Full four-human local match.' }
+      ];
+
+      ui.playerCountChoices.innerHTML = '';
+      playerCountOptions.forEach(option => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'choice-card';
+        button.dataset.value = option.value;
+        button.innerHTML = `
+          <div class="choice-meta">${option.meta}</div>
+          <h3>${option.title}</h3>
+          <p>${option.description}</p>
+        `;
+        button.addEventListener('click', () => {
+          primeAudioAndPlayButton();
+          appState.matchConfig.playerCount = option.value;
+          appState.matchConfig.controlMap = getControlMapForPlayerCount(option.value);
+          renderAppScreen();
+        });
+        ui.playerCountChoices.appendChild(button);
+      });
+
+      const difficultyOptions = [
+        { value: 'easy', title: 'Easy', meta: 'Loose & random', description: 'Mostly random legal play with only a slight capture bias.' },
+        { value: 'medium', title: 'Medium', meta: 'Solid basic play', description: 'Prefers captures, basic promotions, and avoids some obvious mistakes.' },
+        { value: 'hard', title: 'Hard', meta: 'Heuristic-driven', description: 'Scores actions more carefully and chooses stronger tactical turns.' },
+        { value: 'pro', title: 'Pro', meta: 'Strongest non-cheating AI', description: 'Simulates candidate actions more deeply and values stronger continuations.' }
+      ];
+
+      ui.difficultyChoices.innerHTML = '';
+      difficultyOptions.forEach(option => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'choice-card';
+        button.dataset.value = option.value;
+        button.innerHTML = `
+          <div class="choice-meta">${option.meta}</div>
+          <h3>${option.title}</h3>
+          <p>${option.description}</p>
+        `;
+        button.addEventListener('click', () => {
+          primeAudioAndPlayButton();
+          appState.matchConfig.botDifficulty = option.value;
+          renderAppScreen();
+        });
+        ui.difficultyChoices.appendChild(button);
+      });
+    }
+
+    function scheduleSplashAdvance() {
+      clearTimeout(appState.splashTimer);
+      appState.splashTimer = setTimeout(() => {
+        if (appState.screen === 'splash') setScreen('menu');
+      }, 1400);
+    }
+
+    function beginMatchFlowFromTutorial() {
+      setScreen('loading');
+      clearTimeout(appState.loadingTimer);
+      appState.loadingTimer = setTimeout(() => {
+        startNewMatch();
+      }, 900);
+    }
+
+    function startNewMatch() {
+      resetGame();
+      appState.botTurnPending = false;
+      appState.botStatusText = '';
+      setScreen('game');
+      maybeRunBotTurn();
+    }
+
+    function returnToMenu() {
+      clearTimeout(appState.loadingTimer);
+      appState.botTurnPending = false;
+      appState.botStatusText = '';
+      setScreen('menu');
+    }
+
+    function resetGame() {
+      state.board = createEmptyBoard();
+      state.players = createPlayerState();
+      state.currentPlayerIndex = 0;
+      state.selected = null;
+      state.legalMoves = [];
+      state.dice.values = [null, null];
+      state.dice.used = [false, false];
+      state.dice.rolled = false;
+      state.dice.lockedDieIndex = null;
+      state.awaitingPromotion = null;
+      state.gameOver = false;
+      state.winner = null;
+      state.moveLog = [];
+      state.lastMove = null;
+      initializeBoard();
+      pushLog('New game started.');
+      render();
+    }
+
+    function initializeBoard() {
+      const b = state.board;
+
+      b[0][3] = makePiece('green', 'king', true);
+      b[0][2] = makePiece('green', 'elephant');
+      b[0][1] = makePiece('green', 'horse');
+      b[0][0] = makePiece('green', 'ship');
+      for (let col = 0; col < 4; col++) b[1][col] = makePiece('green', 'pawn');
+
+      for (let row = 0; row < 4; row++) b[row][6] = makePiece('red', 'pawn');
+      b[0][7] = makePiece('red', 'ship');
+      b[1][7] = makePiece('red', 'horse');
+      b[2][7] = makePiece('red', 'elephant');
+      b[3][7] = makePiece('red', 'king', true);
+
+      b[7][4] = makePiece('blue', 'king', true);
+      b[7][5] = makePiece('blue', 'elephant');
+      b[7][6] = makePiece('blue', 'horse');
+      b[7][7] = makePiece('blue', 'ship');
+      for (let col = 4; col < 8; col++) b[6][col] = makePiece('blue', 'pawn');
+
+      b[4][0] = makePiece('yellow', 'king', true);
+      b[5][0] = makePiece('yellow', 'elephant');
+      b[6][0] = makePiece('yellow', 'horse');
+      b[7][0] = makePiece('yellow', 'ship');
+      for (let row = 4; row < 8; row++) b[row][1] = makePiece('yellow', 'pawn');
+    }
+
+    function buildBoardGrid() {
+      ui.boardGrid.innerHTML = '';
+      for (let row = ROWS - 1; row >= 0; row--) {
+        const coord = document.createElement('div');
+        coord.className = 'coord';
+        coord.textContent = row + 1;
+        ui.boardGrid.appendChild(coord);
+
+        for (let col = 0; col < COLS; col++) {
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = `cell ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          cell.setAttribute('aria-label', `Cell ${toCoord(row, col)}`);
+          cell.addEventListener('click', () => handleCellClick(row, col));
+          ui.boardGrid.appendChild(cell);
+        }
+      }
+
+      const corner = document.createElement('div');
+      corner.className = 'coord corner';
+      corner.textContent = '·';
+      ui.boardGrid.appendChild(corner);
+
+      for (let col = 0; col < COLS; col++) {
+        const coord = document.createElement('div');
+        coord.className = 'coord';
+        coord.textContent = String.fromCharCode(97 + col);
+        ui.boardGrid.appendChild(coord);
+      }
+    }
+
+    function getCurrentTeam(stateRef = state) {
+      return PLAYERS[stateRef.currentPlayerIndex];
+    }
+
+    function getLiveTeams(stateRef = state) {
+      return PLAYERS.filter(team => stateRef.players[team].alive);
+    }
+
+    function handleCellClick(row, col) {
+      unlockAudioFromInteraction();
+      if (appState.screen !== 'game') return;
+      if (state.gameOver || state.awaitingPromotion || appState.botTurnPending) return;
+      const currentTeam = getCurrentTeam();
+      if (isBotPlayer(currentTeam)) return;
+
+      if (!state.dice.rolled) {
+        sound.playInvalidSound();
+        return;
+      }
+
+      const piece = state.board[row][col];
+
+      if (state.selected) {
+        const move = state.legalMoves.find(m => m.toRow === row && m.toCol === col);
+        if (move) {
+          executeMove(move);
+          return;
+        }
+      }
+
+      if (!piece || piece.team !== currentTeam || !state.players[currentTeam].alive) {
+        clearSelection();
+        render();
+        sound.playInvalidSound();
+        return;
+      }
+
+      const availableDice = getAvailableDiceForPiece(row, col);
+      if (availableDice.length === 0) {
+        clearSelection();
+        render();
+        sound.playInvalidSound();
+        return;
+      }
+
+      state.selected = { row, col };
+      state.legalMoves = [];
+      state.dice.lockedDieIndex = null;
+      sound.playSelectSound();
+
+      if (availableDice.length === 1) {
+        chooseDieForSelection(availableDice[0]);
+      } else {
+        render();
+      }
+    }
+
+    function chooseDieForSelection(dieIndex) {
+      unlockAudioFromInteraction();
+      if (appState.screen !== 'game') return;
+      if (!state.selected) return;
+      if (isBotPlayer(getCurrentTeam())) return;
+
+      const { row, col } = state.selected;
+      const piece = state.board[row][col];
+      if (!piece) return;
+
+      state.dice.lockedDieIndex = dieIndex;
+      state.legalMoves = getLegalMovesForPiece(row, col, dieIndex);
+      sound.playSelectSound();
+
+      if (state.legalMoves.length === 0) {
+        state.dice.lockedDieIndex = null;
+      }
+
+      render();
+    }
+
+    function getAvailableDiceForPiece(row, col) {
+      const piece = state.board[row][col];
+      if (!piece) return [];
+      const out = [];
+      for (let i = 0; i < 2; i++) {
+        if (state.dice.used[i]) continue;
+        const dieValue = state.dice.values[i];
+        if (!dieValue) continue;
+        if (!DICE_ROLLS[dieValue].includes(piece.type)) continue;
+        if (getLegalMovesForPiece(row, col, i).length > 0) out.push(i);
+      }
+      return out;
+    }
+
+    function isInside(row, col) {
+      return row >= 0 && row < ROWS && col >= 0 && col < COLS;
+    }
+
+    function getPossibleTargetsOnBoard(board, row, col, type, team) {
+      switch (type) {
+        case 'king': return getKingMovesOnBoard(board, row, col, team);
+        case 'elephant': return getElephantMovesOnBoard(board, row, col, team);
+        case 'horse': return getHorseMovesOnBoard(board, row, col, team);
+        case 'ship': return getShipMovesOnBoard(board, row, col, team);
+        case 'pawn': return getPawnMovesOnBoard(board, row, col, team);
+        default: return [];
+      }
+    }
+
+    function getKingMovesOnBoard(board, row, col, team) {
+      const moves = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const r = row + dr;
+          const c = col + dc;
+          if (isInside(r, c) && (!board[r][c] || board[r][c].team !== team)) {
+            moves.push([r, c]);
+          }
+        }
+      }
+      return moves;
+    }
+
+    function getElephantMovesOnBoard(board, row, col, team) {
+      const moves = [];
+      const directions = [[-1,0],[1,0],[0,-1],[0,1]];
+      for (const [dr, dc] of directions) {
+        let r = row + dr;
+        let c = col + dc;
+        while (isInside(r, c)) {
+          if (!board[r][c]) {
+            moves.push([r, c]);
+          } else {
+            if (board[r][c].team !== team) moves.push([r, c]);
+            break;
+          }
+          r += dr;
+          c += dc;
+        }
+      }
+      return moves;
+    }
+
+    function getHorseMovesOnBoard(board, row, col, team) {
+      const moves = [];
+      const jumps = [[-2,-1],[-2,1],[2,-1],[2,1],[-1,-2],[-1,2],[1,-2],[1,2]];
+      for (const [dr, dc] of jumps) {
+        const r = row + dr;
+        const c = col + dc;
+        if (isInside(r, c) && (!board[r][c] || board[r][c].team !== team)) {
+          moves.push([r, c]);
+        }
+      }
+      return moves;
+    }
+
+    function getShipMovesOnBoard(board, row, col, team) {
+      const moves = [];
+      const leaps = [[-2,-2],[-2,2],[2,-2],[2,2]];
+      for (const [dr, dc] of leaps) {
+        const r = row + dr;
+        const c = col + dc;
+        if (isInside(r, c) && (!board[r][c] || board[r][c].team !== team)) {
+          moves.push([r, c]);
+        }
+      }
+      return moves;
+    }
+
+    function getPawnMovesOnBoard(board, row, col, team) {
+      const moves = [];
+      let dirRow = 0;
+      let dirCol = 0;
+
+      if (team === 'green') dirRow = 1;
+      else if (team === 'red') dirCol = -1;
+      else if (team === 'blue') dirRow = -1;
+      else if (team === 'yellow') dirCol = 1;
+
+      const forwardRow = row + dirRow;
+      const forwardCol = col + dirCol;
+      if (isInside(forwardRow, forwardCol) && !board[forwardRow][forwardCol]) {
+        moves.push([forwardRow, forwardCol]);
+      }
+
+      const captures = (team === 'green' || team === 'blue')
+        ? [[row + dirRow, col - 1], [row + dirRow, col + 1]]
+        : [[row - 1, col + dirCol], [row + 1, col + dirCol]];
+
+      for (const [r, c] of captures) {
+        if (isInside(r, c) && board[r][c] && board[r][c].team !== team) {
+          moves.push([r, c]);
+        }
+      }
+
+      return moves;
+    }
+
+    function getLegalMovesForPieceOnState(stateRef, row, col, dieIndex) {
+      const piece = stateRef.board[row][col];
+      if (!piece) return [];
+      if (stateRef.dice.used[dieIndex]) return [];
+      const dieValue = stateRef.dice.values[dieIndex];
+      if (!dieValue || !DICE_ROLLS[dieValue].includes(piece.type)) return [];
+      const targets = getPossibleTargetsOnBoard(stateRef.board, row, col, piece.type, piece.team);
+      return targets.map(([toRow, toCol]) => ({
+        fromRow: row,
+        fromCol: col,
+        toRow,
+        toCol,
+        dieIndex,
+        movingType: piece.type,
+        movingTeam: piece.team,
+        captured: stateRef.board[toRow][toCol] ? { ...stateRef.board[toRow][toCol] } : null
+      }));
+    }
+
+    function getLegalMovesForPiece(row, col, dieIndex) {
+      return getLegalMovesForPieceOnState(state, row, col, dieIndex);
+    }
+
+    function playerHasLegalMoveForDieOnState(stateRef, team, dieIndex) {
+      if (stateRef.dice.used[dieIndex]) return false;
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const piece = stateRef.board[row][col];
+          if (!piece || piece.team !== team) continue;
+          if (getLegalMovesForPieceOnState(stateRef, row, col, dieIndex).length > 0) return true;
+        }
+      }
+      return false;
+    }
+
+    function playerHasLegalMoveForDie(team, dieIndex) {
+      return playerHasLegalMoveForDieOnState(state, team, dieIndex);
+    }
+
+    function getRemainingPlayableDiceOnState(stateRef, team) {
+      const playable = [];
+      for (let dieIndex = 0; dieIndex < 2; dieIndex++) {
+        if (stateRef.dice.used[dieIndex]) continue;
+        if (playerHasLegalMoveForDieOnState(stateRef, team, dieIndex)) playable.push(dieIndex);
+      }
+      return playable;
+    }
+
+    function getRemainingPlayableDice(team) {
+      return getRemainingPlayableDiceOnState(state, team);
+    }
+
+    function cloneBoard(board) {
+      return board.map(row => row.map(piece => piece ? { ...piece } : null));
+    }
+
+    function clonePlayers(players) {
+      return {
+        green: { ...players.green },
+        red: { ...players.red },
+        blue: { ...players.blue },
+        yellow: { ...players.yellow }
+      };
+    }
+
+    function countKingsForTeamOnBoard(board, team) {
+      let count = 0;
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const piece = board[row][col];
+          if (piece && piece.team === team && piece.type === 'king') count++;
+        }
+      }
+      return count;
+    }
+
+    function countKingsForTeam(team) {
+      return countKingsForTeamOnBoard(state.board, team);
+    }
+
+    function eliminatePlayerOnState(stateRef, team) {
+      stateRef.players[team].alive = false;
+      stateRef.players[team].royalAlive = false;
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const piece = stateRef.board[row][col];
+          if (piece && piece.team === team) {
+            stateRef.board[row][col] = null;
+          }
+        }
+      }
+    }
+
+    function getPromotionPiece(team, row, col) {
+      if (team === 'red' && col === 0) {
+        if (row === 0 || row === 7) return 'ship';
+        if (row === 1 || row === 6) return 'horse';
+        if (row === 2 || row === 5) return 'elephant';
+        if (row === 3 || row === 4) return 'king';
+      } else if (team === 'green' && row === 7) {
+        if (col === 0 || col === 7) return 'ship';
+        if (col === 1 || col === 6) return 'horse';
+        if (col === 2 || col === 5) return 'elephant';
+        if (col === 3 || col === 4) return 'king';
+      } else if (team === 'blue' && row === 0) {
+        if (col === 0 || col === 7) return 'ship';
+        if (col === 1 || col === 6) return 'horse';
+        if (col === 2 || col === 5) return 'elephant';
+        if (col === 3 || col === 4) return 'king';
+      } else if (team === 'yellow' && col === 7) {
+        if (row === 0 || row === 7) return 'ship';
+        if (row === 1 || row === 6) return 'horse';
+        if (row === 2 || row === 5) return 'elephant';
+        if (row === 3 || row === 4) return 'king';
+      }
+      return null;
+    }
+
+    function pushLog(text) {
+      state.moveLog.push(text);
+    }
+
+    function clearSelection() {
+      state.selected = null;
+      state.legalMoves = [];
+      state.dice.lockedDieIndex = null;
+    }
+
+    function toCoord(row, col) {
+      return `${String.fromCharCode(97 + col)}${row + 1}`;
+    }
+
+    function openPromotionModal(payload) {
+      state.awaitingPromotion = payload;
+      sound.playPromotionPromptSound();
+      ui.modalTitle.textContent = 'Pawn Promotion';
+      ui.modalText.textContent = `This pawn reached ${toCoord(payload.row, payload.col)} and may promote to ${PIECE_NAME[payload.promotionType]}.`;
+      ui.modalBackdrop.classList.add('show');
+      ui.modalBackdrop.setAttribute('aria-hidden', 'false');
+    }
+
+    function closePromotionModal() {
+      sound.playModalCloseSound();
+      state.awaitingPromotion = null;
+      ui.modalBackdrop.classList.remove('show');
+      ui.modalBackdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    function checkTeamEliminationAfterCapture(team, attackerTeam) {
+      if (countKingsForTeam(team) === 0) {
+        eliminatePlayer(team, attackerTeam);
+      }
+    }
+
+    function eliminatePlayer(team, attackerTeam) {
+      sound.playEliminationSound();
+      state.players[team].alive = false;
+      state.players[team].royalAlive = false;
+
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const piece = state.board[row][col];
+          if (piece && piece.team === team) {
+            state.board[row][col] = null;
+          }
+        }
+      }
+
+      pushLog(`${TEAM_LABEL[team]} was eliminated by ${TEAM_LABEL[attackerTeam]}. All remaining ${TEAM_LABEL[team]} pieces were removed.`);
+    }
+
+    function checkVictory() {
+      const liveTeams = getLiveTeams();
+      if (liveTeams.length === 1) {
+        state.gameOver = true;
+        state.winner = liveTeams[0];
+        pushLog(`${TEAM_LABEL[state.winner]} wins the game.`);
+        sound.playVictorySound();
+      }
+    }
+
+    function advanceTurn() {
+      sound.playTurnEndSound();
+      clearSelection();
+      state.dice.values = [null, null];
+      state.dice.used = [false, false];
+      state.dice.rolled = false;
+      state.dice.lockedDieIndex = null;
+
+      let safety = 0;
+      do {
+        state.currentPlayerIndex = (state.currentPlayerIndex + 1) % PLAYERS.length;
+        safety++;
+      } while (!state.players[getCurrentTeam()].alive && safety < 10);
+
+      appState.botStatusText = '';
+      render();
+    }
+
+    function finalizeActionFlow() {
+      checkVictory();
+      if (state.gameOver) {
+        render();
+        return;
+      }
+
+      const currentTeam = getCurrentTeam();
+      const remainingPlayableDice = getRemainingPlayableDice(currentTeam);
+
+      if (remainingPlayableDice.length === 0) {
+        pushLog(`${TEAM_LABEL[currentTeam]} has no legal move left for unused dice. Turn auto-ended.`);
+        advanceTurn();
+        return;
+      }
+
+      render();
+    }
+
+    function applyMoveAction(move, options = {}) {
+      const {
+        forcePromotionDecision = null,
+        forcePromotionType = null
+      } = options;
+
+      const movingPiece = state.board[move.fromRow][move.fromCol];
+      if (!movingPiece) return;
+
+      const captured = state.board[move.toRow][move.toCol];
+      state.board[move.toRow][move.toCol] = movingPiece;
+      state.board[move.fromRow][move.fromCol] = null;
+      state.dice.used[move.dieIndex] = true;
+      state.lastMove = {
+        fromRow: move.fromRow,
+        fromCol: move.fromCol,
+        toRow: move.toRow,
+        toCol: move.toCol
+      };
+
+      if (captured) {
+        pushLog(`${TEAM_LABEL[movingPiece.team]} ${PIECE_NAME[movingPiece.type]} captured ${TEAM_LABEL[captured.team]} ${PIECE_NAME[captured.type]} at ${toCoord(move.toRow, move.toCol)}.`);
+        sound.playCaptureSound();
+        checkTeamEliminationAfterCapture(captured.team, movingPiece.team);
+      } else {
+        pushLog(`${TEAM_LABEL[movingPiece.team]} ${PIECE_NAME[movingPiece.type]} moved to ${toCoord(move.toRow, move.toCol)} using Die ${move.dieIndex + 1}.`);
+        sound.playMoveSound();
+      }
+
+      clearSelection();
+
+      if (movingPiece.type === 'pawn') {
+        const promotionType = getPromotionPiece(movingPiece.team, move.toRow, move.toCol);
+        if (promotionType) {
+          if (forcePromotionDecision === null) {
+            openPromotionModal({ row: move.toRow, col: move.toCol, promotionType });
+            render();
+            return;
+          }
+          if (forcePromotionDecision === 'confirm') {
+            const chosenType = forcePromotionType || promotionType;
+            movingPiece.type = chosenType;
+            movingPiece.isRoyal = false;
+            pushLog(`${TEAM_LABEL[movingPiece.team]} pawn promoted to ${PIECE_NAME[chosenType]} at ${toCoord(move.toRow, move.toCol)}.${chosenType === 'king' ? ' This new king is non-royal.' : ''}`);
+            sound.playPromotionConfirmSound();
+          } else {
+            pushLog(`${TEAM_LABEL[movingPiece.team]} kept the pawn at ${toCoord(move.toRow, move.toCol)}.`);
+          }
+        }
+      }
+
+      finalizeActionFlow();
+    }
+
+    function executeMove(move) {
+      applyMoveAction(move);
+    }
+
+    function confirmPromotion() {
+      unlockAudioFromInteraction();
+      if (!state.awaitingPromotion) return;
+      const { row, col, promotionType } = state.awaitingPromotion;
+      closePromotionModal();
+      const piece = state.board[row][col];
+      if (piece && piece.type === 'pawn') {
+        piece.type = promotionType;
+        piece.isRoyal = false;
+        pushLog(`${TEAM_LABEL[piece.team]} pawn promoted to ${PIECE_NAME[promotionType]} at ${toCoord(row, col)}.${promotionType === 'king' ? ' This new king is non-royal.' : ''}`);
+        sound.playPromotionConfirmSound();
+      }
+      finalizeActionFlow();
+    }
+
+    function declinePromotion() {
+      unlockAudioFromInteraction();
+      if (state.awaitingPromotion) {
+        const { row, col } = state.awaitingPromotion;
+        const piece = state.board[row][col];
+        if (piece) pushLog(`${TEAM_LABEL[piece.team]} kept the pawn at ${toCoord(row, col)}.`);
+      }
+      closePromotionModal();
+      finalizeActionFlow();
+    }
+
+    function rollDice() {
+      unlockAudioFromInteraction();
+      if (appState.screen !== 'game') return;
+      if (state.gameOver || state.dice.rolled || state.awaitingPromotion) return;
+
+      state.dice.values = [randDie(), randDie()];
+      sound.playDiceRollSound();
+      state.dice.used = [false, false];
+      state.dice.rolled = true;
+      state.dice.lockedDieIndex = null;
+      clearSelection();
+
+      const team = getCurrentTeam();
+      const playableDice = getRemainingPlayableDice(team);
+
+      if (playableDice.length === 0) {
+        pushLog(`${TEAM_LABEL[team]} rolled ${state.dice.values[0]} and ${state.dice.values[1]} but had no legal move. Turn auto-ended.`);
+        advanceTurn();
+        return;
+      }
+
+      pushLog(`${TEAM_LABEL[team]} rolled ${state.dice.values[0]} and ${state.dice.values[1]}.`);
+      render();
+    }
+
+    function randDie() {
+      return Math.floor(Math.random() * 6) + 1;
+    }
+
+    function endTurnEarly() {
+      unlockAudioFromInteraction();
+      if (state.gameOver || !state.dice.rolled || state.awaitingPromotion || appState.botTurnPending) return;
+      if (isBotPlayer(getCurrentTeam())) return;
+      pushLog(`${TEAM_LABEL[getCurrentTeam()]} ended the turn early.`);
+      advanceTurn();
+    }
+
+    function getAllLegalActionsForTeam(team, stateRef = state) {
+      const actions = [];
+      for (let dieIndex = 0; dieIndex < 2; dieIndex++) {
+        if (stateRef.dice.used[dieIndex]) continue;
+        for (let row = 0; row < ROWS; row++) {
+          for (let col = 0; col < COLS; col++) {
+            const piece = stateRef.board[row][col];
+            if (!piece || piece.team !== team) continue;
+            const legalMoves = getLegalMovesForPieceOnState(stateRef, row, col, dieIndex);
+            legalMoves.forEach(move => {
+              const promotionType = move.movingType === 'pawn' ? getPromotionPiece(team, move.toRow, move.toCol) : null;
+              if (promotionType) {
+                actions.push({ ...move, promotionType, promotionDecision: 'confirm' });
+                actions.push({ ...move, promotionType, promotionDecision: 'decline' });
+              } else {
+                actions.push({ ...move, promotionType: null, promotionDecision: null });
+              }
+            });
+          }
+        }
+      }
+      return actions;
+    }
+
+    function cloneStateForSimulation(stateRef) {
+      return {
+        board: cloneBoard(stateRef.board),
+        players: clonePlayers(stateRef.players),
+        currentPlayerIndex: stateRef.currentPlayerIndex,
+        dice: {
+          values: [...stateRef.dice.values],
+          used: [...stateRef.dice.used],
+          rolled: stateRef.dice.rolled,
+          lockedDieIndex: null
+        }
+      };
+    }
+
+    function applyActionToSimState(stateRef, action) {
+      const sim = cloneStateForSimulation(stateRef);
+      const movingPiece = sim.board[action.fromRow][action.fromCol];
+      if (!movingPiece) return sim;
+
+      const captured = sim.board[action.toRow][action.toCol];
+      sim.board[action.toRow][action.toCol] = movingPiece;
+      sim.board[action.fromRow][action.fromCol] = null;
+      sim.dice.used[action.dieIndex] = true;
+
+      if (captured && countKingsForTeamOnBoard(sim.board, captured.team) === 0) {
+        eliminatePlayerOnState(sim, captured.team);
+      }
+
+      if (movingPiece.type === 'pawn') {
+        const promotionType = getPromotionPiece(movingPiece.team, action.toRow, action.toCol);
+        if (promotionType && action.promotionDecision === 'confirm') {
+          movingPiece.type = promotionType;
+          movingPiece.isRoyal = false;
+        }
+      }
+
+      return sim;
+    }
+
+    function getPawnProgressScore(team, row, col) {
+      if (team === 'green') return row;
+      if (team === 'blue') return 7 - row;
+      if (team === 'red') return 7 - col;
+      if (team === 'yellow') return col;
+      return 0;
+    }
+
+    function evaluateBoardForTeam(stateRef, team) {
+      if (!stateRef.players[team].alive) return -20000;
+      let score = 0;
+
+      for (const side of PLAYERS) {
+        if (!stateRef.players[side].alive) continue;
+        let material = 0;
+        let kings = 0;
+        let mobility = 0;
+        let pawnProgress = 0;
+
+        for (let row = 0; row < ROWS; row++) {
+          for (let col = 0; col < COLS; col++) {
+            const piece = stateRef.board[row][col];
+            if (!piece || piece.team !== side) continue;
+            material += PIECE_VALUE[piece.type];
+            if (piece.type === 'king') kings += 1;
+            if (piece.type === 'pawn') pawnProgress += getPawnProgressScore(side, row, col) * 2;
+          }
+        }
+
+        for (let dieIndex = 0; dieIndex < 2; dieIndex++) {
+          if (stateRef.dice.used[dieIndex]) continue;
+          for (let row = 0; row < ROWS; row++) {
+            for (let col = 0; col < COLS; col++) {
+              const piece = stateRef.board[row][col];
+              if (!piece || piece.team !== side) continue;
+              mobility += getLegalMovesForPieceOnState(stateRef, row, col, dieIndex).length;
+            }
+          }
+        }
+
+        const sideScore = material + kings * 240 + mobility * 3 + pawnProgress;
+        if (side === team) score += sideScore;
+        else score -= sideScore * 0.72;
+      }
+
+      return score;
+    }
+
+    function countThreatsOnSquare(stateRef, targetRow, targetCol, team) {
+      let threatScore = 0;
+      for (const enemy of PLAYERS) {
+        if (enemy === team || !stateRef.players[enemy].alive) continue;
+        for (let dieIndex = 0; dieIndex < 2; dieIndex++) {
+          if (stateRef.dice.used[dieIndex]) continue;
+          for (let row = 0; row < ROWS; row++) {
+            for (let col = 0; col < COLS; col++) {
+              const piece = stateRef.board[row][col];
+              if (!piece || piece.team !== enemy) continue;
+              const moves = getLegalMovesForPieceOnState(stateRef, row, col, dieIndex);
+              for (const move of moves) {
+                if (move.toRow === targetRow && move.toCol === targetCol) {
+                  threatScore += PIECE_VALUE[piece.type] * 0.18;
+                }
+              }
+            }
+          }
+        }
+      }
+      return threatScore;
+    }
+
+    function getBestContinuationScore(simState, team, difficulty, depthRemaining) {
+      if (depthRemaining <= 0) return 0;
+      const remainingDice = getRemainingPlayableDiceOnState(simState, team);
+      if (remainingDice.length === 0) return 0;
+
+      const followActions = getAllLegalActionsForTeam(team, simState);
+      if (!followActions.length) return 0;
+
+      let best = -Infinity;
+      for (const nextAction of followActions) {
+        const nextSim = applyActionToSimState(simState, nextAction);
+        let score = evaluateBoardForTeam(nextSim, team) - evaluateBoardForTeam(simState, team);
+        if (difficulty === 'pro') {
+          score += getBestContinuationScore(nextSim, team, difficulty, depthRemaining - 1) * 0.4;
+        }
+        if (score > best) best = score;
+      }
+      return best === -Infinity ? 0 : best;
+    }
+
+    function scoreAction(action, difficulty, baseState = state) {
+      const team = action.movingTeam;
+      const simulated = applyActionToSimState(baseState, action);
+      const capturedValue = action.captured ? PIECE_VALUE[action.captured.type] : 0;
+      const beforeEval = evaluateBoardForTeam(baseState, team);
+      const afterEval = evaluateBoardForTeam(simulated, team);
+      const evalDelta = afterEval - beforeEval;
+
+      let score = 0;
+      score += capturedValue * 4;
+      if (action.promotionDecision === 'confirm' && action.promotionType) {
+        score += PIECE_VALUE[action.promotionType] * 3.2;
+        if (action.promotionType === 'king') score += 220;
+      }
+      if (action.captured && action.captured.type === 'king') score += 800;
+      if (baseState.players[action.movingTeam].alive && simulated.players[action.captured?.team || action.movingTeam].alive === false && action.captured) {
+        score += 1500;
+      }
+
+      const movedPieceAfter = simulated.board[action.toRow][action.toCol];
+      if (movedPieceAfter) {
+        if (movedPieceAfter.type === 'pawn') score += getPawnProgressScore(team, action.toRow, action.toCol) * 10;
+        score -= countThreatsOnSquare(simulated, action.toRow, action.toCol, team);
+      }
+
+      if (difficulty === 'easy') {
+        score += Math.random() * 120;
+        score += capturedValue * 1.5;
+        if (action.promotionDecision === 'confirm') score += 50;
+        return score;
+      }
+
+      score += evalDelta * (difficulty === 'medium' ? 0.22 : difficulty === 'hard' ? 0.45 : 0.68);
+
+      if (difficulty === 'medium') {
+        score += getRemainingPlayableDiceOnState(simulated, team).length * 18;
+        score += Math.random() * 28;
+        return score;
+      }
+
+      const continuation = getBestContinuationScore(simulated, team, difficulty, difficulty === 'pro' ? 2 : 1);
+      score += continuation * (difficulty === 'hard' ? 0.45 : 0.72);
+
+      if (difficulty === 'hard') {
+        score += Math.random() * 10;
+        return score;
+      }
+
+      score += getAllLegalActionsForTeam(team, simulated).length * 2.2;
+      score -= Math.max(0, 1 - countKingsForTeamOnBoard(simulated.board, team)) * 2000;
+      return score;
+    }
+
+    function chooseBotAction(actions, difficulty) {
+      if (!actions.length) return null;
+
+      if (difficulty === 'easy') {
+        const scored = actions.map(action => ({ action, score: scoreAction(action, difficulty) }));
+        scored.sort((a, b) => b.score - a.score);
+        const pool = scored.slice(0, Math.min(6, scored.length));
+        return pool[Math.floor(Math.random() * pool.length)].action;
+      }
+
+      const scored = actions.map(action => ({ action, score: scoreAction(action, difficulty) }));
+      scored.sort((a, b) => b.score - a.score);
+
+      if (difficulty === 'medium') {
+        const topBand = scored.filter(item => item.score >= scored[0].score - 35);
+        return topBand[Math.floor(Math.random() * topBand.length)].action;
+      }
+
+      if (difficulty === 'hard') {
+        const topBand = scored.filter(item => item.score >= scored[0].score - 12);
+        return topBand[Math.floor(Math.random() * topBand.length)].action;
+      }
+
+      return scored[0].action;
+    }
+
+    function getBotDelay() {
+      const difficulty = appState.matchConfig.botDifficulty;
+      if (difficulty === 'easy') return 420;
+      if (difficulty === 'medium') return 340;
+      if (difficulty === 'hard') return 320;
+      return 300;
+    }
+
+    function maybeRunBotTurn() {
+      if (appState.screen !== 'game') return;
+      if (state.gameOver || state.awaitingPromotion) return;
+      const team = getCurrentTeam();
+      if (!isBotPlayer(team)) return;
+      if (appState.botTurnPending) return;
+
+      appState.botTurnPending = true;
+      appState.botStatusText = `${TEAM_LABEL[team]} bot is thinking...`;
+      renderStatus();
+      renderButtons();
+
+      setTimeout(() => {
+        appState.botTurnPending = false;
+        takeBotTurn();
+      }, getBotDelay());
+    }
+
+    function takeBotTurn() {
+      if (appState.screen !== 'game') return;
+      if (state.gameOver || state.awaitingPromotion) return;
+      const team = getCurrentTeam();
+      if (!isBotPlayer(team)) return;
+
+      if (!state.dice.rolled) {
+        appState.botStatusText = `${TEAM_LABEL[team]} bot rolled the dice.`;
+        rollDice();
+        return;
+      }
+
+      const actions = getAllLegalActionsForTeam(team, state);
+      if (!actions.length) {
+        pushLog(`${TEAM_LABEL[team]} bot had no legal action and ended the turn.`);
+        advanceTurn();
+        return;
+      }
+
+      const chosen = chooseBotAction(actions, appState.matchConfig.botDifficulty);
+      if (!chosen) {
+        advanceTurn();
+        return;
+      }
+
+      appState.botStatusText = `${TEAM_LABEL[team]} bot plays ${PIECE_NAME[chosen.movingType]} ${toCoord(chosen.fromRow, chosen.fromCol)} → ${toCoord(chosen.toRow, chosen.toCol)}.`;
+      applyMoveAction(chosen, {
+        forcePromotionDecision: chosen.promotionDecision,
+        forcePromotionType: chosen.promotionType
+      });
+    }
+
+    function render() {
+      if (appState.screen !== 'game') return;
+      renderBoard();
+      renderStatus();
+      renderDice();
+      renderSelectionInfo();
+      renderPlayerPills();
+      renderMoveLog();
+      renderButtons();
+      maybeRunBotTurn();
+    }
+
+    function renderBoard() {
+      const currentTeam = getCurrentTeam();
+      const cells = ui.boardGrid.querySelectorAll('.cell');
+      cells.forEach(cell => {
+        const row = Number(cell.dataset.row);
+        const col = Number(cell.dataset.col);
+        const piece = state.board[row][col];
+        const isHumanInteractive = appState.screen === 'game' && !state.gameOver && !state.awaitingPromotion && !appState.botTurnPending && !isBotPlayer(currentTeam);
+        cell.disabled = !isHumanInteractive;
+        cell.innerHTML = '';
+        cell.classList.remove('selected', 'possible', 'capture', 'last-from', 'last-to');
+
+        if (state.selected && state.selected.row === row && state.selected.col === col) {
+          cell.classList.add('selected');
+        }
+
+        if (state.lastMove && state.lastMove.fromRow === row && state.lastMove.fromCol === col) {
+          cell.classList.add('last-from');
+        }
+
+        if (state.lastMove && state.lastMove.toRow === row && state.lastMove.toCol === col) {
+          cell.classList.add('last-to');
+        }
+
+        const move = state.legalMoves.find(m => m.toRow === row && m.toCol === col);
+        if (move) {
+          cell.classList.add(move.captured ? 'capture' : 'possible');
+          const marker = document.createElement('div');
+          marker.className = move.captured ? 'capture-ring' : 'move-dot';
+          cell.appendChild(marker);
+        }
+
+        if (piece) {
+          const token = document.createElement('div');
+          token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
+          token.innerHTML = `
+            <div class="glyph">${PIECE_DISPLAY[piece.type].glyph}</div>
+            <div class="tag">${piece.team[0].toUpperCase()}-${PIECE_DISPLAY[piece.type].tag}</div>
+            ${piece.isRoyal ? '<div class="crest" aria-hidden="true">✦</div>' : ''}
+          `;
+          token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
+          cell.appendChild(token);
+          cell.setAttribute('aria-label', `${toCoord(row, col)}: ${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' royal' : ''}`);
+        } else {
+          cell.setAttribute('aria-label', `Cell ${toCoord(row, col)}`);
+        }
+      });
+    }
+
+    function renderStatus() {
+      const team = getCurrentTeam();
+      ui.turnMark.className = `turn-mark ${TEAM_CLASS[team]}`;
+      ui.statusPlayer.className = `status-player ${TEAM_CLASS[team]}`;
+
+      if (state.gameOver) {
+        ui.statusPlayer.textContent = `${TEAM_LABEL[state.winner]} Wins`;
+        ui.statusBar.innerHTML = `<strong>Game over.</strong> ${TEAM_LABEL[state.winner]} is the last surviving team.`;
+        ui.statusMeta.innerHTML = '<span class="meta-chip">Victory</span><span class="meta-chip">Match Complete</span>';
+        return;
+      }
+
+      const controller = isBotPlayer(team) ? 'Bot' : 'Human';
+      ui.statusPlayer.textContent = `${TEAM_LABEL[team]} to act`;
+
+      let line = '';
+      const meta = [];
+
+      if (appState.botTurnPending && isBotPlayer(team)) {
+        line = appState.botStatusText || `${TEAM_LABEL[team]} bot is taking its turn.`;
+        meta.push('Bot turn');
+      } else if (!state.dice.rolled) {
+        line = `Roll the dice to activate pieces for ${TEAM_LABEL[team]}.`;
+        meta.push(controller);
+        meta.push('Awaiting roll');
+      } else {
+        const remainingPlayableDice = getRemainingPlayableDice(team).map(i => `Die ${i + 1}`).join(', ');
+        line = `Unused playable dice: ${remainingPlayableDice || 'none'}.`;
+        meta.push(controller);
+        meta.push(`Rolled ${state.dice.values[0]} / ${state.dice.values[1]}`);
+        meta.push(`${state.dice.used.filter(Boolean).length}/2 used`);
+      }
+
+      if (state.selected) {
+        const piece = state.board[state.selected.row][state.selected.col];
+        if (piece) {
+          line += ` Selected: ${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]} at ${toCoord(state.selected.row, state.selected.col)}.`;
+          if (state.dice.lockedDieIndex !== null) {
+            line += ` Using Die ${state.dice.lockedDieIndex + 1} (${state.dice.values[state.dice.lockedDieIndex]}) with ${state.legalMoves.length} legal move(s).`;
+          } else {
+            line += ` Choose a die if more than one applies.`;
+          }
+        }
+      }
+
+      if (state.awaitingPromotion) meta.push('Promotion pending');
+
+      ui.statusBar.innerHTML = line;
+      ui.statusMeta.innerHTML = meta.map(text => `<span class="meta-chip">${text}</span>`).join('');
+    }
+
+    function renderDice() {
+      const team = getCurrentTeam();
+      for (let i = 0; i < 2; i++) {
+        const value = state.dice.values[i];
+        const rolled = value !== null;
+        const pieceText = value ? DICE_ROLLS[value].map(name => PIECE_NAME[name]).join(' or ') : 'Roll to activate';
+        let dieState = 'Idle';
+
+        if (state.dice.used[i]) dieState = 'Used';
+        else if (state.dice.lockedDieIndex === i) dieState = 'Active';
+        else if (rolled && playerHasLegalMoveForDie(team, i)) dieState = 'Ready';
+        else if (rolled) dieState = 'No Move';
+
+        ui.dieValues[i].textContent = value ?? '?';
+        ui.diePieces[i].textContent = pieceText;
+        ui.dieStates[i].textContent = dieState;
+        ui.dieCards[i].classList.toggle('used', state.dice.used[i]);
+        ui.dieCards[i].classList.toggle('active', state.dice.lockedDieIndex === i);
+      }
+    }
+
+    function renderSelectionInfo() {
+      ui.dieChoiceBar.innerHTML = '';
+
+      if (!state.selected) {
+        ui.selectionInfo.textContent = isBotPlayer(getCurrentTeam())
+          ? 'Bot-controlled turn. Human selection is disabled.'
+          : 'No piece selected.';
+        return;
+      }
+
+      const piece = state.board[state.selected.row][state.selected.col];
+      const availableDice = getAvailableDiceForPiece(state.selected.row, state.selected.col);
+      ui.selectionInfo.textContent = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]} at ${toCoord(state.selected.row, state.selected.col)}.`;
+
+      if (availableDice.length > 1 && state.dice.lockedDieIndex === null) {
+        ui.selectionInfo.textContent += ' This piece can use either active die. Choose which die to spend.';
+        availableDice.forEach(dieIndex => {
+          const btn = document.createElement('button');
+          btn.className = 'subtle';
+          btn.textContent = `Use Die ${dieIndex + 1}`;
+          btn.addEventListener('click', () => chooseDieForSelection(dieIndex));
+          ui.dieChoiceBar.appendChild(btn);
+        });
+      } else if (state.dice.lockedDieIndex !== null) {
+        const dieValue = state.dice.values[state.dice.lockedDieIndex];
+        ui.selectionInfo.textContent += ` Using Die ${state.dice.lockedDieIndex + 1} (${dieValue}) with ${state.legalMoves.length} legal move(s).`;
+      }
+    }
+
+    function renderPlayerPills() {
+      ui.playerPills.innerHTML = '';
+      PLAYERS.forEach(team => {
+        const pill = document.createElement('div');
+        const isCurrent = team === getCurrentTeam() && !state.gameOver;
+        const controlType = appState.matchConfig.controlMap[team];
+        const label = !state.players[team].alive ? 'Eliminated' : isCurrent ? `${capitalize(controlType)} • current` : capitalize(controlType);
+        pill.className = `pill ${state.players[team].alive ? '' : 'dead'} ${isCurrent ? 'current' : ''}`.trim();
+        pill.innerHTML = `
+          <div class="pill-left">
+            <span class="pill-swatch ${TEAM_CLASS[team]}" aria-hidden="true"></span>
+            <span>${TEAM_LABEL[team]}</span>
+          </div>
+          <span class="pill-tag">${label}</span>
+        `;
+        ui.playerPills.appendChild(pill);
+      });
+    }
+
+    function renderMoveLog() {
+      ui.moveLog.innerHTML = '';
+      const entries = state.moveLog.slice().reverse();
+      entries.forEach(text => {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.textContent = text;
+        ui.moveLog.appendChild(div);
+      });
+    }
+
+    function renderButtons() {
+      const humanTurn = !isBotPlayer(getCurrentTeam());
+      const disabledByBot = !humanTurn || appState.botTurnPending;
+      ui.rollBtn.disabled = state.gameOver || state.dice.rolled || !!state.awaitingPromotion || disabledByBot;
+      ui.endTurnBtn.disabled = state.gameOver || !state.dice.rolled || !!state.awaitingPromotion || disabledByBot;
+    }
+
+    function capitalize(text) {
+      return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    ui.splashContinueArea.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      setScreen('menu');
+    });
+    ui.splashContinueArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        primeAudioAndPlayButton();
+        setScreen('menu');
+      }
+    });
+
+    ui.menuPlayBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      setScreen('playerCount');
+    });
+
+    ui.menuHowBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      appState.tutorialEntry = 'menu';
+      setScreen('tutorial');
+    });
+
+    ui.playerCountBackBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      setScreen('menu');
+    });
+
+    ui.playerCountNextBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      setScreen('difficulty');
+    });
+
+    ui.difficultyBackBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      setScreen('playerCount');
+    });
+
+    ui.difficultyNextBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      appState.tutorialEntry = 'flow';
+      setScreen('tutorial');
+    });
+
+    ui.tutorialBackBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      setScreen(appState.tutorialEntry === 'menu' ? 'menu' : 'difficulty');
+    });
+
+    ui.tutorialSkipBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      beginMatchFlowFromTutorial();
+    });
+
+    ui.tutorialStartBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      beginMatchFlowFromTutorial();
+    });
+
+    ui.restartMatchBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      setScreen('loading');
+      clearTimeout(appState.loadingTimer);
+      appState.loadingTimer = setTimeout(() => {
+        startNewMatch();
+      }, 650);
+    });
+
+    ui.returnMenuBtn.addEventListener('click', () => {
+      primeAudioAndPlayButton();
+      returnToMenu();
+    });
+
+    ui.audioToggleBtn.addEventListener('click', async () => {
+      const unlocked = await sound.unlock();
+      if (!unlocked) return;
+      if (ui.audioToggleBtn.getAttribute('aria-pressed') === 'true') sound.toggleEnabled();
+      else sound.setEnabled(true);
+      sound.playButtonSound();
+    });
+
+    ui.volumeSlider.addEventListener('input', (e) => {
+      const nextVolume = Number(e.target.value) / 100;
+      sound.setVolume(nextVolume);
+      sound.playButtonSound();
+    });
+
+    ui.rollBtn.addEventListener('click', () => { sound.playButtonSound(); rollDice(); });
+    ui.endTurnBtn.addEventListener('click', () => { sound.playButtonSound(); endTurnEarly(); });
+    ui.newGameBtn.addEventListener('click', () => { primeAudioAndPlayButton(); startNewMatch(); });
+    ui.modalConfirmBtn.addEventListener('click', () => { sound.playButtonSound(); confirmPromotion(); });
+    ui.modalCancelBtn.addEventListener('click', () => { sound.playButtonSound(); declinePromotion(); });
+    ui.modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === ui.modalBackdrop) declinePromotion();
+    });
+
+    buildSetupChoices();
+    buildBoardGrid();
+    renderAppScreen();
+    scheduleSplashAdvance();
+  </script>
+
+<script>
+(() => {
+  // ---------- Extended Play Mode / Online Multiplayer Layer ----------
+  const extraStyle = document.createElement('style');
+  extraStyle.textContent = `
+    .flow-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:14px; margin-top:18px; }
+    .inline-field { display:grid; gap:8px; margin-top:14px; }
+    .inline-field label { color: var(--text-soft); font-size: 0.88rem; font-weight: 700; }
+    .inline-field input {
+      width:100%; border-radius:14px; padding:13px 14px; border:1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04); color: var(--text); outline:none;
+    }
+    .inline-field input:focus { border-color: rgba(142,197,255,0.38); box-shadow: 0 0 0 2px rgba(142,197,255,0.16); }
+    .inline-copy-row, .lobby-share-row, .lobby-headline { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .inline-copy-row button, .lobby-share-row button { width:auto; min-width: 0; }
+    .muted-note { color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+    .lobby-grid { display:grid; grid-template-columns: 1fr 0.95fr; gap:18px; margin-top:18px; }
+    .slot-list { display:grid; gap:12px; }
+    .slot-card {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 16px; border-radius:18px; border:1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
+    }
+    .slot-main { display:grid; gap:4px; }
+    .slot-name { font-weight: 800; color: var(--text); }
+    .slot-meta { color: var(--text-soft); font-size: 0.86rem; }
+    .slot-empty .slot-name { color: var(--muted); }
+    .ready-chip {
+      padding: 6px 10px; border-radius: 999px; font-size: 11px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase;
+      border:1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-soft);
+    }
+    .ready-chip.ready { background: rgba(43,166,106,0.16); color: var(--green-2); border-color: rgba(43,166,106,0.28); }
+    .ready-chip.waiting { background: rgba(216,91,98,0.14); color: var(--red-2); border-color: rgba(216,91,98,0.28); }
+    .ready-chip.host { background: rgba(88,144,246,0.14); color: var(--blue-2); border-color: rgba(88,144,246,0.28); }
+    .countdown-screen {
+      position: fixed; inset: 0; display:none; align-items:center; justify-content:center; z-index: 1200;
+      background: rgba(4,7,12,0.72); backdrop-filter: blur(10px);
+    }
+    .countdown-screen.show { display:flex; }
+    .countdown-card {
+      width:min(420px, 100%); padding:28px; border-radius:28px; text-align:center;
+      border:1px solid rgba(223,191,122,0.18);
+      background: radial-gradient(circle at top, rgba(223,191,122,0.13), transparent 40%), linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)), rgba(15,19,29,0.98);
+      box-shadow: var(--shadow-lg);
+    }
+    .countdown-value { font-size: 4rem; font-weight: 900; line-height: 1; margin-top: 12px; color: var(--gold); }
+    .net-pill {
+      padding: 7px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
+      color: var(--text-soft); font-size: 12px; font-weight: 700;
+    }
+    .net-pill.live { color: var(--green-2); border-color: rgba(43,166,106,0.28); background: rgba(43,166,106,0.14); }
+    .net-pill.warn { color: var(--red-2); border-color: rgba(216,91,98,0.28); background: rgba(216,91,98,0.14); }
+    @media (max-width: 900px) {
+      .flow-grid, .lobby-grid { grid-template-columns: 1fr; }
+    }
+  `;
+  document.head.appendChild(extraStyle);
+
+  const injectedMarkup = document.createElement('div');
+  injectedMarkup.innerHTML = `
+    <section id="screenPlayMode" class="screen" aria-label="Play mode selection">
+      <div class="screen-panel">
+        <div class="eyebrow">Setup</div>
+        <h1 style="font-size:2.1rem; line-height:1.08;">Choose Play Mode</h1>
+        <p class="subtitle">Offline keeps the current browser-only match flow. Online adds room creation, lobby sync, ready checks, countdown, and authoritative turn sync without changing the rules engine.</p>
+        <div id="playModeChoices" class="flow-grid"></div>
+        <div class="screen-actions">
+          <button id="playModeBackBtn" class="ghost">Back</button>
+          <button id="playModeNextBtn" class="primary">Continue</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenOnlineSetup" class="screen" aria-label="Online room setup">
+      <div class="screen-panel">
+        <div class="eyebrow">Online Play</div>
+        <h1 style="font-size:2.1rem; line-height:1.08;">Create or Join a Room</h1>
+        <p class="subtitle">Create a room with 2, 3, or 4 required human players, or join using a room code or invite link. Bots only fill the unused colors after the room match begins.</p>
+        <div class="menu-grid">
+          <div class="menu-card">
+            <div class="eyebrow">Create Room</div>
+            <h3 style="font-size:1.3rem;">Host an online match</h3>
+            <div id="onlinePlayerCountChoices" class="choice-grid" style="margin-top:14px;"></div>
+            <div class="inline-field">
+              <label for="serverUrlInput">Server URL</label>
+              <input id="serverUrlInput" type="text" placeholder="ws://localhost:8080" />
+            </div>
+            <div class="screen-actions">
+              <button id="createRoomBtn" class="primary">Create Room</button>
+            </div>
+          </div>
+          <div class="menu-card">
+            <div class="eyebrow">Join Room</div>
+            <h3 style="font-size:1.3rem;">Enter an existing room</h3>
+            <div class="inline-field">
+              <label for="joinRoomCodeInput">Room ID</label>
+              <input id="joinRoomCodeInput" type="text" placeholder="AB12CD" maxlength="16" />
+            </div>
+            <div class="inline-field">
+              <label for="playerNameInput">Display Name</label>
+              <input id="playerNameInput" type="text" placeholder="Player name" maxlength="32" />
+            </div>
+            <p class="muted-note">If your URL already contains a valid room ID, it will prefill here automatically.</p>
+            <div class="screen-actions">
+              <button id="joinRoomBtn" class="secondary">Join Room</button>
+              <button id="onlineSetupBackBtn" class="ghost">Back</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenLobby" class="screen" aria-label="Online lobby">
+      <div class="screen-panel">
+        <div class="eyebrow">Lobby</div>
+        <div class="lobby-headline">
+          <div style="flex:1 1 360px;">
+            <h1 style="font-size:2.1rem; line-height:1.08;">Room <span id="lobbyRoomIdText"></span></h1>
+            <p id="lobbyStatusText" class="subtitle">Waiting for players.</p>
+          </div>
+          <div class="net-pill" id="lobbyConnectionPill">Disconnected</div>
+        </div>
+        <div class="lobby-grid">
+          <div class="config-card">
+            <div class="eyebrow">Players</div>
+            <div id="lobbyPlayerSlots" class="slot-list"></div>
+          </div>
+          <div class="config-card">
+            <div class="eyebrow">Invite</div>
+            <div class="summary-list">
+              <div class="summary-item"><span>Room ID</span><strong id="lobbyRoomCodeValue">-</strong></div>
+              <div class="summary-item"><span>Required Humans</span><strong id="lobbySeatCountValue">-</strong></div>
+              <div class="summary-item"><span>Your Team</span><strong id="lobbyLocalTeamValue">Waiting</strong></div>
+            </div>
+            <div class="inline-field">
+              <label for="lobbyShareLinkInput">Share link</label>
+              <input id="lobbyShareLinkInput" type="text" readonly />
+            </div>
+            <div class="lobby-share-row">
+              <button id="copyRoomLinkBtn" class="primary">Copy Room Link</button>
+              <button id="copyRoomCodeBtn" class="secondary">Copy Room Code</button>
+              <button id="shareRoomBtn" class="ghost">Share</button>
+            </div>
+            <div class="screen-actions" style="margin-top:18px;">
+              <button id="toggleReadyBtn" class="primary">Ready</button>
+              <button id="leaveLobbyBtn" class="ghost">Leave Lobby</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="countdownOverlay" class="countdown-screen" aria-hidden="true">
+      <div class="countdown-card">
+        <div class="eyebrow">Match Start</div>
+        <h2 id="countdownLabel">All players ready</h2>
+        <div id="countdownValue" class="countdown-value">3</div>
+      </div>
+    </div>
+  `;
+  ui.appView.appendChild(injectedMarkup);
+
+  Object.assign(ui, {
+    screens: {
+      ...ui.screens,
+      playMode: document.getElementById('screenPlayMode'),
+      onlineSetup: document.getElementById('screenOnlineSetup'),
+      lobby: document.getElementById('screenLobby')
+    },
+    playModeChoices: document.getElementById('playModeChoices'),
+    playModeBackBtn: document.getElementById('playModeBackBtn'),
+    playModeNextBtn: document.getElementById('playModeNextBtn'),
+    onlinePlayerCountChoices: document.getElementById('onlinePlayerCountChoices'),
+    serverUrlInput: document.getElementById('serverUrlInput'),
+    joinRoomCodeInput: document.getElementById('joinRoomCodeInput'),
+    playerNameInput: document.getElementById('playerNameInput'),
+    createRoomBtn: document.getElementById('createRoomBtn'),
+    joinRoomBtn: document.getElementById('joinRoomBtn'),
+    onlineSetupBackBtn: document.getElementById('onlineSetupBackBtn'),
+    lobbyRoomIdText: document.getElementById('lobbyRoomIdText'),
+    lobbyStatusText: document.getElementById('lobbyStatusText'),
+    lobbyPlayerSlots: document.getElementById('lobbyPlayerSlots'),
+    lobbyRoomCodeValue: document.getElementById('lobbyRoomCodeValue'),
+    lobbySeatCountValue: document.getElementById('lobbySeatCountValue'),
+    lobbyLocalTeamValue: document.getElementById('lobbyLocalTeamValue'),
+    lobbyShareLinkInput: document.getElementById('lobbyShareLinkInput'),
+    copyRoomLinkBtn: document.getElementById('copyRoomLinkBtn'),
+    copyRoomCodeBtn: document.getElementById('copyRoomCodeBtn'),
+    shareRoomBtn: document.getElementById('shareRoomBtn'),
+    toggleReadyBtn: document.getElementById('toggleReadyBtn'),
+    leaveLobbyBtn: document.getElementById('leaveLobbyBtn'),
+    lobbyConnectionPill: document.getElementById('lobbyConnectionPill'),
+    countdownOverlay: document.getElementById('countdownOverlay'),
+    countdownValue: document.getElementById('countdownValue'),
+    countdownLabel: document.getElementById('countdownLabel')
+  });
+
+  const defaultServerUrl = (() => {
+    const saved = localStorage.getItem('chaturanga_server_url');
+    if (saved) return saved;
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      return location.origin.replace(/^http/, 'ws');
+    }
+    return 'ws://localhost:8080';
+  })();
+
+  Object.assign(appState, {
+    playMode: 'offline',
+    online: {
+      serverUrl: defaultServerUrl,
+      connected: false,
+      roomId: '',
+      shareLink: '',
+      seatCount: 2,
+      isHost: false,
+      localPlayerId: '',
+      localName: 'Player',
+      localTeam: null,
+      roomState: null
+    }
+  });
+
+  appState.matchConfig.playerCount = 2;
+  appState.matchConfig.controlMap = getControlMapForPlayerCount(2);
+
+  const params = new URLSearchParams(location.search);
+  const autoRoomId = (params.get('room') || '').trim().toUpperCase();
+  const urlServer = (params.get('server') || '').trim();
+  if (urlServer) {
+    appState.online.serverUrl = urlServer;
+    localStorage.setItem('chaturanga_server_url', urlServer);
+  }
+  ui.serverUrlInput.value = appState.online.serverUrl;
+  ui.joinRoomCodeInput.value = autoRoomId;
+  ui.playerNameInput.value = localStorage.getItem('chaturanga_player_name') || `Player-${Math.floor(Math.random() * 900 + 100)}`;
+
+  function makeCardChoice(container, choices, selectedValue, onSelect) {
+    container.innerHTML = '';
+    choices.forEach(choice => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-card' + (choice.value === selectedValue ? ' selected' : '');
+      btn.innerHTML = `<div class="choice-meta">${choice.meta}</div><h3>${choice.title}</h3><p>${choice.description}</p>`;
+      btn.addEventListener('click', () => {
+        primeAudioAndPlayButton();
+        onSelect(choice.value);
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  const originalBuildSetupChoices = buildSetupChoices;
+  buildSetupChoices = function () {
+    originalBuildSetupChoices();
+    makeCardChoice(ui.playerCountChoices, [
+      { value: 2, title: '2 Player', meta: '2 humans + 2 bots', description: 'Green and Red are human. Blue and Yellow stay as bots.' },
+      { value: 3, title: '3 Player', meta: '3 humans + 1 bot', description: 'Green, Red, and Blue are human. Yellow stays as the only bot.' },
+      { value: 4, title: '4 Player', meta: '4 humans + 0 bots', description: 'All four seats are human. No offline bots are added.' }
+    ], appState.matchConfig.playerCount, value => {
+      appState.matchConfig.playerCount = value;
+      appState.matchConfig.controlMap = getControlMapForPlayerCount(value);
+      renderAppScreen();
+      buildSetupChoices();
+    });
+
+    makeCardChoice(ui.playModeChoices, [
+      { value: 'offline', title: 'Offline Play', meta: 'Browser only', description: 'Play locally in this browser. No server needed. Existing move engine and bots stay intact.' },
+      { value: 'online', title: 'Online Play', meta: 'Room + lobby', description: 'Create or join a synchronized room with ready checks, invite links, and server-authoritative turns.' }
+    ], appState.playMode, value => {
+      appState.playMode = value;
+      renderAppScreen();
+      buildSetupChoices();
+    });
+
+    makeCardChoice(ui.onlinePlayerCountChoices, [
+      { value: 2, title: '2 Players', meta: '2 humans + 2 bots at match start', description: 'Start once 2 humans are in the room and both are ready.' },
+      { value: 3, title: '3 Players', meta: '3 humans + 1 bot at match start', description: 'Start once 3 humans are in the room and all are ready.' },
+      { value: 4, title: '4 Players', meta: '4 humans + 0 bots at match start', description: 'Full online table. No bots are added.' }
+    ], appState.online.seatCount, value => {
+      appState.online.seatCount = value;
+      renderAppScreen();
+      buildSetupChoices();
+    });
+  };
+
+  const originalGetGameSummaryText = getGameSummaryText;
+  getGameSummaryText = function () {
+    if (appState.playMode === 'online' && appState.online.roomState && appState.online.roomState.matchStarted) {
+      const humans = appState.online.roomState.seatCount;
+      const bots = 4 - humans;
+      return `Online room ${appState.online.roomId}. ${humans} human${humans !== 1 ? 's' : ''}, ${bots} bot${bots !== 1 ? 's' : ''}, ${capitalize(appState.matchConfig.botDifficulty)} bots.`;
+    }
+    const humans = Object.values(appState.matchConfig.controlMap).filter(v => v === 'human').length;
+    const bots = 4 - humans;
+    return `${capitalize(appState.playMode)} · ${humans} human${humans !== 1 ? 's' : ''}, ${bots} bot${bots !== 1 ? 's' : ''}, ${capitalize(appState.matchConfig.botDifficulty)} difficulty.`;
+  };
+
+  const originalRenderGameConfigPills = renderGameConfigPills;
+  renderGameConfigPills = function () {
+    originalRenderGameConfigPills();
+    const pill = document.createElement('div');
+    pill.className = 'config-pill';
+    pill.textContent = appState.playMode === 'online' ? `Online${appState.online.roomId ? ' · Room ' + appState.online.roomId : ''}` : 'Offline';
+    ui.gameConfigPills.prepend(pill);
+  };
+
+  const originalRenderButtons = renderButtons;
+  renderButtons = function () {
+    originalRenderButtons();
+    if (appState.playMode === 'online') {
+      ui.restartMatchBtn.disabled = true;
+      ui.newGameBtn.disabled = true;
+      const localTurn = OnlineMatchController.isLocalTurn();
+      ui.rollBtn.disabled = ui.rollBtn.disabled || !localTurn;
+      ui.endTurnBtn.disabled = ui.endTurnBtn.disabled || !localTurn;
+    }
+  };
+
+  const originalRenderSelectionInfo = renderSelectionInfo;
+  renderSelectionInfo = function () {
+    originalRenderSelectionInfo();
+    if (appState.playMode === 'online' && !OnlineMatchController.isLocalTurn() && appState.screen === 'game' && !state.gameOver) {
+      ui.selectionInfo.textContent = appState.online.localTeam
+        ? `Online match. You control ${TEAM_LABEL[appState.online.localTeam]}. Interaction is disabled until it is your turn.`
+        : 'Online match. Waiting for seat assignment.';
+      ui.dieChoiceBar.innerHTML = '';
+    }
+  };
+
+  const originalRenderStatus = renderStatus;
+  renderStatus = function () {
+    originalRenderStatus();
+    if (appState.playMode === 'online' && appState.screen === 'game' && !state.gameOver) {
+      const meta = document.createElement('span');
+      meta.className = 'meta-chip';
+      meta.textContent = appState.online.connected ? 'Server synced' : 'Server disconnected';
+      ui.statusMeta.appendChild(meta);
+    }
+  };
+
+  const originalMaybeRunBotTurn = maybeRunBotTurn;
+  maybeRunBotTurn = function () { if (appState.playMode === 'online') return; return originalMaybeRunBotTurn(); };
+  const originalHandleCellClick = handleCellClick;
+  handleCellClick = function (row, col) { if (appState.playMode === 'online' && !OnlineMatchController.isLocalTurn()) return; return originalHandleCellClick(row, col); };
+  const originalExecuteMove = executeMove;
+  executeMove = function (move) { if (appState.playMode === 'online') return OnlineMatchController.requestMove(move); return originalExecuteMove(move); };
+  const originalRollDice = rollDice;
+  rollDice = function () { if (appState.playMode === 'online') return OnlineMatchController.requestRoll(); return originalRollDice(); };
+  const originalEndTurnEarly = endTurnEarly;
+  endTurnEarly = function () { if (appState.playMode === 'online') return OnlineMatchController.requestEndTurn(); return originalEndTurnEarly(); };
+  const originalConfirmPromotion = confirmPromotion;
+  confirmPromotion = function () { if (appState.playMode === 'online') return OnlineMatchController.requestPromotion('confirm'); return originalConfirmPromotion(); };
+  const originalDeclinePromotion = declinePromotion;
+  declinePromotion = function () { if (appState.playMode === 'online') return OnlineMatchController.requestPromotion('decline'); return originalDeclinePromotion(); };
+
+  function setControlMapForOnline(roomState) {
+    const humans = roomState.players.slice(0, roomState.seatCount).map(p => p.team);
+    const controlMap = {};
+    PLAYERS.forEach(team => controlMap[team] = humans.includes(team) ? 'human' : 'bot');
+    appState.matchConfig.controlMap = controlMap;
+    appState.matchConfig.playerCount = roomState.seatCount;
+  }
+
+  function replaceStateFromSnapshot(snapshot) {
+    state.board = cloneBoard(snapshot.board);
+    state.players = clonePlayers(snapshot.players);
+    state.currentPlayerIndex = snapshot.currentPlayerIndex;
+    state.selected = null;
+    state.legalMoves = [];
+    state.dice.values = [...snapshot.dice.values];
+    state.dice.used = [...snapshot.dice.used];
+    state.dice.rolled = snapshot.dice.rolled;
+    state.dice.lockedDieIndex = null;
+    state.awaitingPromotion = snapshot.awaitingPromotion ? { ...snapshot.awaitingPromotion } : null;
+    state.gameOver = snapshot.gameOver;
+    state.winner = snapshot.winner;
+    state.moveLog = [...snapshot.moveLog];
+    state.lastMove = snapshot.lastMove ? { ...snapshot.lastMove } : null;
+    if (state.awaitingPromotion) {
+      ui.modalTitle.textContent = 'Pawn Promotion';
+      ui.modalText.textContent = `This pawn reached ${toCoord(state.awaitingPromotion.row, state.awaitingPromotion.col)} and may promote to ${PIECE_NAME[state.awaitingPromotion.promotionType]}.`;
+      ui.modalBackdrop.classList.add('show');
+      ui.modalBackdrop.setAttribute('aria-hidden', 'false');
+    } else {
+      ui.modalBackdrop.classList.remove('show');
+      ui.modalBackdrop.setAttribute('aria-hidden', 'true');
+    }
+    render();
+  }
+
+  function updateShareLink(roomId) {
+    const baseUrl = location.origin && location.origin !== 'null' ? `${location.origin}${location.pathname}` : location.href.split('?')[0];
+    const shareLink = `${baseUrl}?room=${encodeURIComponent(roomId)}${appState.online.serverUrl ? `&server=${encodeURIComponent(appState.online.serverUrl)}` : ''}`;
+    appState.online.shareLink = shareLink;
+    return shareLink;
+  }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (error) { window.prompt('Copy this value:', text); }
+  }
+
+  function getPlayerName() {
+    const name = (ui.playerNameInput.value || '').trim() || `Player-${Math.floor(Math.random() * 900 + 100)}`;
+    ui.playerNameInput.value = name;
+    localStorage.setItem('chaturanga_player_name', name);
+    appState.online.localName = name;
+    return name;
+  }
+
+  const MultiplayerService = {
+    socket: null,
+    connect() {
+      const serverUrl = (ui.serverUrlInput.value || appState.online.serverUrl || '').trim();
+      if (!serverUrl) { alert('Server URL is required for online play.'); return false; }
+      appState.online.serverUrl = serverUrl;
+      localStorage.setItem('chaturanga_server_url', serverUrl);
+      if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) return true;
+      try { this.socket = new WebSocket(serverUrl); }
+      catch (error) { alert(`Could not connect to ${serverUrl}`); return false; }
+      this.socket.addEventListener('open', () => { appState.online.connected = true; renderLobby(); });
+      this.socket.addEventListener('close', () => { appState.online.connected = false; renderLobby(); });
+      this.socket.addEventListener('error', () => { appState.online.connected = false; renderLobby(); });
+      this.socket.addEventListener('message', event => {
+        let payload = null;
+        try { payload = JSON.parse(event.data); } catch (error) { return; }
+        OnlineLobbyController.handleMessage(payload);
+        OnlineMatchController.handleMessage(payload);
+      });
+      return true;
+    },
+    send(type, data = {}) {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return false;
+      this.socket.send(JSON.stringify({ type, ...data }));
+      return true;
+    },
+    disconnect() {
+      if (this.socket) this.socket.close();
+      this.socket = null;
+      appState.online.connected = false;
+    }
+  };
+
+  const OfflineController = {
+    start() {
+      appState.playMode = 'offline';
+      appState.matchConfig.controlMap = getControlMapForPlayerCount(appState.matchConfig.playerCount);
+      beginMatchFlowFromTutorialOriginal();
+    }
+  };
+
+  const OnlineLobbyController = {
+    createRoom() {
+      const name = getPlayerName();
+      if (!MultiplayerService.connect()) return;
+      appState.playMode = 'online';
+      appState.online.isHost = true;
+      const sendWhenOpen = () => MultiplayerService.send('create_room', { seatCount: appState.online.seatCount, playerName: name, botDifficulty: appState.matchConfig.botDifficulty });
+      if (MultiplayerService.socket.readyState === WebSocket.OPEN) sendWhenOpen();
+      else MultiplayerService.socket.addEventListener('open', sendWhenOpen, { once: true });
+    },
+    joinRoom(roomId) {
+      const name = getPlayerName();
+      if (!roomId) { alert('Room ID is required.'); return; }
+      if (!MultiplayerService.connect()) return;
+      appState.playMode = 'online';
+      appState.online.isHost = false;
+      appState.online.roomId = roomId.toUpperCase();
+      const sendWhenOpen = () => MultiplayerService.send('join_room', { roomId: appState.online.roomId, playerName: name });
+      if (MultiplayerService.socket.readyState === WebSocket.OPEN) sendWhenOpen();
+      else MultiplayerService.socket.addEventListener('open', sendWhenOpen, { once: true });
+    },
+    setReady(ready) { MultiplayerService.send('set_ready', { roomId: appState.online.roomId, ready }); },
+    leaveRoom() {
+      MultiplayerService.send('leave_room', { roomId: appState.online.roomId });
+      MultiplayerService.disconnect();
+      appState.online.roomState = null;
+      appState.online.localTeam = null;
+      appState.online.roomId = '';
+      hideCountdown();
+      setScreen('onlineSetup');
+      renderAppScreen();
+    },
+    handleMessage(payload) {
+      if (payload.type === 'room_state') {
+        appState.online.roomId = payload.room.roomId;
+        appState.online.roomState = payload.room;
+        appState.online.localPlayerId = payload.localPlayerId || appState.online.localPlayerId;
+        appState.online.localTeam = payload.localTeam || appState.online.localTeam;
+        updateShareLink(payload.room.roomId);
+        renderLobby();
+        if (!payload.room.matchStarted && appState.screen !== 'lobby') setScreen('lobby');
+      }
+      if (payload.type === 'countdown') showCountdown(payload.seconds);
+      if (payload.type === 'error_notice') alert(payload.message);
+    }
+  };
+
+  const OnlineMatchController = {
+    isLocalTurn() {
+      if (appState.playMode !== 'online') return !isBotPlayer(getCurrentTeam());
+      if (!appState.online.localTeam) return false;
+      if (state.awaitingPromotion && state.awaitingPromotion.team) return state.awaitingPromotion.team === appState.online.localTeam;
+      return getCurrentTeam() === appState.online.localTeam && !state.gameOver;
+    },
+    requestRoll() { if (this.isLocalTurn()) MultiplayerService.send('roll_dice', { roomId: appState.online.roomId }); },
+    requestMove(move) {
+      if (!this.isLocalTurn()) return;
+      MultiplayerService.send('make_move', { roomId: appState.online.roomId, move: { fromRow: move.fromRow, fromCol: move.fromCol, toRow: move.toRow, toCol: move.toCol, dieIndex: move.dieIndex } });
+      clearSelection();
+      render();
+    },
+    requestEndTurn() { if (this.isLocalTurn()) MultiplayerService.send('end_turn', { roomId: appState.online.roomId }); },
+    requestPromotion(decision) { MultiplayerService.send('promotion_decision', { roomId: appState.online.roomId, decision }); },
+    handleMessage(payload) {
+      if (payload.type === 'match_started') {
+        hideCountdown();
+        appState.playMode = 'online';
+        appState.online.roomId = payload.roomId;
+        appState.online.localPlayerId = payload.localPlayerId || appState.online.localPlayerId;
+        appState.online.localTeam = payload.localTeam || appState.online.localTeam;
+        appState.online.roomState = payload.roomState || appState.online.roomState;
+        setControlMapForOnline(payload.roomState);
+        replaceStateFromSnapshot(payload.snapshot);
+        setScreen('game');
+        renderAppScreen();
+      }
+      if (payload.type === 'match_state') {
+        if (payload.roomState) {
+          appState.online.roomState = payload.roomState;
+          appState.online.localTeam = payload.localTeam || appState.online.localTeam;
+          setControlMapForOnline(payload.roomState);
+        }
+        replaceStateFromSnapshot(payload.snapshot);
+        renderAppScreen();
+      }
+    }
+  };
+
+  function showCountdown(seconds) {
+    ui.countdownOverlay.classList.add('show');
+    ui.countdownOverlay.setAttribute('aria-hidden', 'false');
+    ui.countdownValue.textContent = String(seconds);
+  }
+  function hideCountdown() { ui.countdownOverlay.classList.remove('show'); ui.countdownOverlay.setAttribute('aria-hidden', 'true'); }
+  function renderLobby() {
+    const roomState = appState.online.roomState;
+    ui.lobbyConnectionPill.textContent = appState.online.connected ? 'Connected' : 'Disconnected';
+    ui.lobbyConnectionPill.className = `net-pill ${appState.online.connected ? 'live' : 'warn'}`;
+    if (!roomState) return;
+    const localPlayer = roomState.players.find(player => player.id === appState.online.localPlayerId);
+    const everyonePresent = roomState.players.length === roomState.seatCount;
+    const everyoneReady = everyonePresent && roomState.players.every(player => !!player.ready);
+    ui.lobbyRoomIdText.textContent = roomState.roomId;
+    ui.lobbyRoomCodeValue.textContent = roomState.roomId;
+    ui.lobbySeatCountValue.textContent = `${roomState.seatCount} humans`;
+    ui.lobbyLocalTeamValue.textContent = localPlayer ? TEAM_LABEL[localPlayer.team] : 'Waiting';
+    ui.lobbyShareLinkInput.value = updateShareLink(roomState.roomId);
+    ui.lobbyStatusText.textContent = roomState.matchStarted ? 'Match already started.' : everyoneReady ? 'All players ready. Countdown should begin.' : everyonePresent ? 'All slots filled. Waiting for ready checks.' : `Waiting for ${roomState.seatCount - roomState.players.length} more player(s).`;
+    ui.toggleReadyBtn.textContent = localPlayer && localPlayer.ready ? 'Unready' : 'Ready';
+    ui.lobbyPlayerSlots.innerHTML = '';
+    PLAYERS.slice(0, roomState.seatCount).forEach(team => {
+      const player = roomState.players.find(entry => entry.team === team);
+      const slot = document.createElement('div');
+      slot.className = `slot-card ${player ? '' : 'slot-empty'}`;
+      const readyLabel = !player ? 'Empty' : player.ready ? 'Ready' : player.isHost ? 'Host' : 'Waiting';
+      const readyClass = !player ? '' : player.ready ? 'ready' : player.isHost ? 'host' : 'waiting';
+      slot.innerHTML = `<div class="slot-main"><div class="slot-name">${TEAM_LABEL[team]}${player ? ` · ${player.name}` : ' · Empty Slot'}</div><div class="slot-meta">${player ? (player.id === appState.online.localPlayerId ? 'You' : 'Connected player') : 'Waiting for join'}</div></div><div class="ready-chip ${readyClass}">${readyLabel}</div>`;
+      ui.lobbyPlayerSlots.appendChild(slot);
+    });
+  }
+
+  function replaceButtonWithoutListeners(oldBtn) { const clone = oldBtn.cloneNode(true); oldBtn.parentNode.replaceChild(clone, oldBtn); return clone; }
+  const beginMatchFlowFromTutorialOriginal = beginMatchFlowFromTutorial;
+  beginMatchFlowFromTutorial = function () { if (appState.playMode === 'offline') return beginMatchFlowFromTutorialOriginal(); };
+
+  ui.menuPlayBtn = replaceButtonWithoutListeners(ui.menuPlayBtn);
+  ui.menuPlayBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
+  ui.playModeBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('menu'); });
+  ui.playModeNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen(appState.playMode === 'offline' ? 'playerCount' : 'onlineSetup'); });
+  ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
+  ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.createRoom(); });
+  ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
+  ui.copyRoomLinkBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(ui.lobbyShareLinkInput.value); });
+  ui.copyRoomCodeBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomId); });
+  ui.shareRoomBtn.addEventListener('click', async () => { sound.playButtonSound(); const url = ui.lobbyShareLinkInput.value; if (navigator.share) { try { await navigator.share({ title: 'Chaturanga Room', url }); } catch (error) {} } else { copyText(url); } });
+  ui.toggleReadyBtn.addEventListener('click', () => { sound.playButtonSound(); const localPlayer = appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId); if (localPlayer) OnlineLobbyController.setReady(!localPlayer.ready); });
+  ui.leaveLobbyBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.leaveRoom(); });
+
+  ui.playerCountNextBtn = replaceButtonWithoutListeners(ui.playerCountNextBtn);
+  ui.playerCountNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('difficulty'); });
+  ui.difficultyNextBtn = replaceButtonWithoutListeners(ui.difficultyNextBtn);
+  ui.difficultyNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.tutorialEntry = 'flow'; setScreen('tutorial'); });
+  ui.tutorialSkipBtn = replaceButtonWithoutListeners(ui.tutorialSkipBtn);
+  ui.tutorialStartBtn = replaceButtonWithoutListeners(ui.tutorialStartBtn);
+  ui.tutorialSkipBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OfflineController.start(); });
+  ui.tutorialStartBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OfflineController.start(); });
+
+  ui.restartMatchBtn = replaceButtonWithoutListeners(ui.restartMatchBtn);
+  ui.restartMatchBtn.addEventListener('click', () => { if (appState.playMode === 'online') return; primeAudioAndPlayButton(); setScreen('loading'); clearTimeout(appState.loadingTimer); appState.loadingTimer = setTimeout(() => { originalStartNewMatch(); }, 650); });
+  ui.returnMenuBtn = replaceButtonWithoutListeners(ui.returnMenuBtn);
+  ui.returnMenuBtn.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode === 'online') { MultiplayerService.disconnect(); appState.online.roomState = null; appState.online.roomId = ''; appState.online.localTeam = null; } returnToMenu(); });
+
+  const originalSetScreen = setScreen;
+  setScreen = function (nextScreen) { originalSetScreen(nextScreen); if (nextScreen === 'lobby') renderLobby(); };
+  const originalReturnToMenu = returnToMenu;
+  returnToMenu = function () { hideCountdown(); originalReturnToMenu(); };
+
+  window.ChaturangaControllers = {
+    GameCore: { createInitialState, createEmptyBoard, createPlayerState, initializeBoard, getLegalMovesForPieceOnState, getAllLegalActionsForTeam, getPromotionPiece, cloneBoard, clonePlayers, replaceStateFromSnapshot },
+    OfflineController,
+    OnlineLobbyController,
+    OnlineMatchController,
+    MultiplayerService
+  };
+
+  buildSetupChoices();
+  renderAppScreen();
+  if (autoRoomId) { appState.playMode = 'online'; setScreen('onlineSetup'); renderAppScreen(); }
+})();
+</script>
+
+</body>
+</html>
