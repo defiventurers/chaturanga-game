@@ -1,1 +1,15 @@
-
+{
+  "name": "chaturanga-room-server",
+  "version": "1.0.0",
+  "description": "Multiplayer room server for Chaturanga",
+  "main": "chaturanga-room-server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node chaturanga-room-server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0",
+    "uuid": "^9.0.1"
+  }
+}
