@@ -1718,6 +1718,8 @@
     const PLAYERS = ['green', 'red', 'blue', 'yellow'];
     const TEAM_LABEL = { green: 'Green', red: 'Red', blue: 'Blue', yellow: 'Yellow' };
     const TEAM_CLASS = { green: 'team-green', red: 'team-red', blue: 'team-blue', yellow: 'team-yellow' };
+    const LEGACY_TEAM_PREFIX_MAP = { g: 'green', r: 'red', b: 'blue', y: 'yellow' };
+    const LEGACY_PIECE_CODE_MAP = { p: 'pawn', S: 'ship', E: 'elephant', h: 'horse', K: 'king' };
     const PIECE_DISPLAY = {
       king: { glyph: '♔', tag: 'K' },
       elephant: { glyph: '♖', tag: 'E' },
@@ -2106,6 +2108,37 @@
 
     function makePiece(team, type, isRoyal = false) {
       return { team, type, isRoyal };
+    }
+
+    function normalizeTeam(team) {
+      const normalized = String(team || '').trim().toLowerCase();
+      return PLAYERS.includes(normalized) ? normalized : null;
+    }
+
+    function normalizePieceType(type) {
+      const normalized = String(type || '').trim().toLowerCase();
+      return PIECE_NAME[normalized] ? normalized : null;
+    }
+
+    function deserializePiece(rawPiece) {
+      if (!rawPiece) return null;
+
+      if (typeof rawPiece === 'string') {
+        const [teamPrefix, pieceCode] = rawPiece.split('-');
+        const team = LEGACY_TEAM_PREFIX_MAP[String(teamPrefix || '').trim().toLowerCase()];
+        const type = LEGACY_PIECE_CODE_MAP[String(pieceCode || '').trim()];
+        if (!team || !type) return null;
+        return makePiece(team, type, type === 'king');
+      }
+
+      const team = normalizeTeam(rawPiece.team || rawPiece.color);
+      const type = normalizePieceType(rawPiece.type);
+      if (!team || !type) return null;
+      return makePiece(team, type, !!rawPiece.isRoyal);
+    }
+
+    function deserializeBoard(rawBoard) {
+      return (rawBoard || []).map(row => (row || []).map(cell => deserializePiece(cell)));
     }
 
     function getControlMapForPlayerCount(playerCount) {
@@ -2638,7 +2671,7 @@
     }
 
     function cloneBoard(board) {
-      return board.map(row => row.map(piece => piece ? { ...piece } : null));
+      return board.map(row => row.map(piece => deserializePiece(piece)));
     }
 
     function clonePlayers(players) {
@@ -3282,7 +3315,7 @@
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           token.innerHTML = `
             <div class="glyph">${PIECE_DISPLAY[piece.type].glyph}</div>
-            <div class="tag">${piece.team[0].toUpperCase()}-${PIECE_DISPLAY[piece.type].tag}</div>
+            <div class="tag">${PIECE_NAME[piece.type]}</div>
             ${piece.isRoyal ? '<div class="crest" aria-hidden="true">✦</div>' : ''}
           `;
           token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
@@ -4021,7 +4054,7 @@
   }
 
   function replaceStateFromSnapshot(snapshot) {
-    state.board = cloneBoard(snapshot.board);
+    state.board = cloneBoard(deserializeBoard(snapshot.board));
     state.players = clonePlayers(snapshot.players);
     state.currentPlayerIndex = snapshot.currentPlayerIndex;
     state.selected = null;
