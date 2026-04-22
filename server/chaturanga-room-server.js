@@ -7,96 +7,118 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// IMPORTANT: Render uses process.env.PORT
-const PORT = process.env.PORT || 10000;
-
-/* =========================
-   In-memory store (simple)
-========================= */
-
+const PORT = Number(process.env.PORT || 10000);
+const PLAYERS = ["green", "red", "blue", "yellow"];
 const rooms = new Map();
 
-/*
-room = {
-  id,
-  hostId,
-  maxPlayers,
-  players: [{ id, name, ready }],
-  state: "lobby" | "countdown" | "playing",
-  gameState: {} // authoritative state
-}
-*/
-
-/* =========================
-   Utility
-========================= */
-
-function send(ws, type, payload) {
+function send(ws, type, payload = {}) {
+  if (ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type, payload }));
 }
 
-function broadcast(room, type, payload) {
-  room.players.forEach(p => {
-    if (p.ws && p.ws.readyState === WebSocket.OPEN) {
-      send(p.ws, type, payload);
-    }
-  });
+function sendError(ws, message, code = "server_error") {
+  send(ws, "error_notice", { message, code });
 }
 
 function getRoom(roomId) {
-  return rooms.get(roomId);
+  return rooms.get(String(roomId || "").toUpperCase());
 }
 
-/* =========================
-   HTTP health check
-========================= */
+function roomViewFor(room, localPlayerId) {
+  const localPlayer = room.players.find((p) => p.id === localPlayerId) || null;
+  return {
+    roomId: room.id,
+    seatCount: room.seatCount,
+    players: room.players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      team: p.team,
+      ready: !!p.ready,
+      isHost: p.id === room.hostId,
+    })),
+    matchStarted: !!room.matchStarted,
+    turnTeam: room.turnTeam,
+    diceRolled: !!room.diceRolled,
+    awaitingPromotionTeam: room.awaitingPromotionTeam,
+    localPlayerId,
+    localTeam: localPlayer ? localPlayer.team : null,
+  };
+}
+
+function broadcastRoomState(room) {
+  room.players.forEach((player) => {
+    send(player.ws, "room_state", {
+      room: roomViewFor(room, player.id),
+      localPlayerId: player.id,
+      localTeam: player.team,
+    });
+  });
+}
+
+function getMessageType(raw) {
+  return String(raw?.type || "").trim();
+}
+
+function getPayload(raw) {
+  if (raw && typeof raw.payload === "object" && raw.payload !== null) {
+    return raw.payload;
+  }
+  return raw || {};
+}
+
+function normalizeWsUrlInput(value) {
+  return String(value || "").trim().toUpperCase();
+}
 
 app.get("/", (_req, res) => {
-  res.send("Chaturanga server running");
+  res.status(200).send("Chaturanga room server is healthy");
 });
 
-/* =========================
-   WebSocket logic
-========================= */
-
 wss.on("connection", (ws) => {
-  const playerId = uuidv4();
-
-  ws.playerId = playerId;
+  ws.playerId = uuidv4();
   ws.roomId = null;
 
-  send(ws, "connected", { playerId });
+  send(ws, "connected", { playerId: ws.playerId });
 
-  ws.on("message", (message) => {
-    let data;
-
+  ws.on("message", (buffer) => {
+    let raw;
     try {
-      data = JSON.parse(message);
+      raw = JSON.parse(buffer.toString());
     } catch {
+      sendError(ws, "Invalid server response: malformed JSON message.", "invalid_json");
       return;
     }
 
-    const { type, payload } = data;
+    const type = getMessageType(raw);
+    const payload = getPayload(raw);
 
     switch (type) {
       case "create_room":
         handleCreateRoom(ws, payload);
         break;
-
       case "join_room":
         handleJoinRoom(ws, payload);
         break;
-
       case "set_ready":
-        handleReady(ws);
+        handleSetReady(ws, payload);
         break;
-
-      case "game_action":
-        handleGameAction(ws, payload);
-        break;
-
-      case "leave":
+      case "leave_room":
         handleLeave(ws);
+        break;
+      case "roll_dice":
+        handleGameplayAction(ws, type);
+        break;
+      case "make_move":
+        handleGameplayAction(ws, type, { move: payload.move || null });
+        break;
+      case "promotion_decision":
+        handleGameplayAction(ws, type, { decision: payload.decision || null });
+        break;
+      case "end_turn":
+        handleGameplayAction(ws, type);
+        break;
+      default:
+        sendError(ws, `Unsupported message type: ${type || "(empty)"}.`, "unsupported_message_type");
         break;
     }
   });
@@ -106,188 +128,295 @@ wss.on("connection", (ws) => {
   });
 });
 
-/* =========================
-   Room Handlers
-========================= */
+function handleCreateRoom(ws, payload) {
+  if (ws.roomId) {
+    sendError(ws, "Leave your current room before creating another room.", "already_in_room");
+    return;
+  }
 
-function handleCreateRoom(ws, { maxPlayers }) {
+  const seatCount = Number(payload.seatCount);
+  const safeSeatCount = Number.isInteger(seatCount) && seatCount >= 2 && seatCount <= 4 ? seatCount : 2;
   const roomId = generateRoomId();
 
   const room = {
     id: roomId,
     hostId: ws.playerId,
-    maxPlayers,
+    seatCount: safeSeatCount,
     players: [],
-    state: "lobby",
-    gameState: null
+    matchStarted: false,
+    turnTeam: PLAYERS[0],
+    diceRolled: false,
+    awaitingPromotionTeam: null,
   };
 
   rooms.set(roomId, room);
-
-  joinRoom(ws, room);
+  joinRoom(ws, room, payload.playerName || "Host");
 }
 
-function handleJoinRoom(ws, { roomId, name }) {
+function handleJoinRoom(ws, payload) {
+  if (ws.roomId) {
+    sendError(ws, "Leave your current room before joining a new room.", "already_in_room");
+    return;
+  }
+
+  const roomId = normalizeWsUrlInput(payload.roomId);
   const room = getRoom(roomId);
   if (!room) {
-    send(ws, "error", { message: "Room not found" });
+    sendError(ws, "Room not found.", "room_not_found");
     return;
   }
 
-  if (room.players.length >= room.maxPlayers) {
-    send(ws, "error", { message: "Room full" });
+  if (room.players.length >= room.seatCount) {
+    sendError(ws, "Room is full.", "room_full");
     return;
   }
 
-  joinRoom(ws, room, name);
+  if (room.matchStarted) {
+    sendError(ws, "Match already started in this room.", "match_started");
+    return;
+  }
+
+  joinRoom(ws, room, payload.playerName || "Player");
 }
 
-function joinRoom(ws, room, name = "Player") {
-  ws.roomId = room.id;
-
+function joinRoom(ws, room, playerName) {
+  const team = PLAYERS[room.players.length];
   const player = {
     id: ws.playerId,
-    name,
+    name: String(playerName || "Player").trim().slice(0, 28) || "Player",
     ready: false,
-    ws
+    team,
+    ws,
   };
 
+  ws.roomId = room.id;
   room.players.push(player);
 
   send(ws, "room_joined", {
     roomId: room.id,
-    playerId: player.id
+    localPlayerId: player.id,
+    localTeam: team,
   });
-
-  updateLobby(room);
+  broadcastRoomState(room);
 }
 
-function handleReady(ws) {
+function handleSetReady(ws, payload) {
   const room = getRoom(ws.roomId);
-  if (!room) return;
+  if (!room) {
+    sendError(ws, "Room not found for ready state update.", "room_not_found");
+    return;
+  }
 
-  const player = room.players.find(p => p.id === ws.playerId);
-  if (!player) return;
+  if (room.matchStarted) {
+    sendError(ws, "Cannot toggle ready after match has started.", "match_started");
+    return;
+  }
 
-  player.ready = !player.ready;
+  const player = room.players.find((p) => p.id === ws.playerId);
+  if (!player) {
+    sendError(ws, "Player is not part of this room.", "player_not_in_room");
+    return;
+  }
 
-  updateLobby(room);
+  if (typeof payload.ready === "boolean") {
+    player.ready = payload.ready;
+  } else {
+    player.ready = !player.ready;
+  }
 
-  const allReady =
-    room.players.length === room.maxPlayers &&
-    room.players.every(p => p.ready);
+  broadcastRoomState(room);
 
-  if (allReady) startCountdown(room);
+  const allReady = room.players.length === room.seatCount && room.players.every((p) => p.ready);
+  if (allReady) {
+    startCountdown(room);
+  }
 }
-
-function updateLobby(room) {
-  broadcast(room, "lobby_update", {
-    roomId: room.id,
-    players: room.players.map(p => ({
-      id: p.id,
-      name: p.name,
-      ready: p.ready
-    })),
-    maxPlayers: room.maxPlayers
-  });
-}
-
-/* =========================
-   Countdown + Game Start
-========================= */
 
 function startCountdown(room) {
-  room.state = "countdown";
+  if (room.matchStarted || room.countdownTimer) return;
 
-  let count = 3;
-
-  const interval = setInterval(() => {
-    broadcast(room, "countdown", { count });
-
-    count--;
-
-    if (count < 0) {
-      clearInterval(interval);
-      startGame(room);
+  let seconds = 3;
+  room.countdownTimer = setInterval(() => {
+    room.players.forEach((player) => send(player.ws, "countdown", { seconds }));
+    seconds -= 1;
+    if (seconds < 0) {
+      clearInterval(room.countdownTimer);
+      room.countdownTimer = null;
+      startMatch(room);
     }
   }, 1000);
 }
 
-function startGame(room) {
-  room.state = "playing";
-
-  room.gameState = {
-    turnIndex: 0,
-    players: room.players.map(p => p.id),
-    // plug your real game state here
-  };
-
-  broadcast(room, "game_start", room.gameState);
+function startMatch(room) {
+  room.matchStarted = true;
+  room.turnTeam = PLAYERS[0];
+  room.diceRolled = false;
+  room.awaitingPromotionTeam = null;
+  room.players.forEach((player) => {
+    send(player.ws, "match_started", {
+      roomId: room.id,
+      localPlayerId: player.id,
+      localTeam: player.team,
+      roomState: roomViewFor(room, player.id),
+    });
+  });
 }
 
-/* =========================
-   Game Logic (IMPORTANT)
-========================= */
-
-function handleGameAction(ws, action) {
+function handleGameplayAction(ws, type, payload = {}) {
   const room = getRoom(ws.roomId);
-  if (!room || room.state !== "playing") return;
-
-  const state = room.gameState;
-
-  const currentPlayerId = state.players[state.turnIndex];
-
-  // 🔒 HARD LOCK: enforce turn
-  if (ws.playerId !== currentPlayerId) {
-    send(ws, "error", { message: "Not your turn" });
+  if (!room) {
+    sendError(ws, "Room not found.", "room_not_found");
     return;
   }
 
-  // TODO: validate action properly
-  // This is where your GameCore should run on server
+  if (!room.matchStarted) {
+    sendError(ws, "Match has not started yet.", "match_not_started");
+    return;
+  }
 
-  // Example turn advance:
-  state.turnIndex =
-    (state.turnIndex + 1) % state.players.length;
+  const actor = room.players.find((p) => p.id === ws.playerId);
+  if (!actor) {
+    sendError(ws, "Player is not part of this room.", "player_not_in_room");
+    return;
+  }
 
-  broadcast(room, "game_state", state);
+  if (room.turnTeam !== actor.team) {
+    sendError(ws, "Not your turn.", "not_your_turn");
+    return;
+  }
+
+  if (type === "roll_dice") {
+    if (room.diceRolled) {
+      sendError(ws, "Dice already rolled this turn.", "dice_already_rolled");
+      return;
+    }
+    room.diceRolled = true;
+    const dice = [randDie(), randDie()];
+    broadcastMatchState(room, {
+      action: {
+        type,
+        actorTeam: actor.team,
+        dice,
+      },
+    });
+    return;
+  }
+
+  if (type === "make_move") {
+    if (!room.diceRolled) {
+      sendError(ws, "Roll dice before making a move.", "roll_required");
+      return;
+    }
+    if (!payload.move) {
+      sendError(ws, "Move payload is required.", "invalid_move_payload");
+      return;
+    }
+    broadcastMatchState(room, {
+      action: {
+        type,
+        actorTeam: actor.team,
+        move: payload.move,
+      },
+    });
+    return;
+  }
+
+  if (type === "promotion_decision") {
+    if (!["confirm", "decline"].includes(payload.decision)) {
+      sendError(ws, "Promotion decision must be confirm or decline.", "invalid_promotion_decision");
+      return;
+    }
+    room.awaitingPromotionTeam = null;
+    broadcastMatchState(room, {
+      action: {
+        type,
+        actorTeam: actor.team,
+        decision: payload.decision,
+      },
+    });
+    return;
+  }
+
+  if (type === "end_turn") {
+    room.diceRolled = false;
+    room.awaitingPromotionTeam = null;
+    room.turnTeam = nextActiveTeam(room, room.turnTeam);
+    broadcastMatchState(room, {
+      action: {
+        type,
+        actorTeam: actor.team,
+      },
+    });
+  }
 }
 
-/* =========================
-   Leave Handling
-========================= */
+function broadcastMatchState(room, extraPayload = {}) {
+  room.players.forEach((player) => {
+    send(player.ws, "match_state", {
+      roomState: roomViewFor(room, player.id),
+      localPlayerId: player.id,
+      localTeam: player.team,
+      ...extraPayload,
+    });
+  });
+}
+
+function nextActiveTeam(room, currentTeam) {
+  const occupiedTeams = room.players.map((p) => p.team);
+  let idx = PLAYERS.indexOf(currentTeam);
+  for (let i = 0; i < PLAYERS.length; i += 1) {
+    idx = (idx + 1) % PLAYERS.length;
+    if (occupiedTeams.includes(PLAYERS[idx])) return PLAYERS[idx];
+  }
+  return currentTeam;
+}
 
 function handleLeave(ws) {
+  if (!ws.roomId) return;
+
   const room = getRoom(ws.roomId);
+  ws.roomId = null;
   if (!room) return;
 
-  room.players = room.players.filter(p => p.id !== ws.playerId);
+  room.players = room.players.filter((p) => p.id !== ws.playerId);
 
   if (room.players.length === 0) {
+    if (room.countdownTimer) clearInterval(room.countdownTimer);
     rooms.delete(room.id);
     return;
   }
 
-  // reassign host if needed
   if (room.hostId === ws.playerId) {
     room.hostId = room.players[0].id;
   }
 
-  updateLobby(room);
+  if (room.matchStarted) {
+    room.matchStarted = false;
+    room.diceRolled = false;
+    room.awaitingPromotionTeam = null;
+    room.players.forEach((player) => {
+      sendError(player.ws, "A player left the match. Returning room to lobby.", "player_left_match");
+    });
+    room.players.forEach((player) => {
+      player.ready = false;
+    });
+  }
+
+  broadcastRoomState(room);
 }
 
-/* =========================
-   Helpers
-========================= */
+function randDie() {
+  return Math.floor(Math.random() * 6) + 1;
+}
 
 function generateRoomId() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  let roomId = "";
+  do {
+    roomId = Math.random().toString(36).slice(2, 8).toUpperCase();
+  } while (rooms.has(roomId));
+  return roomId;
 }
 
-/* =========================
-   Start server
-========================= */
-
 server.listen(PORT, "0.0.0.0", () => {
-  console.log("Server running on port", PORT);
+  console.log(`Chaturanga room server listening on 0.0.0.0:${PORT}`);
 });

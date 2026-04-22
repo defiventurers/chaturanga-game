@@ -3679,8 +3679,19 @@
   });
 
   const PRODUCTION_WS_URL = 'wss://chaturanga-game.onrender.com';
+
+  function sanitizeServerUrl(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return '';
+    if (/^wss?:\/\//i.test(value)) return value;
+    if (/^https?:\/\//i.test(value)) {
+      return value.replace(/^http/i, 'ws');
+    }
+    return `wss://${value.replace(/^\/+/, '')}`;
+  }
+
   const defaultServerUrl = (() => {
-    const saved = localStorage.getItem('chaturanga_server_url');
+    const saved = sanitizeServerUrl(localStorage.getItem('chaturanga_server_url'));
     if (saved) return saved;
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       return 'ws://localhost:8080';
@@ -3700,7 +3711,8 @@
       localPlayerId: '',
       localName: 'Player',
       localTeam: null,
-      roomState: null
+      roomState: null,
+      errorText: ''
     }
   });
 
@@ -3709,7 +3721,7 @@
 
   const params = new URLSearchParams(location.search);
   const autoRoomId = (params.get('room') || '').trim().toUpperCase();
-  const urlServer = (params.get('server') || '').trim();
+  const urlServer = sanitizeServerUrl(params.get('server'));
   if (urlServer) {
     appState.online.serverUrl = urlServer;
     localStorage.setItem('chaturanga_server_url', urlServer);
@@ -3892,30 +3904,70 @@
     return name;
   }
 
+  function setOnlineError(message) {
+    appState.online.errorText = message || '';
+    if (appState.online.errorText) {
+      ui.lobbyStatusText.textContent = appState.online.errorText;
+    }
+  }
+
   const MultiplayerService = {
     socket: null,
     connect() {
-      const serverUrl = (ui.serverUrlInput.value || appState.online.serverUrl || '').trim();
-      if (!serverUrl) { alert('Server URL is required for online play.'); return false; }
+      const serverUrl = sanitizeServerUrl(ui.serverUrlInput.value || appState.online.serverUrl || '');
+      if (!serverUrl) {
+        setOnlineError('Server URL is required for online play.');
+        return false;
+      }
       appState.online.serverUrl = serverUrl;
+      ui.serverUrlInput.value = serverUrl;
       localStorage.setItem('chaturanga_server_url', serverUrl);
       if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) return true;
-      try { this.socket = new WebSocket(serverUrl); }
-      catch (error) { alert(`Could not connect to ${serverUrl}`); return false; }
-      this.socket.addEventListener('open', () => { appState.online.connected = true; renderLobby(); });
-      this.socket.addEventListener('close', () => { appState.online.connected = false; renderLobby(); });
-      this.socket.addEventListener('error', () => { appState.online.connected = false; renderLobby(); });
+      try {
+        this.socket = new WebSocket(serverUrl);
+      } catch (error) {
+        setOnlineError(`Could not connect to ${serverUrl}`);
+        return false;
+      }
+      this.socket.addEventListener('open', () => {
+        appState.online.connected = true;
+        setOnlineError('');
+        renderLobby();
+      });
+      this.socket.addEventListener('close', () => {
+        appState.online.connected = false;
+        if (appState.playMode === 'online') setOnlineError('Connection closed. Check server URL or Render service status.');
+        renderLobby();
+      });
+      this.socket.addEventListener('error', () => {
+        appState.online.connected = false;
+        setOnlineError('Connection failed. Confirm the WebSocket URL and backend deployment health.');
+        renderLobby();
+      });
       this.socket.addEventListener('message', event => {
-        let payload = null;
-        try { payload = JSON.parse(event.data); } catch (error) { return; }
-        OnlineLobbyController.handleMessage(payload);
-        OnlineMatchController.handleMessage(payload);
+        let packet = null;
+        try {
+          packet = JSON.parse(event.data);
+        } catch (error) {
+          setOnlineError('Invalid server response: could not parse JSON.');
+          return;
+        }
+        if (!packet || typeof packet.type !== 'string') {
+          setOnlineError('Invalid server response: missing message type.');
+          return;
+        }
+        const payload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
+        OnlineLobbyController.handleMessage({ type: packet.type, payload });
+        OnlineMatchController.handleMessage({ type: packet.type, payload });
       });
       return true;
     },
-    send(type, data = {}) {
-      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return false;
-      this.socket.send(JSON.stringify({ type, ...data }));
+    send(type, payload = {}) {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        setOnlineError(`Could not send ${type}: socket is not connected.`);
+        return false;
+      }
+      this.socket.send(JSON.stringify({ type, payload }));
       return true;
     },
     disconnect() {
@@ -3966,17 +4018,30 @@
       renderAppScreen();
     },
     handleMessage(payload) {
-      if (payload.type === 'room_state') {
-        appState.online.roomId = payload.room.roomId;
-        appState.online.roomState = payload.room;
-        appState.online.localPlayerId = payload.localPlayerId || appState.online.localPlayerId;
-        appState.online.localTeam = payload.localTeam || appState.online.localTeam;
-        updateShareLink(payload.room.roomId);
-        renderLobby();
-        if (!payload.room.matchStarted && appState.screen !== 'lobby') setScreen('lobby');
+      if (payload.type === 'room_joined') {
+        appState.online.roomId = (payload.payload?.roomId || '').toUpperCase();
+        setScreen('lobby');
       }
-      if (payload.type === 'countdown') showCountdown(payload.seconds);
-      if (payload.type === 'error_notice') alert(payload.message);
+      if (payload.type === 'room_state') {
+        const data = payload.payload || {};
+        if (!data.room || !data.room.roomId) {
+          setOnlineError('Invalid server response: room_state missing room details.');
+          return;
+        }
+        appState.online.roomId = data.room.roomId;
+        appState.online.roomState = data.room;
+        appState.online.localPlayerId = data.localPlayerId || appState.online.localPlayerId;
+        appState.online.localTeam = data.localTeam || appState.online.localTeam;
+        updateShareLink(data.room.roomId);
+        renderLobby();
+        if (!data.room.matchStarted && appState.screen !== 'lobby') setScreen('lobby');
+      }
+      if (payload.type === 'countdown') showCountdown(payload.payload?.seconds ?? 0);
+      if (payload.type === 'error_notice') {
+        const msg = payload.payload?.message || 'Server error.';
+        setOnlineError(msg);
+        alert(msg);
+      }
     }
   };
 
@@ -3998,24 +4063,44 @@
     requestPromotion(decision) { MultiplayerService.send('promotion_decision', { roomId: appState.online.roomId, decision }); },
     handleMessage(payload) {
       if (payload.type === 'match_started') {
+        const data = payload.payload || {};
         hideCountdown();
         appState.playMode = 'online';
-        appState.online.roomId = payload.roomId;
-        appState.online.localPlayerId = payload.localPlayerId || appState.online.localPlayerId;
-        appState.online.localTeam = payload.localTeam || appState.online.localTeam;
-        appState.online.roomState = payload.roomState || appState.online.roomState;
-        setControlMapForOnline(payload.roomState);
-        replaceStateFromSnapshot(payload.snapshot);
+        appState.online.roomId = data.roomId || appState.online.roomId;
+        appState.online.localPlayerId = data.localPlayerId || appState.online.localPlayerId;
+        appState.online.localTeam = data.localTeam || appState.online.localTeam;
+        appState.online.roomState = data.roomState || appState.online.roomState;
+        if (appState.online.roomState) setControlMapForOnline(appState.online.roomState);
+        resetGame();
         setScreen('game');
         renderAppScreen();
       }
       if (payload.type === 'match_state') {
-        if (payload.roomState) {
-          appState.online.roomState = payload.roomState;
-          appState.online.localTeam = payload.localTeam || appState.online.localTeam;
-          setControlMapForOnline(payload.roomState);
+        const data = payload.payload || {};
+        if (data.roomState) {
+          appState.online.roomState = data.roomState;
+          appState.online.localTeam = data.localTeam || appState.online.localTeam;
+          setControlMapForOnline(data.roomState);
         }
-        replaceStateFromSnapshot(payload.snapshot);
+        const action = data.action || {};
+        if (action.type === 'roll_dice' && Array.isArray(action.dice) && action.dice.length === 2) {
+          state.dice.values = [...action.dice];
+          state.dice.used = [false, false];
+          state.dice.rolled = true;
+          state.dice.lockedDieIndex = null;
+          clearSelection();
+          pushLog(`${TEAM_LABEL[action.actorTeam]} rolled ${action.dice[0]} and ${action.dice[1]}.`);
+        }
+        if (action.type === 'make_move' && action.move) {
+          applyMoveAction(action.move);
+        }
+        if (action.type === 'promotion_decision') {
+          if (action.decision === 'confirm') originalConfirmPromotion();
+          if (action.decision === 'decline') originalDeclinePromotion();
+        }
+        if (action.type === 'end_turn') {
+          advanceTurn();
+        }
         renderAppScreen();
       }
     }
@@ -4031,7 +4116,10 @@
     const roomState = appState.online.roomState;
     ui.lobbyConnectionPill.textContent = appState.online.connected ? 'Connected' : 'Disconnected';
     ui.lobbyConnectionPill.className = `net-pill ${appState.online.connected ? 'live' : 'warn'}`;
-    if (!roomState) return;
+    if (!roomState) {
+      if (appState.online.errorText) ui.lobbyStatusText.textContent = appState.online.errorText;
+      return;
+    }
     const localPlayer = roomState.players.find(player => player.id === appState.online.localPlayerId);
     const everyonePresent = roomState.players.length === roomState.seatCount;
     const everyoneReady = everyonePresent && roomState.players.every(player => !!player.ready);
@@ -4040,7 +4128,7 @@
     ui.lobbySeatCountValue.textContent = `${roomState.seatCount} humans`;
     ui.lobbyLocalTeamValue.textContent = localPlayer ? TEAM_LABEL[localPlayer.team] : 'Waiting';
     ui.lobbyShareLinkInput.value = updateShareLink(roomState.roomId);
-    ui.lobbyStatusText.textContent = roomState.matchStarted ? 'Match already started.' : everyoneReady ? 'All players ready. Countdown should begin.' : everyonePresent ? 'All slots filled. Waiting for ready checks.' : `Waiting for ${roomState.seatCount - roomState.players.length} more player(s).`;
+    ui.lobbyStatusText.textContent = appState.online.errorText || (roomState.matchStarted ? 'Match already started.' : everyoneReady ? 'All players ready. Countdown should begin.' : everyonePresent ? 'All slots filled. Waiting for ready checks.' : `Waiting for ${roomState.seatCount - roomState.players.length} more player(s).`);
     ui.toggleReadyBtn.textContent = localPlayer && localPlayer.ready ? 'Unready' : 'Ready';
     ui.lobbyPlayerSlots.innerHTML = '';
     PLAYERS.slice(0, roomState.seatCount).forEach(team => {
