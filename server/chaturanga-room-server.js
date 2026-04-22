@@ -11,6 +11,11 @@ const PORT = Number(process.env.PORT || 10000);
 const PLAYERS = ["green", "red", "blue", "yellow"];
 const rooms = new Map();
 
+function normalizeTeam(team) {
+  const t = String(team || "").trim().toLowerCase();
+  return PLAYERS.includes(t) ? t : null;
+}
+
 function send(ws, type, payload = {}) {
   if (ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type, payload }));
@@ -102,20 +107,23 @@ wss.on("connection", (ws) => {
       case "set_ready":
         handleSetReady(ws, payload);
         break;
+      case "set_team_preference":
+        handleSetTeamPreference(ws, payload);
+        break;
       case "leave_room":
         handleLeave(ws);
         break;
       case "roll_dice":
-        handleGameplayAction(ws, type);
+        handleGameplayAction(ws, type, payload);
         break;
       case "make_move":
-        handleGameplayAction(ws, type, { move: payload.move || null });
+        handleGameplayAction(ws, type, { actorTeam: payload.actorTeam, move: payload.move || null });
         break;
       case "promotion_decision":
-        handleGameplayAction(ws, type, { decision: payload.decision || null });
+        handleGameplayAction(ws, type, { actorTeam: payload.actorTeam, decision: payload.decision || null });
         break;
       case "end_turn":
-        handleGameplayAction(ws, type);
+        handleGameplayAction(ws, type, payload);
         break;
       default:
         sendError(ws, `Unsupported message type: ${type || "(empty)"}.`, "unsupported_message_type");
@@ -150,7 +158,7 @@ function handleCreateRoom(ws, payload) {
   };
 
   rooms.set(roomId, room);
-  joinRoom(ws, room, payload.playerName || "Host");
+  joinRoom(ws, room, payload.playerName || "Host", payload.preferredTeam);
 }
 
 function handleJoinRoom(ws, payload) {
@@ -176,11 +184,17 @@ function handleJoinRoom(ws, payload) {
     return;
   }
 
-  joinRoom(ws, room, payload.playerName || "Player");
+  joinRoom(ws, room, payload.playerName || "Player", payload.preferredTeam);
 }
 
-function joinRoom(ws, room, playerName) {
-  const team = PLAYERS[room.players.length];
+function joinRoom(ws, room, playerName, preferredTeam = null) {
+  const takenTeams = new Set(room.players.map((p) => p.team));
+  const preferred = normalizeTeam(preferredTeam);
+  const team = preferred && !takenTeams.has(preferred) ? preferred : PLAYERS.find((entry) => !takenTeams.has(entry));
+  if (!team) {
+    sendError(ws, "No teams available in this room.", "no_teams_available");
+    return;
+  }
   const player = {
     id: ws.playerId,
     name: String(playerName || "Player").trim().slice(0, 28) || "Player",
@@ -232,6 +246,40 @@ function handleSetReady(ws, payload) {
   }
 }
 
+
+function handleSetTeamPreference(ws, payload) {
+  const room = getRoom(ws.roomId);
+  if (!room) {
+    sendError(ws, "Room not found.", "room_not_found");
+    return;
+  }
+  if (room.matchStarted) {
+    sendError(ws, "Cannot change team after match start.", "match_started");
+    return;
+  }
+
+  const player = room.players.find((p) => p.id === ws.playerId);
+  if (!player) {
+    sendError(ws, "Player is not part of this room.", "player_not_in_room");
+    return;
+  }
+
+  const requestedTeam = normalizeTeam(payload.team);
+  if (!requestedTeam) {
+    sendError(ws, "Invalid team selection.", "invalid_team");
+    return;
+  }
+
+  const occupiedByOther = room.players.some((p) => p.id !== player.id && p.team === requestedTeam);
+  if (occupiedByOther) {
+    sendError(ws, `${requestedTeam} is already taken.`, "team_taken");
+    return;
+  }
+
+  player.team = requestedTeam;
+  broadcastRoomState(room);
+}
+
 function startCountdown(room) {
   if (room.matchStarted || room.countdownTimer) return;
 
@@ -280,9 +328,21 @@ function handleGameplayAction(ws, type, payload = {}) {
     return;
   }
 
-  if (room.turnTeam !== actor.team) {
-    sendError(ws, "Not your turn.", "not_your_turn");
-    return;
+  // Server-authoritative turn ownership: human players control only their team; host may proxy bot turns.
+  const requestedActorTeam = normalizeTeam(payload.actorTeam) || actor.team;
+  const turnControlledByHuman = room.players.some((p) => p.team === room.turnTeam);
+  const isHost = actor.id === room.hostId;
+
+  if (turnControlledByHuman) {
+    if (actor.team !== room.turnTeam) {
+      sendError(ws, "Not your turn.", "not_your_turn");
+      return;
+    }
+  } else {
+    if (!isHost || requestedActorTeam !== room.turnTeam) {
+      sendError(ws, "Host must proxy bot turns for the active team.", "bot_proxy_required");
+      return;
+    }
   }
 
   if (type === "roll_dice") {
@@ -295,7 +355,7 @@ function handleGameplayAction(ws, type, payload = {}) {
     broadcastMatchState(room, {
       action: {
         type,
-        actorTeam: actor.team,
+        actorTeam: requestedActorTeam,
         dice,
       },
     });
@@ -314,7 +374,7 @@ function handleGameplayAction(ws, type, payload = {}) {
     broadcastMatchState(room, {
       action: {
         type,
-        actorTeam: actor.team,
+        actorTeam: requestedActorTeam,
         move: payload.move,
       },
     });
@@ -330,7 +390,7 @@ function handleGameplayAction(ws, type, payload = {}) {
     broadcastMatchState(room, {
       action: {
         type,
-        actorTeam: actor.team,
+        actorTeam: requestedActorTeam,
         decision: payload.decision,
       },
     });
@@ -344,7 +404,7 @@ function handleGameplayAction(ws, type, payload = {}) {
     broadcastMatchState(room, {
       action: {
         type,
-        actorTeam: actor.team,
+        actorTeam: requestedActorTeam,
       },
     });
   }
@@ -362,13 +422,8 @@ function broadcastMatchState(room, extraPayload = {}) {
 }
 
 function nextActiveTeam(room, currentTeam) {
-  const occupiedTeams = room.players.map((p) => p.team);
-  let idx = PLAYERS.indexOf(currentTeam);
-  for (let i = 0; i < PLAYERS.length; i += 1) {
-    idx = (idx + 1) % PLAYERS.length;
-    if (occupiedTeams.includes(PLAYERS[idx])) return PLAYERS[idx];
-  }
-  return currentTeam;
+  const idx = PLAYERS.indexOf(currentTeam);
+  return PLAYERS[(idx + 1) % PLAYERS.length];
 }
 
 function handleLeave(ws) {
