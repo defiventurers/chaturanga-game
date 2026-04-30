@@ -874,12 +874,18 @@
       pointer-events: none;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28));
     }
-    .green-frost-king-img {
-      width: 92%;
-      height: 92%;
+    .piece-img {
+      width: 100%;
+      height: 100%;
       object-fit: contain;
-      display: block;
       pointer-events: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28));
+    }
+
+    .green-king-fix {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
       transform: scale(1.35);
       transform-origin: center;
     }
@@ -3359,7 +3365,7 @@
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           const art = document.createElement('img');
           art.className = 'piece-art';
-          if (piece.team === 'green' && piece.type === 'king') art.classList.add('green-frost-king-img');
+          if (piece.team === 'green' && piece.type === 'king') art.className = 'piece-img green-king-fix';
           art.loading = 'eager';
           art.decoding = 'async';
           art.src = getPieceAsset(piece.team, piece.type);
