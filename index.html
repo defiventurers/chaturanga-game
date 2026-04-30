@@ -1764,6 +1764,7 @@
       pawn: 'Snow Guard'
     };
     function getPieceAsset(team, type) {
+      if (team === 'green' && type === 'king') return 'assets/arctic/pieces/green-frost-king.png';
       const visualTeam = team === 'yellow' ? 'pink' : team;
       const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
       return `assets/arctic/pieces/${visualTeam}-${slug}.svg`;
