@@ -874,19 +874,15 @@
       pointer-events: none;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28));
     }
-    .green-frost-king-piece {
-      position: relative;
-      overflow: visible;
-    }
-
-    .green-frost-king-piece img {
+    .green-king-full {
       position: absolute;
-      inset: -8px;
-      width: calc(100% + 16px);
-      height: calc(100% + 16px);
+      top: 50%;
+      left: 50%;
+      width: 115%;
+      height: 115%;
+      transform: translate(-50%, -50%);
       object-fit: contain;
       pointer-events: none;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28));
     }
 
     .piece .crest {
@@ -3363,9 +3359,8 @@
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           const isGreenFrostKing = piece.team === 'green' && piece.type === 'king';
-          if (isGreenFrostKing) token.classList.add('green-frost-king-piece');
           const art = document.createElement('img');
-          art.className = 'piece-art';
+          art.className = isGreenFrostKing ? 'piece-img green-king-full' : 'piece-art';
           art.loading = 'eager';
           art.decoding = 'async';
           art.src = getPieceAsset(piece.team, piece.type);
