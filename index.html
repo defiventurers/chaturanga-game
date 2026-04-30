@@ -4093,7 +4093,8 @@
   }
 
   function getPlayerName() {
-    const name = (ui.playerNameInput.value || '').trim() || `Player-${Math.floor(Math.random() * 900 + 100)}`;
+    const raw = (ui.playerNameInput.value || '').trim() || `Player-${Math.floor(Math.random() * 900 + 100)}`;
+    const name = raw.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 28) || 'Player';
     ui.playerNameInput.value = name;
     localStorage.setItem('chaturanga_player_name', name);
     appState.online.localName = name;
@@ -4103,8 +4104,12 @@
   function setOnlineError(message) {
     appState.online.errorText = message || '';
     if (appState.online.errorText) {
-      ui.lobbyStatusText.textContent = appState.online.errorText;
+      ui.lobbyStatusText.textContent = `⚠ ${appState.online.errorText}`;
     }
+  }
+
+  function safePlayerName(name) {
+    return String(name || 'Player').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 28) || 'Player';
   }
 
   const MultiplayerService = {
@@ -4128,11 +4133,12 @@
       this.socket.addEventListener('open', () => {
         appState.online.connected = true;
         setOnlineError('');
+        ui.lobbyStatusText.textContent = 'Connected to room server.';
         renderLobby();
       });
       this.socket.addEventListener('close', () => {
         appState.online.connected = false;
-        if (appState.playMode === 'online') setOnlineError('Connection closed. Check server URL or Render service status.');
+        if (appState.playMode === 'online') setOnlineError('Connection closed. Check server URL or Render backend status.');
         renderLobby();
       });
       this.socket.addEventListener('error', () => {
@@ -4346,6 +4352,12 @@
     ui.lobbyStatusText.textContent = appState.online.errorText || (roomState.matchStarted ? 'Match already started.' : everyoneReady ? 'All players ready. Countdown should begin.' : everyonePresent ? 'All slots filled. Waiting for ready checks.' : `Waiting for ${roomState.seatCount - roomState.players.length} more player(s).`);
     renderOnlinePreferredTeamChoices();
     ui.toggleReadyBtn.textContent = localPlayer && localPlayer.ready ? 'Unready' : 'Ready';
+    const actionsDisabled = !appState.online.connected;
+    ui.toggleReadyBtn.disabled = actionsDisabled || !localPlayer;
+    ui.leaveLobbyBtn.disabled = false;
+    ui.copyRoomCodeBtn.disabled = !appState.online.roomId;
+    ui.copyRoomLinkBtn.disabled = !ui.lobbyShareLinkInput.value;
+    ui.shareRoomBtn.disabled = !ui.lobbyShareLinkInput.value;
     ui.lobbyPlayerSlots.innerHTML = '';
     PLAYERS.forEach(team => {
       const player = roomState.players.find(entry => entry.team === team);
@@ -4353,7 +4365,21 @@
       slot.className = `slot-card ${player ? '' : 'slot-empty'}`;
       const readyLabel = !player ? 'Empty' : player.ready ? 'Ready' : player.isHost ? 'Host' : 'Waiting';
       const readyClass = !player ? '' : player.ready ? 'ready' : player.isHost ? 'host' : 'waiting';
-      slot.innerHTML = `<div class="slot-main"><div class="slot-name">${TEAM_LABEL[team]}${player ? ` · ${player.name}` : ' · Empty Slot'}</div><div class="slot-meta">${player ? (player.id === appState.online.localPlayerId ? 'You' : 'Connected player') : 'Waiting for join'}</div></div><div class="ready-chip ${readyClass}">${readyLabel}</div>`;
+
+      const slotMain = document.createElement('div');
+      slotMain.className = 'slot-main';
+      const slotName = document.createElement('div');
+      slotName.className = 'slot-name';
+      slotName.textContent = `${TEAM_LABEL[team]}${player ? ` · ${safePlayerName(player.name)}` : ' · Empty Slot'}`;
+      const slotMeta = document.createElement('div');
+      slotMeta.className = 'slot-meta';
+      slotMeta.textContent = player ? (player.id === appState.online.localPlayerId ? 'You' : 'Connected player') : 'Waiting for join';
+      slotMain.append(slotName, slotMeta);
+
+      const chip = document.createElement('div');
+      chip.className = `ready-chip ${readyClass}`.trim();
+      chip.textContent = readyLabel;
+      slot.append(slotMain, chip);
       ui.lobbyPlayerSlots.appendChild(slot);
     });
   }
