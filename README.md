@@ -1,4 +1,6 @@
-# Chaturanga Game
+# Arctic Dominion (Visual Re-theme)
+
+This project is a **visual/branding re-theme** of the existing Chaturanga game. Gameplay logic, move validation, dice behavior, and online room protocol remain unchanged.
 
 ## Current deployment setup
 
