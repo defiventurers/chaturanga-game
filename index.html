@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chaturanga v2 - 4 Player Dice Chess</title>
+  <title>Arctic Dominion - 4 Player Dice Strategy</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg-0: #0e1118;
-      --bg-1: #151b27;
+      --bg-0: #081a34;
+      --bg-1: #0c2b4f;
       --bg-2: #1a2232;
       --surface: rgba(24, 31, 46, 0.9);
       --surface-2: rgba(32, 41, 60, 0.88);
@@ -29,10 +29,16 @@
       --radius-sm: 10px;
       --transition-fast: 140ms cubic-bezier(.2,.8,.2,1);
       --transition-med: 220ms cubic-bezier(.2,.8,.2,1);
-      --cell-light: #d8bf98;
-      --cell-light-2: #c9a877;
-      --cell-dark: #7b5639;
-      --cell-dark-2: #65452f;
+      --ice-white: #f4fdff;
+      --ice-blue: #cdefff;
+      --ice-blue-deep: #8fd8ff;
+      --ice-cyan-glow: #64e8ff;
+      --ice-border: rgba(174, 243, 255, 0.95);
+      --snow-bg: #dff6ff;
+      --cell-light: #eefbff;
+      --cell-light-2: #ddf5ff;
+      --cell-dark: #b2e6ff;
+      --cell-dark-2: #8ed4ff;
       --selected: #f8d469;
       --selected-ring: rgba(248, 212, 105, 0.72);
       --possible: #4ad78c;
@@ -48,12 +54,13 @@
       --red-2: #ff9ea3;
       --blue: #5890f6;
       --blue-2: #a8c4ff;
-      --yellow: #d7a21e;
-      --yellow-2: #ffd56f;
+      --yellow: #ff60bd;
+      --yellow-2: #ffb7e1;
       --team-green-bg: linear-gradient(180deg, rgba(43,166,106,0.22), rgba(16,57,39,0.92));
       --team-red-bg: linear-gradient(180deg, rgba(216,91,98,0.22), rgba(73,27,31,0.92));
       --team-blue-bg: linear-gradient(180deg, rgba(88,144,246,0.22), rgba(26,43,77,0.92));
-      --team-yellow-bg: linear-gradient(180deg, rgba(215,162,30,0.24), rgba(79,54,16,0.96));
+      --team-yellow-bg: linear-gradient(180deg, rgba(255,96,189,0.28), rgba(109,20,70,0.92));
+      --glow-cyan: #73e7ff;
     }
 
     * { box-sizing: border-box; }
@@ -63,9 +70,9 @@
       min-height: 100%;
       font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
       background:
-        radial-gradient(circle at top, rgba(244, 203, 118, 0.09), transparent 30%),
-        radial-gradient(circle at left 20% bottom 10%, rgba(92, 125, 194, 0.14), transparent 32%),
-        linear-gradient(180deg, var(--bg-1), var(--bg-0) 55%, #0b0d13 100%);
+        radial-gradient(circle at top, rgba(129, 229, 255, 0.2), transparent 30%),
+        radial-gradient(circle at left 20% bottom 10%, rgba(120, 181, 255, 0.22), transparent 36%),
+        linear-gradient(180deg, #123d70, var(--bg-1) 45%, var(--bg-0) 100%);
       color: var(--text);
       overflow-x: hidden;
     }
@@ -536,6 +543,12 @@
       flex-direction: column;
       align-items: center;
       gap: 14px;
+      padding: 6px;
+      border-radius: 36px;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(255,255,255,0.7), transparent 38%),
+        radial-gradient(circle at 50% 110%, rgba(188, 240, 255, 0.85), rgba(120, 208, 255, 0.35) 45%, transparent 72%),
+        linear-gradient(180deg, rgba(189,238,255,0.4), rgba(100,186,240,0.12));
     }
 
     .status-card {
@@ -615,34 +628,36 @@
       width: 100%;
       display: flex;
       justify-content: center;
-      padding: 12px;
-      border-radius: 28px;
+      padding: 8px;
+      border-radius: 34px;
       background:
-        radial-gradient(circle at top, rgba(223, 191, 122, 0.16), transparent 36%),
-        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015)),
-        rgba(14, 18, 28, 0.92);
-      border: 1px solid rgba(223, 191, 122, 0.18);
-      box-shadow: var(--shadow-lg);
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.55), transparent 48%),
+        linear-gradient(180deg, rgba(215,245,255,0.7), rgba(136,217,255,0.35));
+      border: 1px solid rgba(181, 240, 255, 0.7);
+      box-shadow: 0 22px 35px rgba(32, 114, 175, 0.25);
     }
 
     .board-frame {
       position: relative;
-      padding: 14px;
-      border-radius: 24px;
+      padding: 18px;
+      border-radius: 34px;
       background:
-        linear-gradient(180deg, #6a5136 0%, #3e2e20 50%, #2a1e15 100%);
+        linear-gradient(180deg, rgba(233, 251, 255, 0.78), rgba(171, 229, 255, 0.6));
       box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.14),
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        0 16px 28px rgba(0,0,0,0.34);
+        inset 0 0 0 2px rgba(255,255,255,0.72),
+        inset 0 0 34px rgba(86, 220, 255, 0.45),
+        0 0 0 3px rgba(116, 235, 255, 0.72),
+        0 0 28px rgba(88, 227, 255, 0.7),
+        0 20px 40px rgba(56, 126, 198, 0.28);
     }
 
     .board-frame::before {
       content: "";
       position: absolute;
-      inset: 7px;
-      border-radius: 18px;
-      border: 1px solid rgba(223, 191, 122, 0.3);
+      inset: 8px;
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,0.65);
+      box-shadow: inset 0 0 22px rgba(86, 217, 255, 0.35);
       pointer-events: none;
     }
 
@@ -651,7 +666,7 @@
       position: absolute;
       top: 10px;
       right: 16px;
-      color: rgba(223,191,122,0.55);
+      color: rgba(221, 250, 255, 0.7);
       font-size: 18px;
       letter-spacing: 0.2em;
       pointer-events: none;
@@ -659,8 +674,8 @@
 
     #boardGrid {
       display: grid;
-      grid-template-columns: 34px repeat(8, 72px);
-      grid-template-rows: repeat(8, 72px) 34px;
+      grid-template-columns: 36px repeat(8, 78px);
+      grid-template-rows: repeat(8, 78px) 36px;
       gap: 0;
       user-select: none;
     }
@@ -669,26 +684,26 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #edd8b5;
+      color: rgba(223, 247, 255, 0.92);
       font-size: 13px;
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+      text-shadow: 0 1px 0 rgba(14, 86, 138, 0.45);
     }
 
     .coord.corner { color: transparent; }
 
     .cell {
-      width: 72px;
-      height: 72px;
+      width: 78px;
+      height: 78px;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transition: transform var(--transition-fast), filter var(--transition-fast), box-shadow var(--transition-fast);
-      border: 1px solid rgba(21, 14, 10, 0.7);
+      border: 1px solid rgba(200, 241, 255, 0.35);
       overflow: hidden;
       padding: 0;
       appearance: none;
@@ -705,25 +720,27 @@
 
     .cell.light {
       background:
-        linear-gradient(180deg, var(--cell-light), var(--cell-light-2)),
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 3px, rgba(0,0,0,0.02) 3px 6px);
+        linear-gradient(160deg, var(--cell-light), var(--cell-light-2)),
+        radial-gradient(circle at 25% 20%, rgba(255,255,255,0.28), transparent 58%),
+        repeating-linear-gradient(50deg, rgba(255,255,255,0.08) 0 3px, rgba(178,228,248,0.12) 3px 7px);
     }
 
     .cell.dark {
       background:
-        linear-gradient(180deg, var(--cell-dark), var(--cell-dark-2)),
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 3px, rgba(0,0,0,0.04) 3px 6px);
+        linear-gradient(150deg, var(--cell-dark), var(--cell-dark-2)),
+        radial-gradient(circle at 75% 18%, rgba(255,255,255,0.22), transparent 56%),
+        repeating-linear-gradient(55deg, rgba(255,255,255,0.06) 0 3px, rgba(97,185,237,0.16) 3px 7px);
     }
 
     .cell::before {
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.1), transparent 30%, transparent 70%, rgba(0,0,0,0.12)),
-        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 46%);
+        linear-gradient(180deg, rgba(255,255,255,0.18), transparent 30%, transparent 68%, rgba(61,145,190,0.15)),
+        radial-gradient(circle at top, rgba(255,255,255,0.16), transparent 48%);
       opacity: 1;
     }
 
     .cell::after {
-      inset: 4px;
+      inset: 5px;
       border-radius: 12px;
       border: 1px solid transparent;
       opacity: 0;
@@ -799,8 +816,8 @@
       align-items: center;
       justify-content: center;
       gap: 1px;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.6);
       background: var(--piece-bg);
       color: var(--piece-color);
       box-shadow:
@@ -817,9 +834,9 @@
     .piece::before {
       content: "";
       position: absolute;
-      inset: 4px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.08);
+      inset: 5px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.18);
       pointer-events: none;
     }
 
@@ -850,19 +867,12 @@
         0 0 18px rgba(223,191,122,0.22);
     }
 
-    .piece .glyph {
-      font-size: 24px;
-      line-height: 1;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.32);
-    }
-
-    .piece .tag {
-      font-size: 10px;
-      line-height: 1;
-      letter-spacing: 0.12em;
-      font-weight: 900;
-      opacity: 0.92;
-      text-transform: uppercase;
+    .piece-art {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28));
     }
 
     .piece .crest {
@@ -1001,6 +1011,21 @@
       font-size: 0.87rem;
       line-height: 1.35;
       min-height: 36px;
+    }
+    .die-piece-icons {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .die-piece-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.24);
+      background: rgba(9, 19, 37, 0.36);
+      padding: 2px;
+      object-fit: contain;
     }
 
     .controls {
@@ -1353,14 +1378,14 @@
 
     @media (max-width: 1460px) {
       .app {
-        grid-template-columns: 300px minmax(560px, 1fr) 320px;
+        grid-template-columns: 300px minmax(620px, 1fr) 320px;
       }
       #boardGrid {
-        grid-template-columns: 30px repeat(8, 66px);
-        grid-template-rows: repeat(8, 66px) 30px;
+        grid-template-columns: 30px repeat(8, 70px);
+        grid-template-rows: repeat(8, 70px) 30px;
       }
-      .cell { width: 66px; height: 66px; }
-      .piece { width: 54px; height: 54px; }
+      .cell { width: 70px; height: 70px; }
+      .piece { width: 61px; height: 61px; }
     }
 
     @media (max-width: 1260px) {
@@ -1401,20 +1426,18 @@
         border-radius: 18px;
       }
       #boardGrid {
-        grid-template-columns: 26px repeat(8, min(10.5vw, 56px));
-        grid-template-rows: repeat(8, min(10.5vw, 56px)) 26px;
+        grid-template-columns: 24px repeat(8, min(11.2vw, 62px));
+        grid-template-rows: repeat(8, min(11.2vw, 62px)) 24px;
       }
       .cell {
-        width: min(10.5vw, 56px);
-        height: min(10.5vw, 56px);
+        width: min(11.2vw, 62px);
+        height: min(11.2vw, 62px);
       }
       .piece {
-        width: calc(min(10.5vw, 56px) - 12px);
-        height: calc(min(10.5vw, 56px) - 12px);
+        width: calc(min(11.2vw, 62px) - 8px);
+        height: calc(min(11.2vw, 62px) - 8px);
         border-radius: 14px;
       }
-      .piece .glyph { font-size: 20px; }
-      .piece .tag { font-size: 9px; }
       .game-top-actions button {
         min-width: 0;
         width: 100%;
@@ -1427,9 +1450,9 @@
     <section id="screenSplash" class="screen active" aria-label="Splash screen">
       <div class="screen-panel hero" id="splashContinueArea" role="button" tabindex="0">
         <div class="logo-mark">✦</div>
-        <div class="eyebrow">Digital Chaturanga</div>
-        <h1>Chaturanga v2</h1>
-        <p>Four-player dice strategy with modern presentation, guided setup, and rule-respecting computer opponents.</p>
+        <div class="eyebrow">Arctic Fantasy Strategy</div>
+        <h1>Arctic Dominion</h1>
+        <p>Roll • Plan • Conquer</p>
         <div class="splash-prompt">Tap or click to continue</div>
       </div>
     </section>
@@ -1439,11 +1462,17 @@
         <div class="menu-grid">
           <div class="menu-card">
             <div class="eyebrow">Main Menu</div>
-            <h1 style="font-size:2.3rem; line-height:1.05;">Chaturanga v2</h1>
-            <p class="subtitle" style="max-width:560px;">Set the table, pick how many humans are playing, choose bot strength, and launch straight into the same ruleset you already have.</p>
+            <h1 style="font-size:2.3rem; line-height:1.05;">Arctic Dominion</h1>
+            <p class="subtitle" style="max-width:560px;">Enter the frozen kingdom, choose your commanders, and begin an icy four-faction clash with the same trusted rules.</p>
             <div class="menu-actions" style="margin-top:22px;">
-              <button id="menuPlayBtn" class="primary">Play Game</button>
-              <button id="menuHowBtn" class="secondary">How to Play</button>
+              <button id="menuPlayBtn" class="primary">PLAY NOW</button>
+              <button id="menuHowBtn" class="secondary">How to Rule</button>
+            </div>
+            <div class="team-cards">
+              <div class="team-card">Red Team — Retsba<small>Snow Guard Dominion</small></div>
+              <div class="team-card">Blue Team — Pengu<small>Aurora Tide Dominion</small></div>
+              <div class="team-card">Green Team — Abster<small>Glacier Grove Dominion</small></div>
+              <div class="team-card">Pink Team — Polly<small>Rose Frost Dominion</small></div>
             </div>
           </div>
           <div class="menu-card">
@@ -1462,7 +1491,7 @@
       <div class="screen-panel">
         <div class="eyebrow">Setup</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Choose Player Count</h1>
-        <p class="subtitle">Choose how many humans play offline, then choose which colors those humans control. Any unselected colors are filled by bots.</p>
+        <p class="subtitle">Choose how many human rulers join offline, then assign dominions. Unselected teams are commanded by bots.</p>
         <div id="playerCountChoices" class="choice-grid"></div>
         <div id="offlineTeamChoices" class="summary-list" style="margin-top:14px;"></div>
         <div class="screen-actions">
@@ -1489,11 +1518,11 @@
       <div class="screen-panel">
         <div class="eyebrow">How To Play</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Quick Rules & Turn Flow</h1>
-        <p class="subtitle">This explains the current variant only. No rules are changed here. Use it as a fast onboarding pass before the match starts.</p>
+        <p class="subtitle">Learn the existing ruleset in arctic style. Mechanics remain unchanged.</p>
         <div class="tutorial-grid">
           <div class="tutorial-step">
             <h4>1. Roll Dice</h4>
-            <p>Each turn starts with two dice. Dice values unlock piece types: 1 or 5 = Pawn or King, 2 = Elephant, 3 = Horse, 4 or 6 = Ship.</p>
+            <p>Each turn starts with two dice. Dice values unlock piece types: 1 or 5 = Snow Guard or Frost King, 2 = War Mammoth, 3 = Aurora Unicorn, 4 or 6 = Icebreaker.</p>
           </div>
           <div class="tutorial-step">
             <h4>2. Select a Piece</h4>
@@ -1501,7 +1530,7 @@
           </div>
           <div class="tutorial-step">
             <h4>3. Move or Capture</h4>
-            <p>Green and Blue pawns move vertically. Red and Yellow pawns move horizontally. Captures follow the current live rules only—nothing extra is added.</p>
+            <p>Green and Blue snow guards move vertically. Red and Pink snow guards move horizontally. Captures follow the current live rules only—nothing extra is added.</p>
           </div>
           <div class="tutorial-step">
             <h4>4. Promotion</h4>
@@ -1518,8 +1547,8 @@
         </div>
         <div class="screen-actions">
           <button id="tutorialBackBtn" class="ghost">Back</button>
-          <button id="tutorialSkipBtn" class="secondary">Skip Tutorial</button>
-          <button id="tutorialStartBtn" class="primary">Start Game</button>
+          <button id="tutorialSkipBtn" class="secondary">Skip Briefing</button>
+          <button id="tutorialStartBtn" class="primary">Start Dominion</button>
         </div>
       </div>
     </section>
@@ -1529,8 +1558,8 @@
         <div class="loading-wrap">
           <div class="spinner" aria-hidden="true"></div>
           <div class="eyebrow">Preparing Match</div>
-          <h1 style="font-size:2rem;">Setting the Board</h1>
-          <p class="subtitle" id="loadingText" style="max-width:560px;">Assigning control map, preparing bot difficulty, and loading the match.</p>
+          <h1 style="font-size:2rem;">Preparing the Frozen Board</h1>
+          <p class="subtitle" id="loadingText" style="max-width:560px;">Assigning dominions, calibrating rivals, and summoning the icy board.</p>
         </div>
       </div>
     </section>
@@ -1540,7 +1569,7 @@
         <div class="game-topbar">
           <div>
             <div class="eyebrow">Match</div>
-            <h2>Chaturanga v2</h2>
+            <h2>Arctic Dominion</h2>
             <p id="gameTopSummary">1 human, 3 bots, Medium difficulty.</p>
             <div id="gameConfigPills" class="config-pills"></div>
           </div>
@@ -1556,7 +1585,7 @@
               <div>
                 <div class="eyebrow">Turn Engine</div>
                 <h2>Command Panel</h2>
-                <p class="subtitle">Dice, active players, selection details, and the full move history.</p>
+                <p class="subtitle">Runes, active dominions, selection details, and the full battle log.</p>
               </div>
             </div>
 
@@ -1652,7 +1681,7 @@
               <div>
                 <div class="eyebrow">Reference</div>
                 <h2>Rules Snapshot</h2>
-                <p class="subtitle">Core move rules, dice rules, turn flow, promotion, elimination, and victory are unchanged.</p>
+                <p class="subtitle">Core movement, dice outcomes, turn flow, promotion, elimination, and victory remain unchanged.</p>
               </div>
             </div>
 
@@ -1692,7 +1721,7 @@
                 </div>
               </section>
 
-              <p class="mini">This variant stays arcade-like. It does not use check or checkmate. A player is eliminated only when that team has no kings left on the board.</p>
+              <p class="mini">Arctic Dominion keeps the same arcade-style ruleset: no check/checkmate, and elimination occurs only when a team has no kings left.</p>
             </div>
           </aside>
         </div>
@@ -1716,24 +1745,29 @@
     const ROWS = 8;
     const COLS = 8;
     const PLAYERS = ['green', 'red', 'blue', 'yellow'];
-    const TEAM_LABEL = { green: 'Green', red: 'Red', blue: 'Blue', yellow: 'Yellow' };
+    const TEAM_LABEL = { green: 'Green', red: 'Red', blue: 'Blue', yellow: 'Pink' };
     const TEAM_CLASS = { green: 'team-green', red: 'team-red', blue: 'team-blue', yellow: 'team-yellow' };
     const LEGACY_TEAM_PREFIX_MAP = { g: 'green', r: 'red', b: 'blue', y: 'yellow' };
     const LEGACY_PIECE_CODE_MAP = { p: 'pawn', S: 'ship', E: 'elephant', h: 'horse', K: 'king' };
     const PIECE_DISPLAY = {
-      king: { glyph: '♔', tag: 'K' },
-      elephant: { glyph: '♖', tag: 'E' },
-      horse: { glyph: '♘', tag: 'H' },
-      ship: { glyph: '◆', tag: 'S' },
-      pawn: { glyph: '♙', tag: 'P' }
+      king: { glyph: '♔', tag: 'K', asset: 'frost-king' },
+      elephant: { glyph: '♖', tag: 'E', asset: 'war-mammoth' },
+      horse: { glyph: '♘', tag: 'H', asset: 'aurora-unicorn' },
+      ship: { glyph: '◆', tag: 'S', asset: 'icebreaker' },
+      pawn: { glyph: '♙', tag: 'P', asset: 'snow-guard' }
     };
     const PIECE_NAME = {
-      king: 'King',
-      elephant: 'Elephant',
-      horse: 'Horse',
-      ship: 'Ship',
-      pawn: 'Pawn'
+      king: 'Frost King',
+      elephant: 'War Mammoth',
+      horse: 'Aurora Unicorn',
+      ship: 'Icebreaker',
+      pawn: 'Snow Guard'
     };
+    function getPieceAsset(team, type) {
+      const visualTeam = team === 'yellow' ? 'pink' : team;
+      const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
+      return `assets/arctic/pieces/${visualTeam}-${slug}.svg`;
+    }
     const PIECE_VALUE = {
       king: 1200,
       elephant: 90,
@@ -2232,9 +2266,9 @@
 
     function buildSetupChoices() {
       const playerCountOptions = [
-        { value: 1, title: '1 Player', meta: 'Green human', description: 'Green is human. Red, Blue, and Yellow are bots.' },
-        { value: 2, title: '2 Player', meta: 'Green + Red human', description: 'Green and Red are human. Blue and Yellow are bots.' },
-        { value: 3, title: '3 Player', meta: 'Green + Red + Blue human', description: 'Three humans play. Yellow becomes the only bot.' },
+        { value: 1, title: '1 Player', meta: 'Green human', description: 'Green is human. Red, Blue, and Pink are bots.' },
+        { value: 2, title: '2 Player', meta: 'Green + Red human', description: 'Green and Red are human. Blue and Pink are bots.' },
+        { value: 3, title: '3 Player', meta: 'Green + Red + Blue human', description: 'Three humans play. Pink becomes the only bot.' },
         { value: 4, title: '4 Player', meta: 'All human', description: 'No bots. Full four-human local match.' }
       ];
 
@@ -3313,11 +3347,14 @@
         if (piece) {
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
-          token.innerHTML = `
-            <div class="glyph">${PIECE_DISPLAY[piece.type].glyph}</div>
-            <div class="tag">${PIECE_NAME[piece.type]}</div>
-            ${piece.isRoyal ? '<div class="crest" aria-hidden="true">✦</div>' : ''}
-          `;
+          const art = document.createElement('img');
+          art.className = 'piece-art';
+          art.loading = 'eager';
+          art.decoding = 'async';
+          art.src = getPieceAsset(piece.team, piece.type);
+          art.alt = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}`;
+          token.appendChild(art);
+          if (piece.isRoyal) token.innerHTML += '<div class="crest" aria-hidden="true">✦</div>';
           token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
           cell.appendChild(token);
           cell.setAttribute('aria-label', `${toCoord(row, col)}: ${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' royal' : ''}`);
@@ -3392,7 +3429,12 @@
         else if (rolled) dieState = 'No Move';
 
         ui.dieValues[i].textContent = value ?? '?';
-        ui.diePieces[i].textContent = pieceText;
+        if (value) {
+          const options = DICE_ROLLS[value].map(name => `<img class=\"die-piece-icon\" src=\"${getPieceAsset(team, name)}\" alt=\"${PIECE_NAME[name]}\">`).join('');
+          ui.diePieces[i].innerHTML = `<div class=\"die-piece-icons\">${options}</div><div>${pieceText}</div>`;
+        } else {
+          ui.diePieces[i].textContent = pieceText;
+        }
         ui.dieStates[i].textContent = dieState;
         ui.dieCards[i].classList.toggle('used', state.dice.used[i]);
         ui.dieCards[i].classList.toggle('active', state.dice.lockedDieIndex === i);
@@ -3645,7 +3687,7 @@
       <div class="screen-panel">
         <div class="eyebrow">Setup</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Choose Play Mode</h1>
-        <p class="subtitle">Offline keeps the current browser-only match flow. Online adds room creation, lobby sync, ready checks, countdown, and authoritative turn sync without changing the rules engine.</p>
+        <p class="subtitle">Offline keeps the same local match flow. Online adds room creation, lobby sync, ready checks, countdown, and authoritative turn sync without changing the rules engine.</p>
         <div id="playModeChoices" class="flow-grid"></div>
         <div class="screen-actions">
           <button id="playModeBackBtn" class="ghost">Back</button>
@@ -3657,7 +3699,7 @@
     <section id="screenOnlineSetup" class="screen" aria-label="Online room setup">
       <div class="screen-panel">
         <div class="eyebrow">Online Play</div>
-        <h1 style="font-size:2.1rem; line-height:1.08;">Create or Join a Room</h1>
+        <h1 style="font-size:2.1rem; line-height:1.08;">Create or Join a Frost Room</h1>
         <p class="subtitle">Create a room with 2, 3, or 4 required human players, or join using a room code or invite link. Bots only fill the unused colors after the room match begins.</p>
         <div class="menu-grid">
           <div class="menu-card">
@@ -3699,7 +3741,7 @@
         <div class="lobby-headline">
           <div style="flex:1 1 360px;">
             <h1 style="font-size:2.1rem; line-height:1.08;">Room <span id="lobbyRoomIdText"></span></h1>
-            <p id="lobbyStatusText" class="subtitle">Waiting for players.</p>
+            <p id="lobbyStatusText" class="subtitle">Waiting for challengers.</p>
           </div>
           <div class="net-pill" id="lobbyConnectionPill">Disconnected</div>
         </div>
@@ -4397,7 +4439,7 @@
   ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
   ui.copyRoomLinkBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(ui.lobbyShareLinkInput.value); });
   ui.copyRoomCodeBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomId); });
-  ui.shareRoomBtn.addEventListener('click', async () => { sound.playButtonSound(); const url = ui.lobbyShareLinkInput.value; if (navigator.share) { try { await navigator.share({ title: 'Chaturanga Room', url }); } catch (error) {} } else { copyText(url); } });
+  ui.shareRoomBtn.addEventListener('click', async () => { sound.playButtonSound(); const url = ui.lobbyShareLinkInput.value; if (navigator.share) { try { await navigator.share({ title: 'Arctic Dominion Room', url }); } catch (error) {} } else { copyText(url); } });
   ui.toggleReadyBtn.addEventListener('click', () => { sound.playButtonSound(); const localPlayer = appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId); if (localPlayer) OnlineLobbyController.setReady(!localPlayer.ready); });
   ui.leaveLobbyBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.leaveRoom(); });
 
@@ -4436,3 +4478,23 @@
 
 </body>
 </html>
+    .board-wrap {
+      border: 2px solid rgba(115,231,255,0.9);
+      box-shadow: 0 0 0 5px rgba(115,231,255,0.22), 0 0 28px rgba(115,231,255,0.5);
+      background: linear-gradient(180deg, rgba(170,232,255,0.2), rgba(175,232,255,0.08));
+    }
+
+    .team-cards {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .team-card {
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.05);
+      font-weight: 700;
+    }
+    .team-card small { display:block; opacity:0.8; margin-top:4px; }
