@@ -8,6 +8,10 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const PORT = Number(process.env.PORT || 10000);
+const MAX_MESSAGE_BYTES = 16 * 1024;
+const MAX_PLAYER_NAME_LENGTH = 28;
+const ROOM_ID_PATTERN = /^[A-Z0-9]{6}$/;
+const HEARTBEAT_INTERVAL_MS = 30000;
 const PLAYERS = ["green", "red", "blue", "yellow"];
 const rooms = new Map();
 
@@ -75,6 +79,30 @@ function normalizeWsUrlInput(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+function sanitizePlayerName(value, fallback = "Player") {
+  const clean = String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  return clean.slice(0, MAX_PLAYER_NAME_LENGTH) || fallback;
+}
+
+function isValidRoomId(roomId) {
+  return ROOM_ID_PATTERN.test(String(roomId || "").trim().toUpperCase());
+}
+
+function clearRoomCountdown(room) {
+  if (room.countdownTimer) {
+    clearInterval(room.countdownTimer);
+    room.countdownTimer = null;
+  }
+}
+
+function cleanupRoomIfEmpty(room) {
+  if (!room || room.players.length !== 0) return false;
+  clearRoomCountdown(room);
+  rooms.delete(room.id);
+  console.log(`[room:${room.id}] cleaned up empty room`);
+  return true;
+}
+
 app.get("/", (_req, res) => {
   res.status(200).send("Chaturanga room server is healthy");
 });
@@ -82,10 +110,19 @@ app.get("/", (_req, res) => {
 wss.on("connection", (ws) => {
   ws.playerId = uuidv4();
   ws.roomId = null;
+  ws.isAlive = true;
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
 
   send(ws, "connected", { playerId: ws.playerId });
 
   ws.on("message", (buffer) => {
+    if (!buffer || buffer.length > MAX_MESSAGE_BYTES) {
+      sendError(ws, `Message too large (max ${MAX_MESSAGE_BYTES} bytes).`, "message_too_large");
+      return;
+    }
     let raw;
     try {
       raw = JSON.parse(buffer.toString());
@@ -168,6 +205,10 @@ function handleJoinRoom(ws, payload) {
   }
 
   const roomId = normalizeWsUrlInput(payload.roomId);
+  if (!isValidRoomId(roomId)) {
+    sendError(ws, "Invalid room ID format.", "invalid_room_id");
+    return;
+  }
   const room = getRoom(roomId);
   if (!room) {
     sendError(ws, "Room not found.", "room_not_found");
@@ -197,7 +238,7 @@ function joinRoom(ws, room, playerName, preferredTeam = null) {
   }
   const player = {
     id: ws.playerId,
-    name: String(playerName || "Player").trim().slice(0, 28) || "Player",
+    name: sanitizePlayerName(playerName, "Player"),
     ready: false,
     team,
     ws,
@@ -243,6 +284,8 @@ function handleSetReady(ws, payload) {
   const allReady = room.players.length === room.seatCount && room.players.every((p) => p.ready);
   if (allReady) {
     startCountdown(room);
+  } else {
+    clearRoomCountdown(room);
   }
 }
 
@@ -296,6 +339,7 @@ function startCountdown(room) {
 }
 
 function startMatch(room) {
+  clearRoomCountdown(room);
   room.matchStarted = true;
   room.turnTeam = PLAYERS[0];
   room.diceRolled = false;
@@ -435,11 +479,11 @@ function handleLeave(ws) {
 
   room.players = room.players.filter((p) => p.id !== ws.playerId);
 
-  if (room.players.length === 0) {
-    if (room.countdownTimer) clearInterval(room.countdownTimer);
-    rooms.delete(room.id);
+  if (cleanupRoomIfEmpty(room)) {
     return;
   }
+
+  clearRoomCountdown(room);
 
   if (room.hostId === ws.playerId) {
     room.hostId = room.players[0].id;
@@ -474,4 +518,20 @@ function generateRoomId() {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Chaturanga room server listening on 0.0.0.0:${PORT}`);
+});
+
+const heartbeatTimer = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      console.warn(`[ws:${ws.playerId || "unknown"}] terminating stale socket`);
+      ws.terminate();
+      return;
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, HEARTBEAT_INTERVAL_MS);
+
+wss.on("close", () => {
+  clearInterval(heartbeatTimer);
 });

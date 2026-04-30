@@ -1,48 +1,43 @@
 # Chaturanga Game
 
-## Production deployment notes
+## Current deployment setup
 
-### Frontend (Vercel / GitHub Pages)
-Use the WebSocket server URL below in the online setup input (or `?server=` URL param):
+- **Frontend host**: Vercel
+- **Backend host**: Render (Node Web Service)
+- **Production WebSocket URL**: `wss://chaturanga-game.onrender.com`
 
-- `wss://chaturanga-game.onrender.com`
+> Deployment providers and production WebSocket URL are intentionally unchanged.
 
-The client now normalizes malformed values safely:
-- `https://chaturanga-game.onrender.com` -> `wss://chaturanga-game.onrender.com`
-- `chaturanga-game.onrender.com` -> `wss://chaturanga-game.onrender.com`
+## Local development
 
-### Backend (Render Node Web Service)
-Deploy from the `/server` directory.
-
-Required settings:
-- **Runtime**: Node
-- **Root Directory**: `server`
-- **Build Command**: `npm install`
-- **Start Command**: `npm start`
-- **Environment**: set `PORT` automatically by Render (no manual value required)
-
-Backend behavior expected in production:
-- listens on `process.env.PORT`
-- binds to `0.0.0.0`
-- health endpoint at `GET /`
-- WebSocket protocol supports:
-  - `create_room`
-  - `join_room`
-  - `set_ready`
-  - `leave_room`
-  - `roll_dice`
-  - `make_move`
-  - `promotion_decision`
-  - `end_turn`
-
-## Local run
-
-### Backend
+### 1) Start backend (Render-equivalent service)
 ```bash
 cd server
 npm install
 npm start
 ```
 
-### Frontend
-Open `index.html` in a browser and set WebSocket URL to `ws://localhost:8080` if needed.
+Expected backend behavior locally:
+- listens on `process.env.PORT` (defaults to `10000`)
+- health endpoint: `GET /`
+- WebSocket endpoint on same host/port
+
+### 2) Start frontend
+Open `index.html` in a browser.
+
+For online mode, use:
+- `ws://localhost:10000` (or whichever local backend port you run)
+
+## Troubleshooting
+
+- **Cannot connect online**
+  - Confirm backend is running and reachable.
+  - Confirm URL scheme matches environment:
+    - local: `ws://...`
+    - production: `wss://chaturanga-game.onrender.com`
+- **Room code rejected**
+  - Room IDs must be 6 uppercase alphanumeric characters.
+- **Disconnected during lobby/match**
+  - Reconnect and rejoin the room if the server closed an idle/stale socket.
+- **No room start countdown**
+  - Countdown starts only when all seats are filled and every player is ready.
