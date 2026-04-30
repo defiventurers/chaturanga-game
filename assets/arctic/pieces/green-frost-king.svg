@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+<defs><radialGradient id="bg" cx="35%" cy="25%" r="75%"><stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.35" stop-color="#20c9b6"/><stop offset="1" stop-color="#0d6e65"/></radialGradient></defs>
+<circle cx="128" cy="128" r="120" fill="url(#bg)"/>
+<circle cx="128" cy="128" r="114" fill="none" stroke="#ffffff" stroke-opacity="0.85" stroke-width="6"/>
+<circle cx="128" cy="128" r="104" fill="none" stroke="#0a1020" stroke-opacity="0.25" stroke-width="2"/>
+<text x="128" y="146" text-anchor="middle" font-size="92" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji">👑🐧</text>
+</svg>
