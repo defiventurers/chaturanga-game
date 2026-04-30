@@ -867,19 +867,12 @@
         0 0 18px rgba(223,191,122,0.22);
     }
 
-    .piece .glyph {
-      font-size: 22px;
-      line-height: 1;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.32);
-    }
-
-    .piece .tag {
-      font-size: 10px;
-      line-height: 1;
-      letter-spacing: 0.12em;
-      font-weight: 900;
-      opacity: 0.92;
-      text-transform: uppercase;
+    .piece-art {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28));
     }
 
     .piece .crest {
@@ -1018,6 +1011,21 @@
       font-size: 0.87rem;
       line-height: 1.35;
       min-height: 36px;
+    }
+    .die-piece-icons {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .die-piece-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.24);
+      background: rgba(9, 19, 37, 0.36);
+      padding: 2px;
+      object-fit: contain;
     }
 
     .controls {
@@ -1430,8 +1438,6 @@
         height: calc(min(11.2vw, 62px) - 8px);
         border-radius: 14px;
       }
-      .piece .glyph { font-size: 20px; }
-      .piece .tag { font-size: 9px; }
       .game-top-actions button {
         min-width: 0;
         width: 100%;
@@ -1744,11 +1750,11 @@
     const LEGACY_TEAM_PREFIX_MAP = { g: 'green', r: 'red', b: 'blue', y: 'yellow' };
     const LEGACY_PIECE_CODE_MAP = { p: 'pawn', S: 'ship', E: 'elephant', h: 'horse', K: 'king' };
     const PIECE_DISPLAY = {
-      king: { glyph: '♔', tag: 'K' },
-      elephant: { glyph: '♖', tag: 'E' },
-      horse: { glyph: '♘', tag: 'H' },
-      ship: { glyph: '◆', tag: 'S' },
-      pawn: { glyph: '♙', tag: 'P' }
+      king: { glyph: '♔', tag: 'K', asset: 'frost-king' },
+      elephant: { glyph: '♖', tag: 'E', asset: 'war-mammoth' },
+      horse: { glyph: '♘', tag: 'H', asset: 'aurora-unicorn' },
+      ship: { glyph: '◆', tag: 'S', asset: 'icebreaker' },
+      pawn: { glyph: '♙', tag: 'P', asset: 'snow-guard' }
     };
     const PIECE_NAME = {
       king: 'Frost King',
@@ -1757,6 +1763,11 @@
       ship: 'Icebreaker',
       pawn: 'Snow Guard'
     };
+    function getPieceAsset(team, type) {
+      const visualTeam = team === 'yellow' ? 'pink' : team;
+      const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
+      return `assets/arctic/pieces/${visualTeam}-${slug}.svg`;
+    }
     const PIECE_VALUE = {
       king: 1200,
       elephant: 90,
@@ -3336,11 +3347,14 @@
         if (piece) {
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
-          token.innerHTML = `
-            <div class="glyph">${PIECE_DISPLAY[piece.type].glyph}</div>
-            <div class="tag">${PIECE_NAME[piece.type]}</div>
-            ${piece.isRoyal ? '<div class="crest" aria-hidden="true">✦</div>' : ''}
-          `;
+          const art = document.createElement('img');
+          art.className = 'piece-art';
+          art.loading = 'eager';
+          art.decoding = 'async';
+          art.src = getPieceAsset(piece.team, piece.type);
+          art.alt = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}`;
+          token.appendChild(art);
+          if (piece.isRoyal) token.innerHTML += '<div class="crest" aria-hidden="true">✦</div>';
           token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
           cell.appendChild(token);
           cell.setAttribute('aria-label', `${toCoord(row, col)}: ${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' royal' : ''}`);
@@ -3415,7 +3429,12 @@
         else if (rolled) dieState = 'No Move';
 
         ui.dieValues[i].textContent = value ?? '?';
-        ui.diePieces[i].textContent = pieceText;
+        if (value) {
+          const options = DICE_ROLLS[value].map(name => `<img class=\"die-piece-icon\" src=\"${getPieceAsset(team, name)}\" alt=\"${PIECE_NAME[name]}\">`).join('');
+          ui.diePieces[i].innerHTML = `<div class=\"die-piece-icons\">${options}</div><div>${pieceText}</div>`;
+        } else {
+          ui.diePieces[i].textContent = pieceText;
+        }
         ui.dieStates[i].textContent = dieState;
         ui.dieCards[i].classList.toggle('used', state.dice.used[i]);
         ui.dieCards[i].classList.toggle('active', state.dice.lockedDieIndex === i);
