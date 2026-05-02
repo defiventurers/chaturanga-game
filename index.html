@@ -874,7 +874,8 @@
       pointer-events: none;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.28));
     }
-    .green-king-full {
+    .green-king-full,
+    .png-piece-full {
       position: absolute;
       top: 50%;
       left: 50%;
@@ -1775,6 +1776,16 @@
     };
     function getPieceAsset(team, type) {
       if (team === 'green' && type === 'king') return 'assets/arctic/pieces/green-frost-king.png';
+      if (team === 'red') {
+        const redPngMap = {
+          pawn: 'red-snow-guard.png',
+          ship: 'red-icebreaker.png',
+          elephant: 'red-war-mammoth.png',
+          horse: 'red-aurora-unicorn.png',
+          king: 'red-frost-king.png'
+        };
+        return `assets/arctic/pieces/${redPngMap[type] || redPngMap.pawn}`;
+      }
       const visualTeam = team === 'yellow' ? 'pink' : team;
       const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
       return `assets/arctic/pieces/${visualTeam}-${slug}.svg`;
@@ -3359,8 +3370,9 @@
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           const isGreenFrostKing = piece.team === 'green' && piece.type === 'king';
+          const isRedPiecePng = piece.team === 'red';
           const art = document.createElement('img');
-          art.className = isGreenFrostKing ? 'piece-img green-king-full' : 'piece-art';
+          art.className = (isGreenFrostKing || isRedPiecePng) ? 'piece-img png-piece-full' : 'piece-art';
           art.loading = 'eager';
           art.decoding = 'async';
           art.src = getPieceAsset(piece.team, piece.type);
