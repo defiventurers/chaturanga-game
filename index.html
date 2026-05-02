@@ -1776,15 +1776,25 @@
     };
     function getPieceAsset(team, type) {
       if (team === 'green' && type === 'king') return 'assets/arctic/pieces/green-frost-king.png';
-      if (team === 'red') {
-        const redPngMap = {
-          pawn: 'red-snow-guard.png',
-          ship: 'red-icebreaker.png',
-          elephant: 'red-war-mammoth.png',
-          horse: 'red-aurora-unicorn.png',
-          king: 'red-frost-king.png'
+      if (team === 'red' || team === 'blue') {
+        const pngMapByTeam = {
+          red: {
+            pawn: 'red-snow-guard.png',
+            ship: 'red-icebreaker.png',
+            elephant: 'red-war-mammoth.png',
+            horse: 'red-aurora-unicorn.png',
+            king: 'red-frost-king.png'
+          },
+          blue: {
+            pawn: 'blue-snow-guard.png',
+            ship: 'blue-icebreaker.png',
+            elephant: 'blue-war-mammoth.png',
+            horse: 'blue-aurora-unicorn.png',
+            king: 'blue-frost-king.png'
+          }
         };
-        return `assets/arctic/pieces/${redPngMap[type] || redPngMap.pawn}`;
+        const teamMap = pngMapByTeam[team];
+        return `assets/arctic/pieces/${teamMap[type] || teamMap.pawn}`;
       }
       const visualTeam = team === 'yellow' ? 'pink' : team;
       const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
@@ -3370,9 +3380,9 @@
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           const isGreenFrostKing = piece.team === 'green' && piece.type === 'king';
-          const isRedPiecePng = piece.team === 'red';
+          const isPngFullTokenPiece = piece.team === 'red' || piece.team === 'blue';
           const art = document.createElement('img');
-          art.className = (isGreenFrostKing || isRedPiecePng) ? 'piece-img png-piece-full' : 'piece-art';
+          art.className = (isGreenFrostKing || isPngFullTokenPiece) ? 'piece-img png-piece-full' : 'piece-art';
           art.loading = 'eager';
           art.decoding = 'async';
           art.src = getPieceAsset(piece.team, piece.type);
