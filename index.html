@@ -284,20 +284,20 @@
 
     .choice-card p {
       color: var(--text-soft);
-      font-size: 0.9rem;
-      line-height: 1.5;
+      font-size: 0.85rem;
+      line-height: 1.35;
     }
 
     .choice-meta {
       color: var(--gold);
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       font-weight: 800;
     }
 
     .screen-actions {
-      margin-top: 22px;
+      margin-top: 14px;
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
@@ -1545,7 +1545,48 @@
       .selection-box,
       #moveLog { margin-top: 10px; }
     }
-  </style>
+  
+    .setup-step {
+      margin: 8px 0 10px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .team-cards {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .team-card {
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+    }
+
+    .team-card img { width: 32px; height: 32px; object-fit: contain; }
+    .team-card small { display:block; opacity:0.8; margin-top:2px; font-size: 0.75rem; font-weight: 600; }
+
+    .compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+    .compact-grid .choice-card { padding: 12px; gap: 6px; border-radius: 16px; }
+    .strength-dots { color: var(--gold); letter-spacing: 0.1em; font-size: 0.8rem; }
+    .color-choice-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; margin-top: 8px; }
+    .color-choice {
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); padding: 10px 8px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .color-choice.selected { box-shadow: 0 0 0 2px rgba(255,255,255,0.2), 0 0 16px currentColor; }
+
+</style>
 </head>
 <body>
   <div id="appView" class="app-view">
@@ -1565,23 +1606,23 @@
           <div class="menu-card">
             <div class="eyebrow">Main Menu</div>
             <h1 style="font-size:2.3rem; line-height:1.05;">Arctic Dominion</h1>
-            <p class="subtitle" style="max-width:560px;">Enter the frozen kingdom, choose your commanders, and begin an icy four-faction clash with the same trusted rules.</p>
-            <div class="menu-actions" style="margin-top:22px;">
+            <p class="subtitle" style="max-width:560px;">Pick your setup and start the frozen showdown.</p>
+            <div class="menu-actions" style="margin-top:14px;">
               <button id="menuPlayBtn" class="primary">PLAY NOW</button>
-              <button id="menuHowBtn" class="secondary">How to Rule</button>
+              <button id="menuHowBtn" class="secondary">How to Play</button>
             </div>
             <div class="team-cards">
-              <div class="team-card">Red Team — Retsba<small>Snow Guard Dominion</small></div>
-              <div class="team-card">Blue Team — Pengu<small>Aurora Tide Dominion</small></div>
-              <div class="team-card">Green Team — Abster<small>Glacier Grove Dominion</small></div>
-              <div class="team-card">Pink Team — Polly<small>Rose Frost Dominion</small></div>
+              <div class="team-card"><img src="assets/arctic/pieces/red-frost-king.svg" alt=""><div>Red<small>Retsba</small></div></div>
+              <div class="team-card"><img src="assets/arctic/pieces/blue-frost-king.svg" alt=""><div>Blue<small>Pengu</small></div></div>
+              <div class="team-card"><img src="assets/arctic/pieces/green-frost-king.svg" alt=""><div>Green<small>Abster</small></div></div>
+              <div class="team-card"><img src="assets/arctic/pieces/pink-frost-king.svg" alt=""><div>Pink<small>Polly</small></div></div>
             </div>
           </div>
           <div class="menu-card">
-            <div class="eyebrow">Current Defaults</div>
+            <div class="eyebrow">Current Setup</div>
             <div class="summary-list">
-              <div class="summary-item"><span>Humans</span><strong id="menuSummaryPlayers">1 Player</strong></div>
-              <div class="summary-item"><span>Bot Difficulty</span><strong id="menuSummaryDifficulty">Medium</strong></div>
+              <div class="summary-item"><span>Players</span><strong id="menuSummaryPlayers">1 Player</strong></div>
+              <div class="summary-item"><span>Difficulty</span><strong id="menuSummaryDifficulty">Medium</strong></div>
               <div class="summary-item"><span>Control Map</span><strong id="menuSummaryControl">Green human</strong></div>
             </div>
           </div>
@@ -1592,9 +1633,9 @@
     <section id="screenPlayerCount" class="screen" aria-label="Player count selection">
       <div class="screen-panel">
         <div class="eyebrow">Setup</div>
+        <div class="setup-step">Players → Colors</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Choose Player Count</h1>
-        <p class="subtitle">Choose how many human rulers join offline, then assign dominions. Unselected teams are commanded by bots.</p>
-        <div id="playerCountChoices" class="choice-grid"></div>
+        <div id="playerCountChoices" class="choice-grid compact-grid"></div>
         <div id="offlineTeamChoices" class="summary-list" style="margin-top:14px;"></div>
         <div class="screen-actions">
           <button id="playerCountBackBtn" class="ghost">Back</button>
@@ -1606,9 +1647,9 @@
     <section id="screenDifficulty" class="screen" aria-label="Difficulty selection">
       <div class="screen-panel">
         <div class="eyebrow">Setup</div>
+        <div class="setup-step">Difficulty → Start</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Choose Bot Difficulty</h1>
-        <p class="subtitle">Difficulty changes actual decision quality. Easy is loose and random-heavy. Pro evaluates candidate turns much more carefully.</p>
-        <div id="difficultyChoices" class="choice-grid"></div>
+        <div id="difficultyChoices" class="choice-grid compact-grid"></div>
         <div class="screen-actions">
           <button id="difficultyBackBtn" class="ghost">Back</button>
           <button id="difficultyNextBtn" class="primary">Continue</button>
@@ -2429,10 +2470,10 @@
       });
 
       const difficultyOptions = [
-        { value: 'easy', title: 'Easy', meta: 'Loose & random', description: 'Mostly random legal play with only a slight capture bias.' },
-        { value: 'medium', title: 'Medium', meta: 'Solid basic play', description: 'Prefers captures, basic promotions, and avoids some obvious mistakes.' },
-        { value: 'hard', title: 'Hard', meta: 'Heuristic-driven', description: 'Scores actions more carefully and chooses stronger tactical turns.' },
-        { value: 'pro', title: 'Pro', meta: 'Strongest non-cheating AI', description: 'Simulates candidate actions more deeply and values stronger continuations.' }
+        { value: 'easy', title: 'Easy', meta: 'Casual · ★', description: 'Random-friendly.' },
+        { value: 'medium', title: 'Medium', meta: 'Standard · ★★', description: 'Balanced play.' },
+        { value: 'hard', title: 'Hard', meta: 'Tactical · ★★★', description: 'Stronger decisions.' },
+        { value: 'pro', title: 'Pro', meta: 'Strongest · ★★★★', description: 'Deepest evaluation.' }
       ];
 
       ui.difficultyChoices.innerHTML = '';
@@ -3824,7 +3865,7 @@
       <div class="screen-panel">
         <div class="eyebrow">Setup</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Choose Play Mode</h1>
-        <p class="subtitle">Offline keeps the same local match flow. Online adds room creation, lobby sync, ready checks, countdown, and authoritative turn sync without changing the rules engine.</p>
+        <p class="subtitle">Pick how you want to play.</p>
         <div id="playModeChoices" class="flow-grid"></div>
         <div class="screen-actions">
           <button id="playModeBackBtn" class="ghost">Back</button>
@@ -4074,20 +4115,19 @@
     ui.offlineTeamChoices.innerHTML = '';
     const title = document.createElement('div');
     title.className = 'summary-item';
-    title.innerHTML = `<span>Choose Human Color${appState.matchConfig.playerCount > 1 ? 's' : ''}</span><strong>${appState.matchConfig.humanTeams.map(t => TEAM_LABEL[t]).join(', ')}</strong>`;
+    title.innerHTML = `<span>Human Color${appState.matchConfig.playerCount > 1 ? 's' : ''}</span><strong>${appState.matchConfig.humanTeams.map(t => TEAM_LABEL[t]).join(', ')}</strong>`;
     ui.offlineTeamChoices.appendChild(title);
 
     const wrap = document.createElement('div');
-    wrap.style.display = 'grid';
-    wrap.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
-    wrap.style.gap = '8px';
+    wrap.className = 'color-choice-grid';
 
     PLAYERS.forEach(team => {
       const selected = appState.matchConfig.humanTeams.includes(team);
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = selected ? 'primary' : 'secondary';
-      btn.style.padding = '10px 8px';
+      btn.className = `color-choice ${selected ? 'selected' : ''}`;
+      btn.style.color = `var(--${team === 'pink' ? 'yellow' : team})`;
+      btn.style.background = selected ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)';
       btn.textContent = TEAM_LABEL[team];
       btn.addEventListener('click', () => {
         primeAudioAndPlayButton();
@@ -4112,10 +4152,10 @@
   buildSetupChoices = function () {
     originalBuildSetupChoices();
     makeCardChoice(ui.playerCountChoices, [
-      { value: 1, title: '1 Player', meta: '1 human + 3 bots', description: 'Choose any one color as human. Remaining colors are bots.' },
-      { value: 2, title: '2 Player', meta: '2 humans + 2 bots', description: 'Choose any two human colors. Other colors remain bots.' },
-      { value: 3, title: '3 Player', meta: '3 humans + 1 bot', description: 'Choose any three human colors. One color remains a bot.' },
-      { value: 4, title: '4 Player', meta: '4 humans + 0 bots', description: 'All four colors are controlled by humans.' }
+      { value: 1, title: '1 Player', meta: '1 human + 3 bots', description: 'Solo commander setup.' },
+      { value: 2, title: '2 Player', meta: '2 humans + 2 bots', description: 'Two local allies vs bots.' },
+      { value: 3, title: '3 Player', meta: '3 humans + 1 bot', description: 'Three humans, one bot.' },
+      { value: 4, title: '4 Player', meta: '4 humans', description: 'Full local table.' }
     ], appState.matchConfig.playerCount, value => {
       appState.matchConfig.playerCount = value;
       syncOfflineHumanTeams();
@@ -4125,8 +4165,8 @@
     });
 
     makeCardChoice(ui.playModeChoices, [
-      { value: 'offline', title: 'Offline Play', meta: 'Browser only', description: 'Play locally in this browser. No server needed. Existing move engine and bots stay intact.' },
-      { value: 'online', title: 'Online Play', meta: 'Room + lobby', description: 'Create or join a synchronized room with ready checks, invite links, and server-authoritative turns.' }
+      { value: 'offline', title: '🎮 Offline Play', meta: 'Local', description: 'Play on this device.' },
+      { value: 'online', title: '🌐 Online Play', meta: 'Room', description: 'Create or join a room.' }
     ], appState.playMode, value => {
       appState.playMode = value;
       renderAppScreen();
@@ -4615,23 +4655,3 @@
 
 </body>
 </html>
-    .board-wrap {
-      border: 2px solid rgba(115,231,255,0.9);
-      box-shadow: 0 0 0 5px rgba(115,231,255,0.22), 0 0 28px rgba(115,231,255,0.5);
-      background: linear-gradient(180deg, rgba(170,232,255,0.2), rgba(175,232,255,0.08));
-    }
-
-    .team-cards {
-      margin-top: 14px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .team-card {
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 14px;
-      padding: 10px 12px;
-      background: rgba(255,255,255,0.05);
-      font-weight: 700;
-    }
-    .team-card small { display:block; opacity:0.8; margin-top:4px; }
