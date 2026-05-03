@@ -305,28 +305,125 @@
 
     .tutorial-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-      margin-top: 18px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
     }
 
     .tutorial-step {
-      padding: 16px;
-      border-radius: 20px;
+      padding: 12px;
+      border-radius: 16px;
       border: 1px solid rgba(255,255,255,0.08);
       background: rgba(255,255,255,0.03);
       display: grid;
       gap: 8px;
     }
 
+    .step-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .step-num {
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
     .tutorial-step h4 {
-      font-size: 1rem;
+      font-size: 0.98rem;
+      margin-top: 2px;
+    }
+
+    .step-icon {
+      font-size: 1.2rem;
+      line-height: 1;
+      border-radius: 999px;
+      padding: 6px;
+      background: rgba(142,197,255,0.13);
+      border: 1px solid rgba(142,197,255,0.34);
     }
 
     .tutorial-step p {
       color: var(--text-soft);
-      line-height: 1.55;
-      font-size: 0.9rem;
+      line-height: 1.4;
+      font-size: 0.85rem;
+    }
+
+    .step-bullets {
+      margin: 0;
+      padding-left: 16px;
+      color: var(--text-soft);
+      font-size: 0.8rem;
+      line-height: 1.35;
+      display: grid;
+      gap: 2px;
+    }
+
+    .mini-visual {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .mini-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 999px;
+      padding: 3px 7px;
+      background: rgba(255,255,255,0.03);
+      font-size: 0.74rem;
+      color: var(--text-soft);
+      white-space: nowrap;
+    }
+
+    .piece-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(223,191,122,0.3);
+      color: var(--gold);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .more-details {
+      margin-top: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.02);
+      overflow: hidden;
+    }
+
+    .more-details summary {
+      cursor: pointer;
+      padding: 10px 12px;
+      list-style: none;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+
+    .more-details summary::-webkit-details-marker { display: none; }
+
+    .more-details-body {
+      padding: 2px 12px 12px;
     }
 
     .loading-wrap {
@@ -1402,9 +1499,7 @@
 
     @media (max-width: 1260px) {
       .menu-grid,
-      .tutorial-grid {
-        grid-template-columns: 1fr;
-      }
+      .tutorial-grid { grid-template-columns: 1fr; }
       .app {
         grid-template-columns: 1fr;
       }
@@ -1660,34 +1755,56 @@
     <section id="screenTutorial" class="screen" aria-label="Tutorial screen">
       <div class="screen-panel">
         <div class="eyebrow">How To Play</div>
-        <h1 style="font-size:2.1rem; line-height:1.08;">Quick Rules & Turn Flow</h1>
-        <p class="subtitle">Learn the existing ruleset in arctic style. Mechanics remain unchanged.</p>
+        <h1 style="font-size:2.1rem; line-height:1.08;">How to Play</h1>
+        <p class="subtitle">Learn the basics in 6 quick steps</p>
         <div class="tutorial-grid">
           <div class="tutorial-step">
-            <h4>1. Roll Dice</h4>
-            <p>Each turn starts with two dice. Dice values unlock piece types: 1 or 5 = Snow Guard or Frost King, 2 = War Mammoth, 3 = Aurora Unicorn, 4 or 6 = Icebreaker.</p>
+            <div class="step-head"><div><div class="step-num">Step 1</div><h4>Roll Dice</h4></div><div class="step-icon" aria-hidden="true">🎲🎲</div></div>
+            <p>Roll two dice each turn. Each die activates certain piece types.</p>
+            <div class="mini-visual">
+              <span class="mini-pill">1/5 → <span class="piece-chip">SG</span> or <span class="piece-chip">FK</span></span>
+              <span class="mini-pill">2 → <span class="piece-chip">WM</span></span>
+              <span class="mini-pill">3 → <span class="piece-chip">AU</span></span>
+              <span class="mini-pill">4/6 → <span class="piece-chip">IB</span></span>
+            </div>
           </div>
           <div class="tutorial-step">
-            <h4>2. Select a Piece</h4>
-            <p>Pick one of your own pieces that matches an unused die and has at least one legal move. If both dice apply, you choose which die to spend.</p>
+            <div class="step-head"><div><div class="step-num">Step 2</div><h4>Pick a Piece</h4></div><div class="step-icon" aria-hidden="true">🧊</div></div>
+            <p>Choose one active piece that matches an unused die.</p>
+            <div class="mini-visual"><span class="mini-pill">Match die value</span><span class="mini-pill">Use 1 die per move</span></div>
           </div>
           <div class="tutorial-step">
-            <h4>3. Move or Capture</h4>
-            <p>Green and Blue snow guards move vertically. Red and Pink snow guards move horizontally. Captures follow the current live rules only—nothing extra is added.</p>
+            <div class="step-head"><div><div class="step-num">Step 3</div><h4>Move or Capture</h4></div><div class="step-icon" aria-hidden="true">↗️⚔️</div></div>
+            <p>Move to a legal square or capture an enemy piece.</p>
+            <div class="mini-visual"><span class="mini-pill">⬜ → ⬛ legal move</span><span class="mini-pill">⬜ ↘ ⚔ enemy</span></div>
           </div>
           <div class="tutorial-step">
-            <h4>4. Promotion</h4>
-            <p>When a pawn reaches a promotion destination square, it may promote according to the existing destination mapping. Promotion can create non-royal kings.</p>
+            <div class="step-head"><div><div class="step-num">Step 4</div><h4>Promotion</h4></div><div class="step-icon" aria-hidden="true">✨</div></div>
+            <p>Snow Guards can promote on their destination squares.</p>
+            <div class="mini-visual"><span class="mini-pill"><span class="piece-chip">SG</span> → promoted piece</span></div>
           </div>
           <div class="tutorial-step">
-            <h4>5. Elimination & Victory</h4>
-            <p>A team is eliminated only when it has no kings left on the board. When only one live team remains, that team wins the game.</p>
+            <div class="step-head"><div><div class="step-num">Step 5</div><h4>Elimination</h4></div><div class="step-icon" aria-hidden="true">👑</div></div>
+            <p>A team is eliminated only when all its kings are gone.</p>
+            <div class="mini-visual"><span class="mini-pill">Kings left = still alive</span></div>
           </div>
           <div class="tutorial-step">
-            <h4>6. Bots</h4>
-            <p>If fewer than four humans are selected, missing colors become bots. Bots roll the same dice, use the same legal move engine, and never cheat.</p>
+            <div class="step-head"><div><div class="step-num">Step 6</div><h4>Victory</h4></div><div class="step-icon" aria-hidden="true">🏆</div></div>
+            <p>The last surviving team wins.</p>
+            <div class="mini-visual"><span class="mini-pill">4 teams → 1 winner</span></div>
           </div>
         </div>
+        <details class="more-details">
+          <summary>More Details</summary>
+          <div class="more-details-body">
+            <ul class="step-bullets">
+              <li>Only legal moves can be played.</li>
+              <li>If one piece matches both dice, you choose which die to spend.</li>
+              <li>If the unused die has no legal move left, the turn ends automatically.</li>
+              <li>Eliminated teams are skipped, and their remaining pieces are removed.</li>
+            </ul>
+          </div>
+        </details>
         <div class="screen-actions">
           <button id="tutorialBackBtn" class="ghost">Back</button>
           <button id="tutorialSkipBtn" class="secondary">Skip Briefing</button>
