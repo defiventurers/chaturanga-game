@@ -1458,13 +1458,11 @@
 
     @media (max-width: 700px) {
       :root {
-        --mobile-board-safe-width: calc(100vw - 72px);
-        --mobile-coord-size: 20px;
+        --mobile-board-safe-width: calc(100vw - 40px);
+        --mobile-coord-size: 18px;
         --mobile-cell-size: calc((var(--mobile-board-safe-width) - var(--mobile-coord-size)) / 8);
       }
-      body {
-        overflow-x: hidden;
-      }
+      body { overflow-x: hidden; }
       .app-shell,
       .app,
       .board-wrap,
@@ -1475,81 +1473,77 @@
       .app-shell {
         width: 100%;
         margin: 0;
-        padding: 8px;
-        border-radius: 16px;
+        padding: 6px;
+        border-radius: 14px;
       }
-      .game-topbar {
-        padding: 6px 2px 10px;
+      .app {
+        display: flex;
+        flex-direction: column;
         gap: 8px;
       }
+      .board-wrap { order: 1; }
+      .panel { order: 2; }
+      .game-topbar {
+        padding: 4px 2px 6px;
+        gap: 6px;
+      }
+      .game-topbar .eyebrow { margin-bottom: 4px; padding: 4px 8px; font-size: 10px; }
+      .game-topbar h2 { font-size: 1rem; }
+      .game-topbar p { font-size: 0.73rem; margin-top: 2px; line-height: 1.25; }
+      .config-pills { margin-top: 6px; gap: 6px; }
+      .config-pill { padding: 4px 8px; font-size: 10px; }
       .game-top-actions {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 8px;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
         width: 100%;
       }
       .game-top-actions button {
-        min-height: 42px;
-        padding: 10px 12px;
+        min-height: 34px;
+        min-width: 0;
+        padding: 6px 8px;
+        font-size: 0.72rem;
       }
       .panel,
       .status-card,
-      .section-card {
-        padding: 12px;
-        border-radius: 14px;
-      }
+      .section-card { padding: 10px; border-radius: 12px; }
+      .panel-header { display: none; }
       .hud-grid,
-      .controls,
-      .pill-row {
-        gap: 8px;
-      }
-      .board-wrap {
-        width: 100%;
-        padding: 4px;
-        gap: 10px;
-        align-items: center;
-      }
-      .board-shell {
-        width: 100%;
-        padding: 6px;
-      }
-      .board-frame {
-        padding: 6px;
-        transform-origin: top center;
-      }
+      .pill-row { gap: 8px; }
+      .status-top { margin-bottom: 6px; gap: 8px; }
+      .status-heading { font-size: 0.62rem; margin-bottom: 0; }
+      .status-player { font-size: 1rem; }
+      .status-body { font-size: 0.79rem; line-height: 1.25; }
+      .status-meta { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; width: 100%; }
+      .meta-chip { font-size: 10px; text-align: center; padding: 5px 6px; overflow: hidden; text-overflow: ellipsis; }
+      .board-wrap { width: 100%; padding: 2px; gap: 8px; align-items: center; }
+      .board-shell { width: 100%; padding: 4px; }
+      .board-frame { padding: 5px; }
       #boardGrid {
         grid-template-columns: var(--mobile-coord-size) repeat(8, var(--mobile-cell-size));
         grid-template-rows: repeat(8, var(--mobile-cell-size)) var(--mobile-coord-size);
       }
-      .coord {
-        font-size: 10px;
-      }
-      .cell {
-        width: var(--mobile-cell-size);
-        height: var(--mobile-cell-size);
-      }
-      .piece {
-        width: calc(var(--mobile-cell-size) - 8px);
-        height: calc(var(--mobile-cell-size) - 8px);
-      }
-      .die-row {
-        grid-template-columns: 1fr;
+      .coord { font-size: 9px; }
+      .cell { width: var(--mobile-cell-size); height: var(--mobile-cell-size); }
+      .piece { width: calc(var(--mobile-cell-size) - 8px); height: calc(var(--mobile-cell-size) - 8px); }
+      .die-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .die-card { min-height: 76px; padding: 8px; border-radius: 12px; }
+      .die-head { font-size: 0.72rem; }
+      .die-state { font-size: 0.62rem; padding: 3px 6px; }
+      .die-value-wrap { gap: 8px; }
+      .die-value { width: 38px; height: 38px; font-size: 1.1rem; }
+      .die-piece { font-size: 0.74rem; line-height: 1.2; }
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
       }
-      .die-card {
-        min-height: auto;
-        padding: 12px;
-        border-radius: 14px;
-      }
-      .die-value {
-        width: 48px;
-        height: 48px;
-        font-size: 1.4rem;
-      }
-      .controls button {
-        min-height: 40px;
-        padding: 9px 12px;
-      }
+      .controls button { min-height: 46px; padding: 8px 10px; font-size: 0.9rem; }
+      #newGameBtn { grid-column: 1 / -1; min-height: 40px; }
+      .audio-controls,
+      #playerPills,
+      .selection-box,
+      #moveLog { margin-top: 10px; }
     }
   </style>
 </head>
