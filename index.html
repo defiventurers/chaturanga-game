@@ -2130,14 +2130,15 @@
       }
     };
     const tutorialState = {
-      selectedTeam: 'red',
-      selectedPiece: 'pawn',
-      selectedPreset: 0,
-      board: createEmptyBoard(),
+      selectedTutorialTeam: 'green',
+      selectedTutorialPiece: 'pawn',
+      selectedTutorialExample: 0,
+      tutorialBoard: createEmptyBoard(),
       selectedCell: null,
-      legalMoves: [],
-      showPattern: true,
-      showCaptures: true
+      tutorialLegalMoves: [],
+      tutorialCaptureSquares: [],
+      showTutorialMovePattern: true,
+      showTutorialCaptures: true
     };
     const TUTORIAL_PRESETS = ['Basic Move', 'Capture Example', 'Blocked Example', 'Edge Case'];
 
@@ -2239,71 +2240,75 @@
       return { board, pieceRow: r, pieceCol: c };
     }
     function getTutorialLegalMoves() {
-      const s = { board: tutorialState.board, dice: { values:[1,1], used:[false,true] } };
+      const s = { board: tutorialState.tutorialBoard, dice: { values:[1,1], used:[false,true] } };
       const dieByPiece = { pawn:1, king:1, elephant:2, horse:3, ship:4 };
-      s.dice.values[0] = dieByPiece[tutorialState.selectedPiece];
+      s.dice.values[0] = dieByPiece[tutorialState.selectedTutorialPiece];
       const pos = findTutorialPiece();
       if (!pos) return [];
       return getLegalMovesForPieceOnState(s, pos.row, pos.col, 0);
     }
     function findTutorialPiece() {
       for (let row=0; row<8; row++) for (let col=0; col<8; col++) {
-        const p = tutorialState.board[row][col];
-        if (p && p.team===tutorialState.selectedTeam && p.type===tutorialState.selectedPiece) return { row, col };
+        const p = tutorialState.tutorialBoard[row][col];
+        if (p && p.team===tutorialState.selectedTutorialTeam && p.type===tutorialState.selectedTutorialPiece) return { row, col };
       }
       return null;
     }
     function resetTutorialScenario() {
-      const preset = TUTORIAL_PRESETS[tutorialState.selectedPreset];
-      const scenario = buildTutorialScenario(tutorialState.selectedTeam, tutorialState.selectedPiece, preset);
-      tutorialState.board = scenario.board;
+      const preset = TUTORIAL_PRESETS[tutorialState.selectedTutorialExample];
+      const scenario = buildTutorialScenario(tutorialState.selectedTutorialTeam, tutorialState.selectedTutorialPiece, preset);
+      tutorialState.tutorialBoard = scenario.board;
       tutorialState.selectedCell = { row: scenario.pieceRow, col: scenario.pieceCol };
-      tutorialState.legalMoves = getTutorialLegalMoves();
+      tutorialState.tutorialLegalMoves = getTutorialLegalMoves();
+      tutorialState.tutorialCaptureSquares = tutorialState.tutorialLegalMoves.filter(m => !!m.captured).map(m => `${m.toRow},${m.toCol}`);
       renderPieceExplorer();
     }
     function renderPieceExplorer() {
       if (!ui.tutorialBoard) return;
       ui.tutorialTeamSelector.innerHTML = '';
-      ['red','blue','green','yellow'].forEach(team => { const b=document.createElement('button'); b.className=`tutorial-choice-card team-${team} ${tutorialState.selectedTeam===team?'selected':''}`; const icon=getPieceIcon(team,'king'); b.innerHTML=`<img src='${icon}' alt='${TEAM_LABEL[team]} king'><div class='meta'><strong>${TEAM_LABEL[team]}</strong><span>team</span></div>`; b.onclick=()=>{tutorialState.selectedTeam=team; resetTutorialScenario();}; ui.tutorialTeamSelector.appendChild(b); });
+      ['red','blue','green','yellow'].forEach(team => { const b=document.createElement('button'); b.className=`tutorial-choice-card team-${team} ${tutorialState.selectedTutorialTeam===team?'selected':''}`; const icon=getPieceAsset(team,'king'); b.innerHTML=`<img src='${icon}' alt='${TEAM_LABEL[team]} king'><div class='meta'><strong>${TEAM_LABEL[team]}</strong><span>team</span></div>`; b.onclick=()=>{tutorialState.selectedTutorialTeam=team; resetTutorialScenario();}; ui.tutorialTeamSelector.appendChild(b); });
       ui.tutorialPieceSelector.innerHTML = '';
-      const pieceRole={pawn:'basic unit',ship:'boat unit',elephant:'heavy unit',horse:'swift unit',king:'royal unit'}; ['pawn','ship','elephant','horse','king'].forEach(type => { const b=document.createElement('button'); b.className=`tutorial-choice-card ${tutorialState.selectedPiece===type?'selected':''}`; const icon=getPieceIcon(tutorialState.selectedTeam,type); b.innerHTML=`<img src='${icon}' alt='${PIECE_NAME[type]}'><div class='meta'><strong>${PIECE_NAME[type]}</strong><span>${pieceRole[type]}</span></div>`; b.onclick=()=>{tutorialState.selectedPiece=type; tutorialState.selectedPreset=0; resetTutorialScenario();}; ui.tutorialPieceSelector.appendChild(b); });
+      const pieceRole={pawn:'basic unit',ship:'boat unit',elephant:'heavy unit',horse:'swift unit',king:'royal unit'}; ['pawn','ship','elephant','horse','king'].forEach(type => { const b=document.createElement('button'); b.className=`tutorial-choice-card ${tutorialState.selectedTutorialPiece===type?'selected':''}`; const icon=getPieceAsset(tutorialState.selectedTutorialTeam,type); b.innerHTML=`<img src='${icon}' alt='${PIECE_NAME[type]}'><div class='meta'><strong>${PIECE_NAME[type]}</strong><span>${pieceRole[type]}</span></div>`; b.onclick=()=>{tutorialState.selectedTutorialPiece=type; tutorialState.selectedTutorialExample=0; resetTutorialScenario();}; ui.tutorialPieceSelector.appendChild(b); });
       ui.tutorialPresetSelector.innerHTML = '';
-      TUTORIAL_PRESETS.forEach((name, idx)=>{ const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedPreset===idx?'selected':''}`; b.textContent=name; b.onclick=()=>{tutorialState.selectedPreset=idx; resetTutorialScenario();}; ui.tutorialPresetSelector.appendChild(b); });
+      TUTORIAL_PRESETS.forEach((name, idx)=>{ const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedTutorialExample===idx?'selected':''}`; b.textContent=name; b.onclick=()=>{tutorialState.selectedTutorialExample=idx; resetTutorialScenario();}; ui.tutorialPresetSelector.appendChild(b); });
       ui.tutorialBoard.innerHTML = '';
       for (let row=7; row>=0; row--) for (let col=0; col<8; col++) {
         const cell=document.createElement('button'); cell.className=`tutorial-cell ${(row+col)%2===0?'light':'dark'}`; cell.onclick=()=>handleTutorialCellClick(row,col);
         if (tutorialState.selectedCell && tutorialState.selectedCell.row===row && tutorialState.selectedCell.col===col) cell.classList.add('selected');
-        const move = tutorialState.legalMoves.find(m=>m.toRow===row&&m.toCol===col);
-        if (move) cell.classList.add(move.captured && tutorialState.showCaptures ? 'capture':'possible');
-        const piece=tutorialState.board[row][col];
+        const move = tutorialState.tutorialLegalMoves.find(m=>m.toRow===row&&m.toCol===col);
+        if (move) {
+          if (move.captured && tutorialState.showTutorialCaptures) cell.classList.add('capture');
+          else cell.classList.add('possible');
+        }
+        const piece=tutorialState.tutorialBoard[row][col];
         if (piece){ const el=document.createElement('div'); el.className='piece'; const img=document.createElement('img'); img.className='piece-art'; img.src=getPieceAsset(piece.team,piece.type); el.appendChild(img); cell.appendChild(el); }
         ui.tutorialBoard.appendChild(cell);
       }
       renderTutorialArrows();
-      const preset = TUTORIAL_PRESETS[tutorialState.selectedPreset];
-      ui.tutorialDescription.innerHTML = `<strong>${PIECE_NAME[tutorialState.selectedPiece]} · ${TEAM_LABEL[tutorialState.selectedTeam]}</strong><div>Moves: uses live move rules.</div><div>Captures: highlighted enemy targets only.</div><div>Tip: ${tutorialState.selectedPiece==='king'?'Protect your kings to stay alive.':'Tap highlighted squares and test each example.'}</div>`;
-      ui.tutorialTogglePatternBtn.textContent = tutorialState.showPattern ? 'Hide Move Pattern' : 'Show Move Pattern';
-      ui.tutorialToggleCapturesBtn.textContent = tutorialState.showCaptures ? 'Hide Captures' : 'Show Captures';
+      const preset = TUTORIAL_PRESETS[tutorialState.selectedTutorialExample];
+      ui.tutorialDescription.innerHTML = `<strong>${PIECE_NAME[tutorialState.selectedTutorialPiece]} · ${TEAM_LABEL[tutorialState.selectedTutorialTeam]}</strong><div>Example: ${preset}</div><div>Moves: uses live move rules.</div><div>Captures: highlighted enemy targets only.</div><div>Tip: ${tutorialState.selectedTutorialPiece==='king'?'Protect your kings to stay alive.':'Tap highlighted squares and test each example.'}</div>`;
+      ui.tutorialTogglePatternBtn.textContent = tutorialState.showTutorialMovePattern ? 'Hide Move Pattern' : 'Show Move Pattern';
+      ui.tutorialToggleCapturesBtn.textContent = tutorialState.showTutorialCaptures ? 'Hide Captures' : 'Show Captures';
     }
     function renderTutorialArrows() {
       ui.tutorialArrows.innerHTML = '';
-      if (!tutorialState.showPattern) return;
+      if (!tutorialState.showTutorialMovePattern) return;
       const defs = { pawn:['M50 60 L50 32'], elephant:['M50 50 L82 50','M50 50 L18 50','M50 50 L50 18','M50 50 L50 82'], horse:['M50 50 L64 30','M50 50 L36 30','M50 50 L64 70','M50 50 L36 70'], ship:['M50 50 L70 30','M50 50 L30 30','M50 50 L70 70','M50 50 L30 70'], king:['M50 50 L70 50','M50 50 L30 50','M50 50 L50 30','M50 50 L50 70','M50 50 L68 32','M50 50 L32 32','M50 50 L68 68','M50 50 L32 68'] };
-      defs[tutorialState.selectedPiece].forEach(d=>{ const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',d); p.setAttribute('class','tutorial-arrow'); ui.tutorialArrows.appendChild(p); });
+      defs[tutorialState.selectedTutorialPiece].forEach(d=>{ const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',d); p.setAttribute('class','tutorial-arrow'); ui.tutorialArrows.appendChild(p); });
     }
     function handleTutorialCellClick(row,col){
-      const move = tutorialState.legalMoves.find(m=>m.toRow===row&&m.toCol===col);
+      const move = tutorialState.tutorialLegalMoves.find(m=>m.toRow===row&&m.toCol===col);
       if (move) {
-        tutorialState.board[move.toRow][move.toCol] = tutorialState.board[move.fromRow][move.fromCol];
-        tutorialState.board[move.fromRow][move.fromCol] = null;
+        tutorialState.tutorialBoard[move.toRow][move.toCol] = tutorialState.tutorialBoard[move.fromRow][move.fromCol];
+        tutorialState.tutorialBoard[move.fromRow][move.fromCol] = null;
         tutorialState.selectedCell = { row: move.toRow, col: move.toCol };
-        tutorialState.legalMoves = getTutorialLegalMoves();
+        tutorialState.tutorialLegalMoves = getTutorialLegalMoves();
         return renderPieceExplorer();
       }
-      const piece = tutorialState.board[row][col];
-      if (piece && piece.team === tutorialState.selectedTeam && piece.type === tutorialState.selectedPiece) {
-        tutorialState.selectedCell = { row, col }; tutorialState.legalMoves = getTutorialLegalMoves();
-      } else { tutorialState.selectedCell = null; tutorialState.legalMoves = []; }
+      const piece = tutorialState.tutorialBoard[row][col];
+      if (piece && piece.team === tutorialState.selectedTutorialTeam && piece.type === tutorialState.selectedTutorialPiece) {
+        tutorialState.selectedCell = { row, col }; tutorialState.tutorialLegalMoves = getTutorialLegalMoves();
+      } else { tutorialState.selectedCell = null; tutorialState.tutorialLegalMoves = []; }
       renderPieceExplorer();
     }
 
@@ -4010,11 +4015,11 @@
       primeAudioAndPlayButton();
       beginMatchFlowFromTutorial();
     });
-    ui.tutorialPrevExampleBtn.addEventListener('click', () => { tutorialState.selectedPreset = (tutorialState.selectedPreset + TUTORIAL_PRESETS.length - 1) % TUTORIAL_PRESETS.length; resetTutorialScenario(); });
-    ui.tutorialNextExampleBtn.addEventListener('click', () => { tutorialState.selectedPreset = (tutorialState.selectedPreset + 1) % TUTORIAL_PRESETS.length; resetTutorialScenario(); });
+    ui.tutorialPrevExampleBtn.addEventListener('click', () => { tutorialState.selectedTutorialExample = (tutorialState.selectedTutorialExample + TUTORIAL_PRESETS.length - 1) % TUTORIAL_PRESETS.length; resetTutorialScenario(); });
+    ui.tutorialNextExampleBtn.addEventListener('click', () => { tutorialState.selectedTutorialExample = (tutorialState.selectedTutorialExample + 1) % TUTORIAL_PRESETS.length; resetTutorialScenario(); });
     ui.tutorialResetExampleBtn.addEventListener('click', resetTutorialScenario);
-    ui.tutorialTogglePatternBtn.addEventListener('click', () => { tutorialState.showPattern = !tutorialState.showPattern; renderPieceExplorer(); });
-    ui.tutorialToggleCapturesBtn.addEventListener('click', () => { tutorialState.showCaptures = !tutorialState.showCaptures; renderPieceExplorer(); });
+    ui.tutorialTogglePatternBtn.addEventListener('click', () => { tutorialState.showTutorialMovePattern = !tutorialState.showTutorialMovePattern; renderPieceExplorer(); });
+    ui.tutorialToggleCapturesBtn.addEventListener('click', () => { tutorialState.showTutorialCaptures = !tutorialState.showTutorialCaptures; renderPieceExplorer(); });
 
     ui.tutorialStartBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
