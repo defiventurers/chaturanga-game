@@ -307,16 +307,16 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
-      margin-top: 14px;
+      margin-top: 10px;
     }
 
     .tutorial-step {
-      padding: 12px;
-      border-radius: 16px;
+      padding: 10px;
+      border-radius: 14px;
       border: 1px solid rgba(255,255,255,0.08);
       background: rgba(255,255,255,0.03);
       display: grid;
-      gap: 8px;
+      gap: 6px;
     }
 
     .step-head {
@@ -425,6 +425,21 @@
     .more-details-body {
       padding: 2px 12px 12px;
     }
+
+    .tutorial-flow-head { display:grid; gap: 6px; margin-bottom: 6px; }
+    .tutorial-flow-title { font-size: clamp(1.75rem, 5vw, 2.2rem); line-height: 1.05; }
+    .tutorial-flow-subtitle { color: var(--text-soft); font-size: .94rem; }
+    .tutorial-helper { color: var(--ice-blue); font-size: .8rem; letter-spacing: .04em; }
+    .team-card-row, .piece-card-row { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .tutorial-choice-card { border-radius: 16px; border:1px solid rgba(174,243,255,.26); background: rgba(255,255,255,.04); min-height: 72px; display:flex; align-items:center; gap:10px; padding:10px; }
+    .tutorial-choice-card img { width: 42px; height: 42px; object-fit: contain; border-radius: 10px; background: rgba(0,0,0,.14); padding: 4px; }
+    .tutorial-choice-card .meta { display:grid; gap:2px; text-align:left; }
+    .tutorial-choice-card .meta strong { font-size:.9rem; }
+    .tutorial-choice-card .meta span { color: var(--text-soft); font-size:.75rem; }
+    .tutorial-choice-card.team-red { background: linear-gradient(180deg, rgba(216,91,98,.22), rgba(73,27,31,.72)); }
+    .tutorial-choice-card.team-blue { background: linear-gradient(180deg, rgba(88,144,246,.22), rgba(26,43,77,.72)); }
+    .tutorial-choice-card.team-green { background: linear-gradient(180deg, rgba(43,166,106,.22), rgba(16,57,39,.72)); }
+    .tutorial-choice-card.team-yellow { background: linear-gradient(180deg, rgba(255,96,189,.26), rgba(109,20,70,.72)); }
     .piece-explorer {
       margin-top: 14px;
       padding: 14px;
@@ -1784,73 +1799,27 @@
     <section id="screenTutorial" class="screen" aria-label="Tutorial screen">
       <div class="screen-panel">
         <div class="eyebrow">How To Play</div>
-        <h1 style="font-size:2.1rem; line-height:1.08;">How to Play</h1>
-        <p class="subtitle">Learn the basics in 6 quick steps</p>
-        <div class="tutorial-grid">
-          <div class="tutorial-step">
-            <div class="step-head"><div><div class="step-num">Step 1</div><h4>Roll Dice</h4></div><div class="step-icon" aria-hidden="true">🎲🎲</div></div>
-            <p>Roll two dice each turn. Each die activates certain piece types.</p>
-            <div class="mini-visual">
-              <span class="mini-pill">1/5 → <span class="piece-chip">SG</span> or <span class="piece-chip">FK</span></span>
-              <span class="mini-pill">2 → <span class="piece-chip">WM</span></span>
-              <span class="mini-pill">3 → <span class="piece-chip">AU</span></span>
-              <span class="mini-pill">4/6 → <span class="piece-chip">IB</span></span>
-            </div>
-          </div>
-          <div class="tutorial-step">
-            <div class="step-head"><div><div class="step-num">Step 2</div><h4>Pick a Piece</h4></div><div class="step-icon" aria-hidden="true">🧊</div></div>
-            <p>Choose one active piece that matches an unused die.</p>
-            <div class="mini-visual"><span class="mini-pill">Match die value</span><span class="mini-pill">Use 1 die per move</span></div>
-          </div>
-          <div class="tutorial-step">
-            <div class="step-head"><div><div class="step-num">Step 3</div><h4>Move or Capture</h4></div><div class="step-icon" aria-hidden="true">↗️⚔️</div></div>
-            <p>Move to a legal square or capture an enemy piece.</p>
-            <div class="mini-visual"><span class="mini-pill">⬜ → ⬛ legal move</span><span class="mini-pill">⬜ ↘ ⚔ enemy</span></div>
-          </div>
-          <div class="tutorial-step">
-            <div class="step-head"><div><div class="step-num">Step 4</div><h4>Promotion</h4></div><div class="step-icon" aria-hidden="true">✨</div></div>
-            <p>Snow Guards can promote on their destination squares.</p>
-            <div class="mini-visual"><span class="mini-pill"><span class="piece-chip">SG</span> → promoted piece</span></div>
-          </div>
-          <div class="tutorial-step">
-            <div class="step-head"><div><div class="step-num">Step 5</div><h4>Elimination</h4></div><div class="step-icon" aria-hidden="true">👑</div></div>
-            <p>A team is eliminated only when all its kings are gone.</p>
-            <div class="mini-visual"><span class="mini-pill">Kings left = still alive</span></div>
-          </div>
-          <div class="tutorial-step">
-            <div class="step-head"><div><div class="step-num">Step 6</div><h4>Victory</h4></div><div class="step-icon" aria-hidden="true">🏆</div></div>
-            <p>The last surviving team wins.</p>
-            <div class="mini-visual"><span class="mini-pill">4 teams → 1 winner</span></div>
-          </div>
+        <div class="tutorial-flow-head">
+          <h1 class="tutorial-flow-title">Learn by Playing</h1>
+          <p class="tutorial-flow-subtitle">Choose a team, choose a piece, then test moves.</p>
+          <p class="tutorial-helper">Blue glow = legal moves · Red glow = captures</p>
         </div>
-        <details class="more-details">
-          <summary>More Details</summary>
-          <div class="more-details-body">
-            <ul class="step-bullets">
-              <li>Only legal moves can be played.</li>
-              <li>If one piece matches both dice, you choose which die to spend.</li>
-              <li>If the unused die has no legal move left, the turn ends automatically.</li>
-              <li>Eliminated teams are skipped, and their remaining pieces are removed.</li>
-            </ul>
-          </div>
-        </details>
         <div class="piece-explorer">
-          <h3>Piece Explorer</h3>
           <div class="explorer-row">
-            <div class="explorer-label">Team</div>
-            <div id="tutorialTeamSelector" class="explorer-chip-row"></div>
+            <div class="explorer-label">1. Pick a team</div>
+            <div id="tutorialTeamSelector" class="team-card-row"></div>
           </div>
           <div class="explorer-row">
-            <div class="explorer-label">Piece</div>
-            <div id="tutorialPieceSelector" class="explorer-chip-row"></div>
-          </div>
-          <div class="explorer-row">
-            <div class="explorer-label">Examples</div>
-            <div id="tutorialPresetSelector" class="explorer-chip-row"></div>
+            <div class="explorer-label">2. Choose a piece</div>
+            <div id="tutorialPieceSelector" class="piece-card-row"></div>
           </div>
           <div class="tutorial-board-wrap">
             <div id="tutorialBoard" class="tutorial-board"></div>
             <svg id="tutorialArrows" class="tutorial-arrows" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="explorer-row">
+            <div class="explorer-label">3. Try each example</div>
+            <div id="tutorialPresetSelector" class="explorer-chip-row"></div>
           </div>
           <div id="tutorialDescription" class="explorer-desc"></div>
           <div class="explorer-controls">
@@ -1861,6 +1830,17 @@
             <button id="tutorialToggleCapturesBtn" type="button" class="subtle">Show Captures</button>
           </div>
         </div>
+        <details class="more-details">
+          <summary>Quick Rules</summary>
+          <div class="more-details-body">
+            <div class="tutorial-grid">
+              <div class="tutorial-step"><div class="step-num">Roll</div><p>Roll two dice. Each die activates specific pieces.</p></div>
+              <div class="tutorial-step"><div class="step-num">Move</div><p>Tap your piece, then tap a highlighted legal square.</p></div>
+              <div class="tutorial-step"><div class="step-num">Capture</div><p>Capture only highlighted enemy targets.</p></div>
+              <div class="tutorial-step"><div class="step-num">Win</div><p>Protect kings. Last surviving team wins.</p></div>
+            </div>
+          </div>
+        </details>
         <div class="screen-actions">
           <button id="tutorialBackBtn" class="ghost">Back</button>
           <button id="tutorialSkipBtn" class="secondary">Skip Briefing</button>
@@ -2284,9 +2264,9 @@
     function renderPieceExplorer() {
       if (!ui.tutorialBoard) return;
       ui.tutorialTeamSelector.innerHTML = '';
-      ['red','blue','green','yellow'].forEach(team => { const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedTeam===team?'selected':''}`; b.textContent=TEAM_LABEL[team]; b.onclick=()=>{tutorialState.selectedTeam=team; resetTutorialScenario();}; ui.tutorialTeamSelector.appendChild(b); });
+      ['red','blue','green','yellow'].forEach(team => { const b=document.createElement('button'); b.className=`tutorial-choice-card team-${team} ${tutorialState.selectedTeam===team?'selected':''}`; const icon=getPieceIcon(team,'king'); b.innerHTML=`<img src='${icon}' alt='${TEAM_LABEL[team]} king'><div class='meta'><strong>${TEAM_LABEL[team]}</strong><span>team</span></div>`; b.onclick=()=>{tutorialState.selectedTeam=team; resetTutorialScenario();}; ui.tutorialTeamSelector.appendChild(b); });
       ui.tutorialPieceSelector.innerHTML = '';
-      ['pawn','ship','elephant','horse','king'].forEach(type => { const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedPiece===type?'selected':''}`; b.textContent=PIECE_NAME[type]; b.onclick=()=>{tutorialState.selectedPiece=type; tutorialState.selectedPreset=0; resetTutorialScenario();}; ui.tutorialPieceSelector.appendChild(b); });
+      const pieceRole={pawn:'basic unit',ship:'boat unit',elephant:'heavy unit',horse:'swift unit',king:'royal unit'}; ['pawn','ship','elephant','horse','king'].forEach(type => { const b=document.createElement('button'); b.className=`tutorial-choice-card ${tutorialState.selectedPiece===type?'selected':''}`; const icon=getPieceIcon(tutorialState.selectedTeam,type); b.innerHTML=`<img src='${icon}' alt='${PIECE_NAME[type]}'><div class='meta'><strong>${PIECE_NAME[type]}</strong><span>${pieceRole[type]}</span></div>`; b.onclick=()=>{tutorialState.selectedPiece=type; tutorialState.selectedPreset=0; resetTutorialScenario();}; ui.tutorialPieceSelector.appendChild(b); });
       ui.tutorialPresetSelector.innerHTML = '';
       TUTORIAL_PRESETS.forEach((name, idx)=>{ const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedPreset===idx?'selected':''}`; b.textContent=name; b.onclick=()=>{tutorialState.selectedPreset=idx; resetTutorialScenario();}; ui.tutorialPresetSelector.appendChild(b); });
       ui.tutorialBoard.innerHTML = '';
@@ -2301,7 +2281,7 @@
       }
       renderTutorialArrows();
       const preset = TUTORIAL_PRESETS[tutorialState.selectedPreset];
-      ui.tutorialDescription.innerHTML = `<strong>${PIECE_NAME[tutorialState.selectedPiece]} · ${TEAM_LABEL[tutorialState.selectedTeam]}</strong><div>Moves: uses the same live legal-move engine.</div><div>Captures: legal target squares only.</div><div>Example: ${preset}.</div><div>Tip: ${tutorialState.selectedPiece==='pawn'?'Snow Guard promotes on its destination rank/file.':'Tap highlighted cells to test safely.'}</div>`;
+      ui.tutorialDescription.innerHTML = `<strong>${PIECE_NAME[tutorialState.selectedPiece]} · ${TEAM_LABEL[tutorialState.selectedTeam]}</strong><div>Moves: uses live move rules.</div><div>Captures: highlighted enemy targets only.</div><div>Tip: ${tutorialState.selectedPiece==='king'?'Protect your kings to stay alive.':'Tap highlighted squares and test each example.'}</div>`;
       ui.tutorialTogglePatternBtn.textContent = tutorialState.showPattern ? 'Hide Move Pattern' : 'Show Move Pattern';
       ui.tutorialToggleCapturesBtn.textContent = tutorialState.showCaptures ? 'Hide Captures' : 'Show Captures';
     }
