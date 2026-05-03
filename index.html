@@ -1777,7 +1777,7 @@
     };
     function getPieceAsset(team, type) {
       if (team === 'green' && type === 'king') return 'assets/arctic/pieces/green-frost-king.png';
-      if (team === 'red' || team === 'blue') {
+      if (team === 'red' || team === 'blue' || team === 'yellow') {
         const pngMapByTeam = {
           red: {
             pawn: 'red-snow-guard.png',
@@ -1792,6 +1792,13 @@
             elephant: 'blue-war-mammoth.png',
             horse: 'blue-aurora-unicorn.png',
             king: 'blue-frost-king.png'
+          },
+          yellow: {
+            pawn: 'pink-snow-guard.png',
+            ship: 'pink-icebreaker.png',
+            elephant: 'pink-war-mammoth.png',
+            horse: 'pink-aurora-unicorn.png',
+            king: 'pink-frost-king.png'
           }
         };
         const teamMap = pngMapByTeam[team];
@@ -3381,7 +3388,7 @@
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           const isGreenFrostKing = piece.team === 'green' && piece.type === 'king';
-          const isPngFullTokenPiece = piece.team === 'red' || piece.team === 'blue';
+          const isPngFullTokenPiece = piece.team === 'red' || piece.team === 'blue' || piece.team === 'yellow';
           const art = document.createElement('img');
           art.className = (isGreenFrostKing || isPngFullTokenPiece) ? 'piece-img png-piece-full' : 'piece-art';
           art.loading = 'eager';
