@@ -425,6 +425,35 @@
     .more-details-body {
       padding: 2px 12px 12px;
     }
+    .piece-explorer {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(174, 243, 255, 0.32);
+      background: rgba(8, 28, 50, 0.56);
+      display: grid;
+      gap: 10px;
+    }
+    .explorer-row { display: grid; gap: 8px; }
+    .explorer-label { font-size: 0.78rem; color: var(--ice-blue); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .explorer-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .explorer-chip { width: auto; padding: 8px 10px; border-radius: 999px; font-size: .8rem; }
+    .explorer-chip.selected { border-color: var(--ice-border); box-shadow: 0 0 0 2px rgba(100,232,255,.2); }
+    .tutorial-board-wrap { position: relative; width: min(100%, 360px); margin: 0 auto; border-radius: 14px; overflow: hidden; border: 1px solid rgba(174, 243, 255, 0.36); }
+    .tutorial-board { display: grid; grid-template-columns: repeat(8,1fr); }
+    .tutorial-cell { aspect-ratio: 1 / 1; border: 1px solid rgba(200,241,255,0.35); padding: 0; position: relative; }
+    .tutorial-cell.light { background: linear-gradient(160deg, var(--cell-light), var(--cell-light-2)); }
+    .tutorial-cell.dark { background: linear-gradient(150deg, var(--cell-dark), var(--cell-dark-2)); }
+    .tutorial-cell.selected::after,.tutorial-cell.possible::after,.tutorial-cell.capture::after { content:""; position:absolute; inset:3px; border-radius:8px; }
+    .tutorial-cell.selected::after { box-shadow: inset 0 0 0 2px var(--selected), 0 0 10px rgba(248,212,105,.45); }
+    .tutorial-cell.possible::after { box-shadow: inset 0 0 0 2px #59b7ff, 0 0 10px rgba(89,183,255,.4); }
+    .tutorial-cell.capture::after { box-shadow: inset 0 0 0 2px #ff884f, 0 0 10px rgba(255,136,79,.42); }
+    .tutorial-arrows { position:absolute; inset:0; pointer-events:none; }
+    .tutorial-arrow { stroke: rgba(115,231,255,.88); stroke-width: 3; fill: none; stroke-linecap: round; stroke-dasharray: 6 8; animation: arrowFlow 1.5s linear infinite; }
+    @keyframes arrowFlow { to { stroke-dashoffset: -28; opacity: .72; } }
+    .explorer-desc { padding: 10px; border-radius: 12px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); font-size:.84rem; color: var(--text-soft); display:grid; gap:4px; }
+    .explorer-controls { display:flex; flex-wrap:wrap; gap:6px; }
+    .explorer-controls button { width: auto; padding: 8px 10px; font-size: .78rem; }
 
     .loading-wrap {
       display: grid;
@@ -1805,6 +1834,33 @@
             </ul>
           </div>
         </details>
+        <div class="piece-explorer">
+          <h3>Piece Explorer</h3>
+          <div class="explorer-row">
+            <div class="explorer-label">Team</div>
+            <div id="tutorialTeamSelector" class="explorer-chip-row"></div>
+          </div>
+          <div class="explorer-row">
+            <div class="explorer-label">Piece</div>
+            <div id="tutorialPieceSelector" class="explorer-chip-row"></div>
+          </div>
+          <div class="explorer-row">
+            <div class="explorer-label">Examples</div>
+            <div id="tutorialPresetSelector" class="explorer-chip-row"></div>
+          </div>
+          <div class="tutorial-board-wrap">
+            <div id="tutorialBoard" class="tutorial-board"></div>
+            <svg id="tutorialArrows" class="tutorial-arrows" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          </div>
+          <div id="tutorialDescription" class="explorer-desc"></div>
+          <div class="explorer-controls">
+            <button id="tutorialPrevExampleBtn" type="button" class="subtle">Previous Example</button>
+            <button id="tutorialNextExampleBtn" type="button" class="subtle">Next Example</button>
+            <button id="tutorialResetExampleBtn" type="button" class="subtle">Reset Position</button>
+            <button id="tutorialTogglePatternBtn" type="button" class="subtle">Show Move Pattern</button>
+            <button id="tutorialToggleCapturesBtn" type="button" class="subtle">Show Captures</button>
+          </div>
+        </div>
         <div class="screen-actions">
           <button id="tutorialBackBtn" class="ghost">Back</button>
           <button id="tutorialSkipBtn" class="secondary">Skip Briefing</button>
@@ -2093,6 +2149,17 @@
         humanTeams: ['green']
       }
     };
+    const tutorialState = {
+      selectedTeam: 'red',
+      selectedPiece: 'pawn',
+      selectedPreset: 0,
+      board: createEmptyBoard(),
+      selectedCell: null,
+      legalMoves: [],
+      showPattern: true,
+      showCaptures: true
+    };
+    const TUTORIAL_PRESETS = ['Basic Move', 'Capture Example', 'Blocked Example', 'Edge Case'];
 
     const ui = {
       appView: document.getElementById('appView'),
@@ -2121,6 +2188,17 @@
       tutorialBackBtn: document.getElementById('tutorialBackBtn'),
       tutorialSkipBtn: document.getElementById('tutorialSkipBtn'),
       tutorialStartBtn: document.getElementById('tutorialStartBtn'),
+      tutorialTeamSelector: document.getElementById('tutorialTeamSelector'),
+      tutorialPieceSelector: document.getElementById('tutorialPieceSelector'),
+      tutorialPresetSelector: document.getElementById('tutorialPresetSelector'),
+      tutorialBoard: document.getElementById('tutorialBoard'),
+      tutorialArrows: document.getElementById('tutorialArrows'),
+      tutorialDescription: document.getElementById('tutorialDescription'),
+      tutorialPrevExampleBtn: document.getElementById('tutorialPrevExampleBtn'),
+      tutorialNextExampleBtn: document.getElementById('tutorialNextExampleBtn'),
+      tutorialResetExampleBtn: document.getElementById('tutorialResetExampleBtn'),
+      tutorialTogglePatternBtn: document.getElementById('tutorialTogglePatternBtn'),
+      tutorialToggleCapturesBtn: document.getElementById('tutorialToggleCapturesBtn'),
       loadingText: document.getElementById('loadingText'),
       gameTopSummary: document.getElementById('gameTopSummary'),
       gameConfigPills: document.getElementById('gameConfigPills'),
@@ -2155,6 +2233,99 @@
 
     const sound = createSoundEngine();
     const state = createInitialState();
+    function buildTutorialScenario(team, piece, presetName) {
+      const board = createEmptyBoard();
+      const r = presetName === 'Edge Case' ? 0 : 3;
+      const c = presetName === 'Edge Case' ? 0 : 3;
+      board[r][c] = makePiece(team, piece, piece === 'king');
+      const enemies = PLAYERS.filter(t => t !== team);
+      if (presetName === 'Capture Example') {
+        const fakeState = { board, dice: { values: [2,2], used: [false,true] } };
+        const test = getLegalMovesForPieceOnState({ ...fakeState, dice: { values: [1,1], used:[false,true]} }, r, c, 0);
+        if (test.length > 0) {
+          const m = test[0];
+          board[m.toRow][m.toCol] = makePiece(enemies[0], 'pawn');
+        }
+      }
+      if (presetName === 'Blocked Example' && piece === 'elephant') board[r][c + 1] = makePiece(team, 'pawn');
+      if (presetName === 'Blocked Example' && piece === 'pawn') {
+        const f = getPawnMovesOnBoard(board, r, c, team).find(([mr, mc]) => !board[mr][mc]);
+        if (f) board[f[0]][f[1]] = makePiece(team, 'pawn');
+      }
+      if (presetName === 'Capture Example' && piece !== 'pawn') {
+        const all = getPossibleTargetsOnBoard(board, r, c, piece, team);
+        if (all.length) board[all[0][0]][all[0][1]] = makePiece(enemies[0], 'pawn');
+      }
+      return { board, pieceRow: r, pieceCol: c };
+    }
+    function getTutorialLegalMoves() {
+      const s = { board: tutorialState.board, dice: { values:[1,1], used:[false,true] } };
+      const dieByPiece = { pawn:1, king:1, elephant:2, horse:3, ship:4 };
+      s.dice.values[0] = dieByPiece[tutorialState.selectedPiece];
+      const pos = findTutorialPiece();
+      if (!pos) return [];
+      return getLegalMovesForPieceOnState(s, pos.row, pos.col, 0);
+    }
+    function findTutorialPiece() {
+      for (let row=0; row<8; row++) for (let col=0; col<8; col++) {
+        const p = tutorialState.board[row][col];
+        if (p && p.team===tutorialState.selectedTeam && p.type===tutorialState.selectedPiece) return { row, col };
+      }
+      return null;
+    }
+    function resetTutorialScenario() {
+      const preset = TUTORIAL_PRESETS[tutorialState.selectedPreset];
+      const scenario = buildTutorialScenario(tutorialState.selectedTeam, tutorialState.selectedPiece, preset);
+      tutorialState.board = scenario.board;
+      tutorialState.selectedCell = { row: scenario.pieceRow, col: scenario.pieceCol };
+      tutorialState.legalMoves = getTutorialLegalMoves();
+      renderPieceExplorer();
+    }
+    function renderPieceExplorer() {
+      if (!ui.tutorialBoard) return;
+      ui.tutorialTeamSelector.innerHTML = '';
+      ['red','blue','green','yellow'].forEach(team => { const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedTeam===team?'selected':''}`; b.textContent=TEAM_LABEL[team]; b.onclick=()=>{tutorialState.selectedTeam=team; resetTutorialScenario();}; ui.tutorialTeamSelector.appendChild(b); });
+      ui.tutorialPieceSelector.innerHTML = '';
+      ['pawn','ship','elephant','horse','king'].forEach(type => { const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedPiece===type?'selected':''}`; b.textContent=PIECE_NAME[type]; b.onclick=()=>{tutorialState.selectedPiece=type; tutorialState.selectedPreset=0; resetTutorialScenario();}; ui.tutorialPieceSelector.appendChild(b); });
+      ui.tutorialPresetSelector.innerHTML = '';
+      TUTORIAL_PRESETS.forEach((name, idx)=>{ const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedPreset===idx?'selected':''}`; b.textContent=name; b.onclick=()=>{tutorialState.selectedPreset=idx; resetTutorialScenario();}; ui.tutorialPresetSelector.appendChild(b); });
+      ui.tutorialBoard.innerHTML = '';
+      for (let row=7; row>=0; row--) for (let col=0; col<8; col++) {
+        const cell=document.createElement('button'); cell.className=`tutorial-cell ${(row+col)%2===0?'light':'dark'}`; cell.onclick=()=>handleTutorialCellClick(row,col);
+        if (tutorialState.selectedCell && tutorialState.selectedCell.row===row && tutorialState.selectedCell.col===col) cell.classList.add('selected');
+        const move = tutorialState.legalMoves.find(m=>m.toRow===row&&m.toCol===col);
+        if (move) cell.classList.add(move.captured && tutorialState.showCaptures ? 'capture':'possible');
+        const piece=tutorialState.board[row][col];
+        if (piece){ const el=document.createElement('div'); el.className='piece'; const img=document.createElement('img'); img.className='piece-art'; img.src=getPieceAsset(piece.team,piece.type); el.appendChild(img); cell.appendChild(el); }
+        ui.tutorialBoard.appendChild(cell);
+      }
+      renderTutorialArrows();
+      const preset = TUTORIAL_PRESETS[tutorialState.selectedPreset];
+      ui.tutorialDescription.innerHTML = `<strong>${PIECE_NAME[tutorialState.selectedPiece]} · ${TEAM_LABEL[tutorialState.selectedTeam]}</strong><div>Moves: uses the same live legal-move engine.</div><div>Captures: legal target squares only.</div><div>Example: ${preset}.</div><div>Tip: ${tutorialState.selectedPiece==='pawn'?'Snow Guard promotes on its destination rank/file.':'Tap highlighted cells to test safely.'}</div>`;
+      ui.tutorialTogglePatternBtn.textContent = tutorialState.showPattern ? 'Hide Move Pattern' : 'Show Move Pattern';
+      ui.tutorialToggleCapturesBtn.textContent = tutorialState.showCaptures ? 'Hide Captures' : 'Show Captures';
+    }
+    function renderTutorialArrows() {
+      ui.tutorialArrows.innerHTML = '';
+      if (!tutorialState.showPattern) return;
+      const defs = { pawn:['M50 60 L50 32'], elephant:['M50 50 L82 50','M50 50 L18 50','M50 50 L50 18','M50 50 L50 82'], horse:['M50 50 L64 30','M50 50 L36 30','M50 50 L64 70','M50 50 L36 70'], ship:['M50 50 L70 30','M50 50 L30 30','M50 50 L70 70','M50 50 L30 70'], king:['M50 50 L70 50','M50 50 L30 50','M50 50 L50 30','M50 50 L50 70','M50 50 L68 32','M50 50 L32 32','M50 50 L68 68','M50 50 L32 68'] };
+      defs[tutorialState.selectedPiece].forEach(d=>{ const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',d); p.setAttribute('class','tutorial-arrow'); ui.tutorialArrows.appendChild(p); });
+    }
+    function handleTutorialCellClick(row,col){
+      const move = tutorialState.legalMoves.find(m=>m.toRow===row&&m.toCol===col);
+      if (move) {
+        tutorialState.board[move.toRow][move.toCol] = tutorialState.board[move.fromRow][move.fromCol];
+        tutorialState.board[move.fromRow][move.fromCol] = null;
+        tutorialState.selectedCell = { row: move.toRow, col: move.toCol };
+        tutorialState.legalMoves = getTutorialLegalMoves();
+        return renderPieceExplorer();
+      }
+      const piece = tutorialState.board[row][col];
+      if (piece && piece.team === tutorialState.selectedTeam && piece.type === tutorialState.selectedPiece) {
+        tutorialState.selectedCell = { row, col }; tutorialState.legalMoves = getTutorialLegalMoves();
+      } else { tutorialState.selectedCell = null; tutorialState.legalMoves = []; }
+      renderPieceExplorer();
+    }
 
     function createSoundEngine() {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -3859,6 +4030,11 @@
       primeAudioAndPlayButton();
       beginMatchFlowFromTutorial();
     });
+    ui.tutorialPrevExampleBtn.addEventListener('click', () => { tutorialState.selectedPreset = (tutorialState.selectedPreset + TUTORIAL_PRESETS.length - 1) % TUTORIAL_PRESETS.length; resetTutorialScenario(); });
+    ui.tutorialNextExampleBtn.addEventListener('click', () => { tutorialState.selectedPreset = (tutorialState.selectedPreset + 1) % TUTORIAL_PRESETS.length; resetTutorialScenario(); });
+    ui.tutorialResetExampleBtn.addEventListener('click', resetTutorialScenario);
+    ui.tutorialTogglePatternBtn.addEventListener('click', () => { tutorialState.showPattern = !tutorialState.showPattern; renderPieceExplorer(); });
+    ui.tutorialToggleCapturesBtn.addEventListener('click', () => { tutorialState.showCaptures = !tutorialState.showCaptures; renderPieceExplorer(); });
 
     ui.tutorialStartBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
@@ -4764,8 +4940,9 @@
     MultiplayerService
   };
 
-  buildSetupChoices();
-  renderAppScreen();
+    buildSetupChoices();
+    renderAppScreen();
+    resetTutorialScenario();
   if (autoRoomId) { appState.playMode = 'online'; setScreen('onlineSetup'); renderAppScreen(); }
 })();
 </script>
