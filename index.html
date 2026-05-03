@@ -1455,6 +1455,102 @@
         width: 100%;
       }
     }
+
+    @media (max-width: 700px) {
+      :root {
+        --mobile-board-safe-width: calc(100vw - 72px);
+        --mobile-coord-size: 20px;
+        --mobile-cell-size: calc((var(--mobile-board-safe-width) - var(--mobile-coord-size)) / 8);
+      }
+      body {
+        overflow-x: hidden;
+      }
+      .app-shell,
+      .app,
+      .board-wrap,
+      .board-shell {
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+      .app-shell {
+        width: 100%;
+        margin: 0;
+        padding: 8px;
+        border-radius: 16px;
+      }
+      .game-topbar {
+        padding: 6px 2px 10px;
+        gap: 8px;
+      }
+      .game-top-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        width: 100%;
+      }
+      .game-top-actions button {
+        min-height: 42px;
+        padding: 10px 12px;
+      }
+      .panel,
+      .status-card,
+      .section-card {
+        padding: 12px;
+        border-radius: 14px;
+      }
+      .hud-grid,
+      .controls,
+      .pill-row {
+        gap: 8px;
+      }
+      .board-wrap {
+        width: 100%;
+        padding: 4px;
+        gap: 10px;
+        align-items: center;
+      }
+      .board-shell {
+        width: 100%;
+        padding: 6px;
+      }
+      .board-frame {
+        padding: 6px;
+        transform-origin: top center;
+      }
+      #boardGrid {
+        grid-template-columns: var(--mobile-coord-size) repeat(8, var(--mobile-cell-size));
+        grid-template-rows: repeat(8, var(--mobile-cell-size)) var(--mobile-coord-size);
+      }
+      .coord {
+        font-size: 10px;
+      }
+      .cell {
+        width: var(--mobile-cell-size);
+        height: var(--mobile-cell-size);
+      }
+      .piece {
+        width: calc(var(--mobile-cell-size) - 8px);
+        height: calc(var(--mobile-cell-size) - 8px);
+      }
+      .die-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .die-card {
+        min-height: auto;
+        padding: 12px;
+        border-radius: 14px;
+      }
+      .die-value {
+        width: 48px;
+        height: 48px;
+        font-size: 1.4rem;
+      }
+      .controls button {
+        min-height: 40px;
+        padding: 9px 12px;
+      }
+    }
   </style>
 </head>
 <body>
