@@ -959,13 +959,20 @@
       gap: 1px;
       border-radius: 50%;
       border: 2px solid rgba(255,255,255,0.6);
-      background: var(--piece-bg);
+      background: transparent !important;
       color: var(--piece-color);
       box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.16),
         inset 0 -10px 16px rgba(0,0,0,0.2),
         0 8px 18px rgba(0,0,0,0.28);
       transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+    }
+
+    .piece img {
+      background: transparent !important;
+      background-color: transparent !important;
+      mix-blend-mode: normal;
+      display: block;
     }
 
     .cell:hover:not(:disabled) .piece {
@@ -2060,40 +2067,6 @@
       pawn: 'Snow Guard'
     };
     function getPieceAsset(team, type) {
-      if (team === 'green' || team === 'red' || team === 'blue' || team === 'yellow') {
-        const pngMapByTeam = {
-          green: {
-            pawn: 'green-snow-guard.png',
-            ship: 'green-icebreaker.png',
-            elephant: 'green-war-mammoth.png',
-            horse: 'green-aurora-unicorn.png',
-            king: 'green-frost-king.png'
-          },
-          red: {
-            pawn: 'red-snow-guard.png',
-            ship: 'red-icebreaker.png',
-            elephant: 'red-war-mammoth.png',
-            horse: 'red-aurora-unicorn.png',
-            king: 'red-frost-king.png'
-          },
-          blue: {
-            pawn: 'blue-snow-guard.png',
-            ship: 'blue-icebreaker.png',
-            elephant: 'blue-war-mammoth.png',
-            horse: 'blue-aurora-unicorn.png',
-            king: 'blue-frost-king.png'
-          },
-          yellow: {
-            pawn: 'pink-snow-guard.png',
-            ship: 'pink-icebreaker.png',
-            elephant: 'pink-war-mammoth.png',
-            horse: 'pink-aurora-unicorn.png',
-            king: 'pink-frost-king.png'
-          }
-        };
-        const teamMap = pngMapByTeam[team];
-        return `assets/arctic/pieces/${teamMap[type] || teamMap.pawn}`;
-      }
       const visualTeam = team === 'yellow' ? 'pink' : team;
       const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
       return `assets/arctic/pieces/${visualTeam}-${slug}.svg`;
@@ -3797,9 +3770,8 @@
         if (piece) {
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
-          const isPngFullTokenPiece = piece.team === 'green' || piece.team === 'red' || piece.team === 'blue' || piece.team === 'yellow';
           const art = document.createElement('img');
-          art.className = isPngFullTokenPiece ? 'piece-img png-piece-full' : 'piece-art';
+          art.className = 'piece-art';
           art.loading = 'eager';
           art.decoding = 'async';
           art.src = getPieceAsset(piece.team, piece.type);
