@@ -687,13 +687,13 @@
       align-items: center;
       gap: 14px;
       width: min(100%, 100%);
-      padding: 12px;
-      border-radius: 30px;
+      padding: 14px;
+      border-radius: 28px;
       background:
         radial-gradient(circle at 50% -10%, rgba(177, 241, 255, 0.3), transparent 45%),
         linear-gradient(180deg, rgba(9, 28, 55, 0.88), rgba(8, 18, 38, 0.92));
-      border: 2px solid rgba(160, 240, 255, 0.9);
-      box-shadow: 0 0 18px rgba(90,220,255,0.65), inset 0 0 24px rgba(255,255,255,0.25);
+      border: 2px solid rgba(165, 243, 255, 0.92);
+      box-shadow: 0 0 30px rgba(88, 232, 255, 0.82), 0 0 64px rgba(36, 142, 200, 0.42), inset 0 0 30px rgba(255,255,255,0.22);
       overflow: hidden;
     }
 
@@ -774,8 +774,8 @@
       width: 100%;
       display: flex;
       justify-content: center;
-      padding: 10px;
-      border-radius: 26px;
+      padding: 8px;
+      border-radius: 22px;
       background: linear-gradient(180deg, rgba(141, 223, 255, 0.22), rgba(95, 177, 233, 0.12));
       border: 1px solid rgba(181, 240, 255, 0.45);
       box-shadow: inset 0 0 18px rgba(123, 212, 255, 0.2);
@@ -783,23 +783,24 @@
 
     .board-frame {
       position: relative;
-      padding: 16px;
-      border-radius: 28px;
+      padding: 14px;
+      border-radius: 22px;
       background:
         linear-gradient(170deg, rgba(199, 241, 255, 0.32), rgba(120, 205, 255, 0.2));
       border: 2px solid rgba(165, 240, 255, 0.82);
       box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.5),
-        inset 0 0 28px rgba(86, 220, 255, 0.3),
-        0 0 22px rgba(88, 227, 255, 0.62),
-        0 18px 32px rgba(12, 42, 77, 0.5);
+        inset 0 0 0 1px rgba(255,255,255,0.48),
+        inset 0 0 30px rgba(86, 220, 255, 0.26),
+        0 0 18px rgba(88, 227, 255, 0.78),
+        0 0 42px rgba(72, 205, 255, 0.5),
+        0 14px 28px rgba(12, 42, 77, 0.52);
     }
 
     .board-frame::before {
       content: "";
       position: absolute;
-      inset: 7px;
-      border-radius: 20px;
+      inset: 6px;
+      border-radius: 15px;
       border: 1px solid rgba(255,255,255,0.65);
       box-shadow: inset 0 0 22px rgba(86, 217, 255, 0.35);
       pointer-events: none;
@@ -808,8 +809,8 @@
     .board-frame::after {
       content: "✦ ✦";
       position: absolute;
-      top: 8px;
-      right: 12px;
+      top: 6px;
+      right: 10px;
       color: rgba(221, 250, 255, 0.7);
       font-size: 18px;
       letter-spacing: 0.2em;
@@ -820,7 +821,7 @@
       display: grid;
       grid-template-columns: 34px repeat(8, 78px);
       grid-template-rows: repeat(8, 78px) 34px;
-      gap: 1px;
+      gap: 0.5px;
       user-select: none;
     }
 
@@ -848,7 +849,7 @@
       cursor: pointer;
       transition: transform var(--transition-fast), filter var(--transition-fast), box-shadow var(--transition-fast);
       border: 1px solid rgba(188, 238, 255, 0.34);
-      border-radius: 6px;
+      border-radius: 4px;
       overflow: hidden;
       padding: 0;
       appearance: none;
@@ -867,14 +868,14 @@
       background:
         linear-gradient(160deg, var(--cell-light), var(--cell-light-2)),
         radial-gradient(circle at 25% 20%, rgba(255,255,255,0.28), transparent 58%),
-        repeating-linear-gradient(48deg, rgba(255,255,255,0.06) 0 2px, rgba(178,228,248,0.1) 2px 6px);
+        repeating-linear-gradient(48deg, rgba(255,255,255,0.035) 0 1.5px, rgba(178,228,248,0.07) 1.5px 5.5px);
     }
 
     .cell.dark {
       background:
         linear-gradient(150deg, var(--cell-dark), var(--cell-dark-2)),
         radial-gradient(circle at 75% 18%, rgba(255,255,255,0.22), transparent 56%),
-        repeating-linear-gradient(58deg, rgba(255,255,255,0.05) 0 2px, rgba(97,185,237,0.14) 2px 6px);
+        repeating-linear-gradient(58deg, rgba(255,255,255,0.03) 0 1.5px, rgba(97,185,237,0.1) 1.5px 5.5px);
     }
 
     .cell::before {
@@ -885,8 +886,8 @@
     }
 
     .cell::after {
-      inset: 4px;
-      border-radius: 6px;
+      inset: 3px;
+      border-radius: 4px;
       border: 1px solid transparent;
       opacity: 0;
     }
@@ -1578,7 +1579,7 @@
       .piece {
         width: calc(min(11.2vw, 62px) - 8px);
         height: calc(min(11.2vw, 62px) - 8px);
-        border-radius: 14px;
+        border-radius: 0;
       }
       .game-top-actions button {
         min-width: 0;
@@ -1646,7 +1647,7 @@
       .status-body { font-size: 0.79rem; line-height: 1.25; }
       .status-meta { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; width: 100%; }
       .meta-chip { font-size: 10px; text-align: center; padding: 5px 6px; overflow: hidden; text-overflow: ellipsis; }
-      .board-wrap { width: 100%; padding: 2px; gap: 8px; align-items: center; }
+      .board-wrap { width: 100%; padding: 4px; gap: 8px; align-items: center; }
       .board-shell { width: 100%; padding: 4px; }
       .board-frame { padding: 5px; }
       #boardGrid {
