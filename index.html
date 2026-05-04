@@ -1541,6 +1541,18 @@
       line-height: 1.35;
       min-height: 1.1em;
     }
+    .mobile-collapsible summary {
+      list-style: none;
+      cursor: pointer;
+    }
+    .mobile-collapsible summary::-webkit-details-marker { display: none; }
+    .mobile-collapsible > summary::after {
+      content: "▾";
+      font-size: 0.85rem;
+      opacity: 0.85;
+      transition: transform var(--transition-fast);
+    }
+    .mobile-collapsible:not([open]) > summary::after { transform: rotate(-90deg); }
 
     .sr-only {
       position: absolute;
@@ -1629,13 +1641,7 @@
         --mobile-cell-size: calc((var(--mobile-board-safe-width) - var(--mobile-coord-size)) / 8);
       }
       body { overflow-x: hidden; }
-      .app-shell,
-      .app,
-      .board-wrap,
-      .board-shell {
-        max-width: 100vw;
-        overflow-x: hidden;
-      }
+      .app-shell, .app, .board-wrap, .board-shell, .board-frame { max-width: 100%; box-sizing: border-box; }
       .app-shell {
         width: 100%;
         margin: 0;
@@ -1647,28 +1653,31 @@
         flex-direction: column;
         gap: 8px;
       }
-      .board-wrap { order: 1; }
-      .panel { order: 2; }
+      .app > .board-wrap { order: 1; }
+      .app > .panel:first-of-type { order: 2; }
+      .app > .panel:last-of-type { order: 3; }
       .game-topbar {
-        padding: 4px 2px 6px;
+        padding: 2px 2px 4px;
         gap: 6px;
+        align-items: center;
       }
-      .game-topbar .eyebrow { margin-bottom: 4px; padding: 4px 8px; font-size: 10px; }
-      .game-topbar h2 { font-size: 1rem; }
-      .game-topbar p { font-size: 0.73rem; margin-top: 2px; line-height: 1.25; }
+      .game-topbar .eyebrow { display: none; }
+      .game-topbar h2 { font-size: 0.86rem; margin: 0; }
+      .game-topbar p,
+      .config-pills { display: none; }
       .config-pills { margin-top: 6px; gap: 6px; }
       .config-pill { padding: 4px 8px; font-size: 10px; }
       .game-top-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: auto auto;
         gap: 6px;
-        width: 100%;
+        width: auto;
       }
       .game-top-actions button {
-        min-height: 34px;
+        min-height: 30px;
         min-width: 0;
-        padding: 6px 8px;
-        font-size: 0.72rem;
+        padding: 4px 8px;
+        font-size: 0.76rem;
       }
       .panel,
       .status-card,
@@ -1676,14 +1685,22 @@
       .panel-header { display: none; }
       .hud-grid,
       .pill-row { gap: 8px; }
-      .status-top { margin-bottom: 6px; gap: 8px; }
+      .status-card { padding: 8px 10px; }
+      .status-top { margin-bottom: 4px; gap: 8px; }
       .status-heading { font-size: 0.62rem; margin-bottom: 0; }
-      .status-player { font-size: 1rem; }
-      .status-body { font-size: 0.79rem; line-height: 1.25; }
+      .status-player { font-size: 0.95rem; }
+      .status-body { font-size: 0.72rem; line-height: 1.2; }
       .status-meta { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; width: 100%; }
       .meta-chip { font-size: 10px; text-align: center; padding: 5px 6px; overflow: hidden; text-overflow: ellipsis; }
-      .board-wrap { width: 100%; padding: 6px; gap: 8px; align-items: center; border-radius: 20px; }
-      .board-shell { width: 100%; padding: 6px; border-radius: 20px; }
+      .board-wrap,
+      .board-shell,
+      .board-frame {
+        margin-left: auto;
+        margin-right: auto;
+        width: min(100%, calc(100vw - 16px));
+      }
+      .board-wrap { padding: 6px; gap: 8px; align-items: center; border-radius: 20px; }
+      .board-shell { padding: 6px; border-radius: 20px; }
       .board-frame { padding: 6px; border-radius: 20px; }
       #boardGrid {
         grid-template-columns: var(--mobile-coord-size) repeat(8, var(--mobile-cell-size));
@@ -1705,11 +1722,12 @@
         gap: 8px;
       }
       .controls button { min-height: 46px; padding: 8px 10px; font-size: 0.9rem; }
-      #newGameBtn { grid-column: 1 / -1; min-height: 40px; }
-      .audio-controls,
-      #playerPills,
-      .selection-box,
-      #moveLog { margin-top: 10px; }
+      #newGameBtn { grid-column: 1 / -1; min-height: 34px; font-size: 0.78rem; }
+      .audio-controls { margin-top: 10px; }
+      .mobile-collapsible { margin-top: 8px; }
+      .mobile-collapsible:not([open]) > *:not(summary) { display: none; }
+      .mobile-collapsible > summary { padding: 6px 0; }
+      #moveLog .log-line:nth-child(n+2) { display: none; }
     }
   
     .setup-step {
@@ -1897,8 +1915,8 @@
             <div id="gameConfigPills" class="config-pills"></div>
           </div>
           <div class="game-top-actions">
-            <button id="restartMatchBtn" class="secondary">Restart Match</button>
-            <button id="returnMenuBtn" class="ghost">Return to Menu</button>
+            <button id="restartMatchBtn" class="secondary">↺</button>
+            <button id="returnMenuBtn" class="ghost">☰</button>
           </div>
         </div>
 
@@ -1959,21 +1977,21 @@
                 </div>
               </section>
 
-              <section class="section-card" aria-labelledby="playersHeading">
-                <div class="section-label" id="playersHeading"><span>Players</span><span>Alive / Control</span></div>
+              <details class="section-card mobile-collapsible" open>
+                <summary class="section-label" id="playersHeading"><span>Players</span><span>Alive / Control</span></summary>
                 <div id="playerPills" class="pill-row"></div>
-              </section>
+              </details>
 
-              <section class="section-card selection-box" aria-labelledby="selectionHeading">
-                <div class="section-label" id="selectionHeading"><span>Selection</span><span>Piece + Die</span></div>
+              <details class="section-card selection-box mobile-collapsible" open>
+                <summary class="section-label" id="selectionHeading"><span>Selection</span><span>Piece + Die</span></summary>
                 <div id="selectionInfo" class="selection-info">No piece selected.</div>
                 <div id="dieChoiceBar" class="choice-bar"></div>
-              </section>
+              </details>
 
-              <section class="section-card" aria-labelledby="logHeading">
-                <div class="section-label" id="logHeading"><span>Move Log</span><span>Latest First</span></div>
+              <details class="section-card mobile-collapsible" open>
+                <summary class="section-label" id="logHeading"><span>Move Log</span><span>Latest First</span></summary>
                 <div id="moveLog" class="log" role="log" aria-live="polite"></div>
-              </section>
+              </details>
             </div>
           </aside>
 
@@ -2009,18 +2027,18 @@
             </div>
 
             <div class="hud-grid">
-              <section class="section-card">
-                <div class="section-label"><span>Dice Mapping</span><span>Exact Variant</span></div>
+              <details class="section-card mobile-collapsible" open>
+                <summary class="section-label"><span>Dice Mapping</span><span>Exact Variant</span></summary>
                 <ul class="legend-list">
                   <li>1 or 5: Pawn or King</li>
                   <li>2: Elephant</li>
                   <li>3: Horse</li>
                   <li>4 or 6: Ship</li>
                 </ul>
-              </section>
+              </details>
 
-              <section class="section-card">
-                <div class="section-label"><span>Variant Notes</span><span>v2 Behavior</span></div>
+              <details class="section-card mobile-collapsible" open>
+                <summary class="section-label"><span>Variant Notes</span><span>v2 Behavior</span></summary>
                 <ul class="rules-list">
                   <li>Only legal moves count. No fake playable turns.</li>
                   <li>If a piece matches both dice, you choose which die to consume.</li>
@@ -2031,10 +2049,10 @@
                   <li>If the unused die has no legal move left, the turn auto-ends.</li>
                   <li>Remaining pieces of an eliminated player are removed immediately.</li>
                 </ul>
-              </section>
+              </details>
 
-              <section class="section-card">
-                <div class="section-label"><span>Piece Guide</span><span>Identity</span></div>
+              <details class="section-card mobile-collapsible" open>
+                <summary class="section-label"><span>Piece Guide</span><span>Identity</span></summary>
                 <div class="piece-guide">
                   <div class="piece-guide-row"><div class="guide-badge">K</div><div class="guide-copy"><strong>King</strong><span>Moves 1 square in any direction.</span></div></div>
                   <div class="piece-guide-row"><div class="guide-badge">E</div><div class="guide-copy"><strong>Elephant</strong><span>Rook-style sliding movement.</span></div></div>
@@ -2042,7 +2060,7 @@
                   <div class="piece-guide-row"><div class="guide-badge">S</div><div class="guide-copy"><strong>Ship</strong><span>Two-square diagonal leap.</span></div></div>
                   <div class="piece-guide-row"><div class="guide-badge">P</div><div class="guide-copy"><strong>Pawn</strong><span>1 forward, diagonal capture.</span></div></div>
                 </div>
-              </section>
+              </details>
 
               <p class="mini">Arctic Dominion keeps the same arcade-style ruleset: no check/checkmate, and elimination occurs only when a team has no kings left.</p>
             </div>
@@ -4923,7 +4941,16 @@
     MultiplayerService
   };
 
+  function syncMobileCollapsibles() {
+    const mobile = window.matchMedia('(max-width: 700px)').matches;
+    document.querySelectorAll('.mobile-collapsible').forEach((section) => {
+      section.open = !mobile;
+    });
+  }
+  window.addEventListener('resize', syncMobileCollapsibles);
+
     buildSetupChoices();
+    syncMobileCollapsibles();
     renderAppScreen();
     resetTutorialScenario();
   if (autoRoomId) { appState.playMode = 'online'; setScreen('onlineSetup'); renderAppScreen(); }
