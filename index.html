@@ -70,10 +70,9 @@
       min-height: 100%;
       font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
       background:
-        radial-gradient(circle at 18% 14%, rgba(136, 230, 255, 0.22), transparent 24%),
-        radial-gradient(circle at 82% 6%, rgba(86, 178, 255, 0.2), transparent 28%),
-        radial-gradient(circle at 20% 88%, rgba(113, 162, 255, 0.18), transparent 32%),
-        linear-gradient(180deg, #061129 0%, #081b37 45%, #040c1d 100%);
+        radial-gradient(circle at 50% 20%, rgba(60,190,255,0.35), transparent 35%),
+        radial-gradient(circle at 50% 100%, rgba(60,190,255,0.25), transparent 45%),
+        linear-gradient(180deg, #071a3d 0%, #0b3e72 45%, #0e6fa2 100%);
       color: var(--text);
       overflow-x: hidden;
     }
@@ -83,13 +82,14 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      opacity: 0.2;
+      opacity: 0.24;
       background:
-        radial-gradient(circle at 30% 18%, rgba(255,255,255,0.14) 0 1px, transparent 1.5px),
-        radial-gradient(circle at 72% 40%, rgba(173,226,255,0.13) 0 1px, transparent 1.5px),
-        radial-gradient(circle at 12% 74%, rgba(255,255,255,0.12) 0 1px, transparent 1.5px);
-      background-size: 160px 160px, 190px 190px, 220px 220px;
-      mask-image: radial-gradient(circle at center, black, transparent 92%);
+        radial-gradient(circle at 14% 16%, rgba(255,255,255,0.18) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 78% 24%, rgba(191,235,255,0.16) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 26% 68%, rgba(224,248,255,0.14) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 68% 78%, rgba(162,223,255,0.12) 0 1px, transparent 1.7px);
+      background-size: 170px 170px, 210px 210px, 240px 240px, 280px 280px;
+      mask-image: radial-gradient(circle at center, black, transparent 94%);
     }
 
     button, input, select, textarea { font: inherit; }
@@ -682,19 +682,34 @@
     }
 
     .board-wrap {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 14px;
       width: min(100%, 100%);
-      padding: 14px;
+      padding: 12px;
       border-radius: 28px;
+      border: 2px solid rgba(170, 245, 255, 0.95);
       background:
-        radial-gradient(circle at 50% -10%, rgba(177, 241, 255, 0.3), transparent 45%),
-        linear-gradient(180deg, rgba(9, 28, 55, 0.88), rgba(8, 18, 38, 0.92));
-      border: 2px solid rgba(165, 243, 255, 0.92);
-      box-shadow: 0 0 30px rgba(88, 232, 255, 0.82), 0 0 64px rgba(36, 142, 200, 0.42), inset 0 0 30px rgba(255,255,255,0.22);
-      overflow: hidden;
+        linear-gradient(180deg, rgba(85,210,255,0.32), rgba(20,105,190,0.42)),
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.35), transparent 45%);
+      box-shadow:
+        0 0 12px rgba(120,235,255,0.9),
+        0 0 34px rgba(40,185,255,0.68),
+        inset 0 0 22px rgba(255,255,255,0.30),
+        inset 0 0 38px rgba(35,155,245,0.35);
+      overflow: visible;
+    }
+
+    .board-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 22px;
+      border: 1px solid rgba(235,255,255,0.55);
+      box-shadow: inset 0 0 16px rgba(180,245,255,0.45);
+      pointer-events: none;
     }
 
     .status-card {
@@ -807,22 +822,30 @@
     }
 
     .board-frame::after {
-      content: "✦ ✦";
+      content: "";
       position: absolute;
-      top: 6px;
-      right: 10px;
-      color: rgba(221, 250, 255, 0.7);
-      font-size: 18px;
-      letter-spacing: 0.2em;
+      inset: 10px;
+      border-radius: 14px;
       pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(125,242,255,0.65) 0 22px, transparent 22px) top left / 46px 2px no-repeat,
+        linear-gradient(180deg, rgba(125,242,255,0.65) 0 22px, transparent 22px) top left / 2px 46px no-repeat,
+        linear-gradient(90deg, rgba(125,242,255,0.65) 0 22px, transparent 22px) top right / 46px 2px no-repeat,
+        linear-gradient(180deg, rgba(125,242,255,0.65) 0 22px, transparent 22px) top right / 2px 46px no-repeat,
+        linear-gradient(90deg, rgba(125,242,255,0.65) 0 22px, transparent 22px) bottom left / 46px 2px no-repeat,
+        linear-gradient(180deg, rgba(125,242,255,0.65) 0 22px, transparent 22px) bottom left / 2px 46px no-repeat,
+        linear-gradient(90deg, rgba(125,242,255,0.65) 0 22px, transparent 22px) bottom right / 46px 2px no-repeat,
+        linear-gradient(180deg, rgba(125,242,255,0.65) 0 22px, transparent 22px) bottom right / 2px 46px no-repeat;
     }
 
-    #boardGrid {
+    #boardGrid,
+    .board-grid {
       display: grid;
       grid-template-columns: 34px repeat(8, 78px);
       grid-template-rows: repeat(8, 78px) 34px;
-      gap: 0.5px;
+      gap: 1px;
       user-select: none;
+      background: rgba(180, 240, 255, 0.28);
     }
 
     .coord {
@@ -839,9 +862,11 @@
 
     .coord.corner { color: transparent; }
 
-    .cell {
+    .cell,
+    .board-cell {
       width: 78px;
       height: 78px;
+      aspect-ratio: 1 / 1;
       position: relative;
       display: flex;
       align-items: center;
@@ -849,10 +874,11 @@
       cursor: pointer;
       transition: transform var(--transition-fast), filter var(--transition-fast), box-shadow var(--transition-fast);
       border: 1px solid rgba(188, 238, 255, 0.34);
-      border-radius: 4px;
-      overflow: hidden;
+      border-radius: 3px;
+      overflow: visible;
       padding: 0;
       appearance: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 4px rgba(20,120,170,0.18);
     }
 
     .cell::before,
@@ -866,23 +892,21 @@
 
     .cell.light {
       background:
-        linear-gradient(160deg, var(--cell-light), var(--cell-light-2)),
-        radial-gradient(circle at 25% 20%, rgba(255,255,255,0.28), transparent 58%),
-        repeating-linear-gradient(48deg, rgba(255,255,255,0.035) 0 1.5px, rgba(178,228,248,0.07) 1.5px 5.5px);
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.8), rgba(220,250,255,0.45) 45%, rgba(180,235,255,0.35)),
+        linear-gradient(135deg, rgba(245,255,255,0.92), rgba(190,235,250,0.78));
     }
 
     .cell.dark {
       background:
-        linear-gradient(150deg, var(--cell-dark), var(--cell-dark-2)),
-        radial-gradient(circle at 75% 18%, rgba(255,255,255,0.22), transparent 56%),
-        repeating-linear-gradient(58deg, rgba(255,255,255,0.03) 0 1.5px, rgba(97,185,237,0.1) 1.5px 5.5px);
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.35), rgba(95,205,245,0.55) 48%, rgba(60,170,230,0.65)),
+        linear-gradient(135deg, rgba(145,225,255,0.9), rgba(70,185,240,0.78));
     }
 
     .cell::before {
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.18), transparent 30%, transparent 68%, rgba(61,145,190,0.15)),
-        radial-gradient(circle at top, rgba(255,255,255,0.16), transparent 48%);
-      opacity: 1;
+        repeating-radial-gradient(circle at 25% 20%, rgba(255,255,255,0.18) 0 1px, rgba(255,255,255,0) 1px 5px),
+        linear-gradient(180deg, rgba(255,255,255,0.14), transparent 32%, transparent 70%, rgba(61,145,190,0.16));
+      opacity: 0.38;
     }
 
     .cell::after {
@@ -950,7 +974,9 @@
       box-shadow: inset 0 0 0 3px rgba(179, 35, 35, 0.34), 0 0 0 5px rgba(255,123,123,0.2);
     }
 
-    .piece {
+    .piece,
+      .board-piece,
+      .piece-token {
       --piece-color: #fff;
       width: 58px;
       height: 58px;
@@ -970,11 +996,15 @@
       transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
     }
 
-    .piece img {
+    .piece img,
+    .board-piece img,
+    .piece-token img,
+    .png-piece-full {
       background: transparent !important;
       background-color: transparent !important;
       mix-blend-mode: normal;
       display: block;
+      object-fit: contain;
     }
 
     .cell:hover:not(:disabled) .piece {
@@ -1012,13 +1042,15 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 115%;
-      height: 115%;
+      width: 108%;
+      height: 108%;
       transform: translate(-50%, -50%);
       object-fit: contain;
       display: block;
       pointer-events: none;
       background: transparent !important;
+      background-color: transparent !important;
+      filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35));
     }
 
     .piece .crest {
@@ -1577,7 +1609,9 @@
         width: min(11.2vw, 62px);
         height: min(11.2vw, 62px);
       }
-      .piece {
+      .piece,
+      .board-piece,
+      .piece-token {
         width: calc(min(11.2vw, 62px) - 8px);
         height: calc(min(11.2vw, 62px) - 8px);
         border-radius: 0;
@@ -1648,9 +1682,9 @@
       .status-body { font-size: 0.79rem; line-height: 1.25; }
       .status-meta { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; width: 100%; }
       .meta-chip { font-size: 10px; text-align: center; padding: 5px 6px; overflow: hidden; text-overflow: ellipsis; }
-      .board-wrap { width: 100%; padding: 4px; gap: 8px; align-items: center; }
-      .board-shell { width: 100%; padding: 4px; }
-      .board-frame { padding: 5px; }
+      .board-wrap { width: 100%; padding: 6px; gap: 8px; align-items: center; border-radius: 20px; }
+      .board-shell { width: 100%; padding: 6px; border-radius: 20px; }
+      .board-frame { padding: 6px; border-radius: 20px; }
       #boardGrid {
         grid-template-columns: var(--mobile-coord-size) repeat(8, var(--mobile-cell-size));
         grid-template-rows: repeat(8, var(--mobile-cell-size)) var(--mobile-coord-size);
