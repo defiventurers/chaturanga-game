@@ -123,6 +123,70 @@
       display: flex;
     }
 
+    #screenMenu {
+      display: none;
+      padding: 0;
+      align-items: stretch;
+      justify-content: stretch;
+    }
+
+    #screenMenu.active {
+      display: block;
+    }
+
+    .main-menu-art-screen {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      background-image: url("assets/arctic/menu/arctic-main-menu.webp");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    .main-menu-hit {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 0;
+      background: transparent;
+      color: transparent;
+      cursor: pointer;
+      padding: 0;
+      touch-action: manipulation;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .main-menu-play {
+      width: 72%;
+      height: 9%;
+      top: 72%;
+    }
+
+    .main-menu-how {
+      width: 62%;
+      height: 7%;
+      top: 84%;
+    }
+
+    @media (max-width: 480px) {
+      .main-menu-play {
+        width: 76%;
+        height: 9%;
+        top: 72%;
+      }
+
+      .main-menu-how {
+        width: 66%;
+        height: 7%;
+        top: 84%;
+      }
+    }
+
     .screen-panel {
       width: min(980px, 100%);
       border-radius: 32px;
@@ -1809,31 +1873,13 @@
     </section>
 
     <section id="screenMenu" class="screen" aria-label="Main menu">
-      <div class="screen-panel">
-        <div class="menu-grid">
-          <div class="menu-card">
-            <div class="eyebrow">Main Menu</div>
-            <h1 style="font-size:2.3rem; line-height:1.05;">Arctic Dominion</h1>
-            <p class="subtitle" style="max-width:560px;">Pick your setup and start the frozen showdown.</p>
-            <div class="menu-actions" style="margin-top:14px;">
-              <button id="menuPlayBtn" class="primary">PLAY NOW</button>
-              <button id="menuHowBtn" class="secondary">How to Play</button>
-            </div>
-            <div class="team-cards">
-              <div class="team-card"><img src="assets/arctic/pieces/red-frost-king.svg" alt=""><div>Red<small>Retsba</small></div></div>
-              <div class="team-card"><img src="assets/arctic/pieces/blue-frost-king.svg" alt=""><div>Blue<small>Pengu</small></div></div>
-              <div class="team-card"><img src="assets/arctic/pieces/green-frost-king.svg" alt=""><div>Green<small>Abster</small></div></div>
-              <div class="team-card"><img src="assets/arctic/pieces/pink-frost-king.svg" alt=""><div>Pink<small>Polly</small></div></div>
-            </div>
-          </div>
-          <div class="menu-card">
-            <div class="eyebrow">Current Setup</div>
-            <div class="summary-list">
-              <div class="summary-item"><span>Players</span><strong id="menuSummaryPlayers">1 Player</strong></div>
-              <div class="summary-item"><span>Difficulty</span><strong id="menuSummaryDifficulty">Medium</strong></div>
-              <div class="summary-item"><span>Control Map</span><strong id="menuSummaryControl">Green human</strong></div>
-            </div>
-          </div>
+      <div class="main-menu-art-screen">
+        <button id="menuPlayBtn" class="main-menu-hit main-menu-play" aria-label="Play Now"></button>
+        <button id="menuHowBtn" class="main-menu-hit main-menu-how" aria-label="How to Play"></button>
+        <div class="hidden" aria-hidden="true">
+          <strong id="menuSummaryPlayers">1 Player</strong>
+          <strong id="menuSummaryDifficulty">Medium</strong>
+          <strong id="menuSummaryControl">Green human</strong>
         </div>
       </div>
     </section>
