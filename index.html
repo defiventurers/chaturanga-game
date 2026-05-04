@@ -1018,6 +1018,7 @@
       object-fit: contain;
       display: block;
       pointer-events: none;
+      background: transparent !important;
     }
 
     .piece .crest {
@@ -2054,6 +2055,11 @@
     function getPieceAsset(team, type) {
       const visualTeam = team === 'yellow' ? 'pink' : team;
       const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
+      return `assets/arctic/pieces/${visualTeam}-${slug}.png`;
+    }
+    function getPieceFallbackAsset(team, type) {
+      const visualTeam = team === 'yellow' ? 'pink' : team;
+      const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
       return `assets/arctic/pieces/${visualTeam}-${slug}.svg`;
     }
     const PIECE_VALUE = {
@@ -2239,7 +2245,7 @@
           else cell.classList.add('possible');
         }
         const piece=tutorialState.tutorialBoard[row][col];
-        if (piece){ const el=document.createElement('div'); el.className='piece'; const img=document.createElement('img'); img.className='piece-art'; img.src=getPieceAsset(piece.team,piece.type); el.appendChild(img); cell.appendChild(el); }
+        if (piece){ const el=document.createElement('div'); el.className='piece'; const img=document.createElement('img'); img.className='piece-art png-piece-full'; img.src=getPieceAsset(piece.team,piece.type); img.onerror=()=>{img.onerror=null;img.src=getPieceFallbackAsset(piece.team,piece.type);}; el.appendChild(img); cell.appendChild(el); }
         ui.tutorialBoard.appendChild(cell);
       }
       renderTutorialArrows();
@@ -3756,10 +3762,11 @@
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           const art = document.createElement('img');
-          art.className = 'piece-art';
+          art.className = 'piece-art png-piece-full';
           art.loading = 'eager';
           art.decoding = 'async';
           art.src = getPieceAsset(piece.team, piece.type);
+          art.onerror = () => { art.onerror = null; art.src = getPieceFallbackAsset(piece.team, piece.type); };
           art.alt = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}`;
           token.appendChild(art);
           if (piece.isRoyal) token.innerHTML += '<div class="crest" aria-hidden="true">✦</div>';
