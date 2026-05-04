@@ -493,13 +493,30 @@
       to { transform: rotate(360deg); }
     }
 
+    .splash-screen {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      background-image: url("assets/arctic/splash/arctic-dominion-splash.webp");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      cursor: pointer;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    #screenSplash {
+      padding: 0;
+    }
+
+    .hero,
+    .logo-mark,
     .splash-prompt {
-      margin-top: 14px;
-      color: var(--muted);
-      letter-spacing: 0.14em;
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      animation: pulse 1.35s ease-in-out infinite;
+      display: none !important;
     }
 
     @keyframes pulse {
@@ -1788,13 +1805,7 @@
 <body>
   <div id="appView" class="app-view">
     <section id="screenSplash" class="screen active" aria-label="Splash screen">
-      <div class="screen-panel hero" id="splashContinueArea" role="button" tabindex="0">
-        <div class="logo-mark">✦</div>
-        <div class="eyebrow">Arctic Fantasy Strategy</div>
-        <h1>Arctic Dominion</h1>
-        <p>Roll • Plan • Conquer</p>
-        <div class="splash-prompt">Tap or click to continue</div>
-      </div>
+      <div class="splash-screen" id="splashContinueArea" role="button" tabindex="0" aria-label="Tap or click to continue"></div>
     </section>
 
     <section id="screenMenu" class="screen" aria-label="Main menu">
