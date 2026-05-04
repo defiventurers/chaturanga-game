@@ -4206,6 +4206,31 @@
     }
     .net-pill.live { color: var(--green-2); border-color: rgba(43,166,106,0.28); background: rgba(43,166,106,0.14); }
     .net-pill.warn { color: var(--red-2); border-color: rgba(216,91,98,0.28); background: rgba(216,91,98,0.14); }
+    .play-mode-art-screen {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    .play-mode-art-screen.mode-offline { background-image: url("assets/arctic/screens/play-mode-offline.webp"); }
+    .play-mode-art-screen.mode-online { background-image: url("assets/arctic/screens/play-mode-online.webp"); }
+    .hit-zone {
+      position: absolute;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .hit-back { top: 2%; left: 3%; width: 11%; height: 7%; }
+    .hit-offline { top: 31%; left: 8%; width: 84%; height: 20%; }
+    .hit-online { top: 53%; left: 8%; width: 84%; height: 19%; }
+    .hit-continue { top: 77%; left: 14%; width: 72%; height: 9%; }
+    .play-mode-hidden-action { display: none !important; }
     @media (max-width: 900px) {
       .flow-grid, .lobby-grid { grid-template-columns: 1fr; }
       .screen-panel { padding: 20px; border-radius: 24px; }
@@ -4226,16 +4251,14 @@
   const injectedMarkup = document.createElement('div');
   injectedMarkup.innerHTML = `
     <section id="screenPlayMode" class="screen" aria-label="Play mode selection">
-      <div class="screen-panel">
-        <div class="eyebrow">Setup</div>
-        <h1 style="font-size:2.1rem; line-height:1.08;">Choose Play Mode</h1>
-        <p class="subtitle">Pick how you want to play.</p>
-        <div id="playModeChoices" class="flow-grid"></div>
-        <div class="screen-actions">
-          <button id="playModeBackBtn" class="ghost">Back</button>
-          <button id="playModeNextBtn" class="primary">Continue</button>
-        </div>
+      <div id="playModeArtScreen" class="play-mode-art-screen mode-online">
+        <button id="playModeHitBack" class="hit-zone hit-back" aria-label="Back"></button>
+        <button id="playModeHitOffline" class="hit-zone hit-offline" aria-label="Offline Battle"></button>
+        <button id="playModeHitOnline" class="hit-zone hit-online" aria-label="Online Room"></button>
+        <button id="playModeHitContinue" class="hit-zone hit-continue" aria-label="Continue"></button>
       </div>
+      <button id="playModeBackBtn" class="play-mode-hidden-action" aria-hidden="true" tabindex="-1">Back</button>
+      <button id="playModeNextBtn" class="play-mode-hidden-action" aria-hidden="true" tabindex="-1">Continue</button>
     </section>
 
     <section id="screenOnlineSetup" class="screen" aria-label="Online room setup">
@@ -4335,7 +4358,11 @@
       onlineSetup: document.getElementById('screenOnlineSetup'),
       lobby: document.getElementById('screenLobby')
     },
-    playModeChoices: document.getElementById('playModeChoices'),
+    playModeArtScreen: document.getElementById('playModeArtScreen'),
+    playModeHitBack: document.getElementById('playModeHitBack'),
+    playModeHitOffline: document.getElementById('playModeHitOffline'),
+    playModeHitOnline: document.getElementById('playModeHitOnline'),
+    playModeHitContinue: document.getElementById('playModeHitContinue'),
     playModeBackBtn: document.getElementById('playModeBackBtn'),
     playModeNextBtn: document.getElementById('playModeNextBtn'),
     onlinePlayerCountChoices: document.getElementById('onlinePlayerCountChoices'),
@@ -4387,7 +4414,7 @@
   })();
 
   Object.assign(appState, {
-    playMode: 'offline',
+    playMode: 'online',
     online: {
       serverUrl: defaultServerUrl,
       connected: false,
@@ -4528,14 +4555,10 @@
       buildSetupChoices();
     });
 
-    makeCardChoice(ui.playModeChoices, [
-      { value: 'offline', title: '🎮 Offline Play', meta: 'Local', description: 'Play on this device.' },
-      { value: 'online', title: '🌐 Online Play', meta: 'Room', description: 'Create or join a room.' }
-    ], appState.playMode, value => {
-      appState.playMode = value;
-      renderAppScreen();
-      buildSetupChoices();
-    });
+    if (ui.playModeArtScreen) {
+      ui.playModeArtScreen.classList.toggle('mode-offline', appState.playMode === 'offline');
+      ui.playModeArtScreen.classList.toggle('mode-online', appState.playMode === 'online');
+    }
 
     makeCardChoice(ui.onlinePlayerCountChoices, [
       { value: 2, title: '2 Players', meta: '2 humans + 2 bots at match start', description: 'Start once 2 humans are in the room and both are ready.' },
@@ -4975,6 +4998,20 @@
   ui.menuPlayBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
   ui.playModeBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('menu'); });
   ui.playModeNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen(appState.playMode === 'offline' ? 'playerCount' : 'onlineSetup'); });
+  ui.playModeHitBack.addEventListener('click', () => ui.playModeBackBtn.click());
+  ui.playModeHitContinue.addEventListener('click', () => ui.playModeNextBtn.click());
+  ui.playModeHitOffline.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    appState.playMode = 'offline';
+    renderAppScreen();
+    buildSetupChoices();
+  });
+  ui.playModeHitOnline.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    appState.playMode = 'online';
+    renderAppScreen();
+    buildSetupChoices();
+  });
   ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
   ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.createRoom(); });
   ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
