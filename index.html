@@ -1841,7 +1841,13 @@
       pointer-events: none;
       user-select: none;
     }
-    .team-layer.overlay { opacity: 0; transition: opacity 160ms ease; }
+    .team-layer.base { z-index: 1; }
+    .team-layer.overlay {
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 160ms ease;
+      clip-path: inset(0 0 22% 0);
+    }
     .team-layer.overlay.visible { opacity: 1; }
     .team-hit-zone {
       position: absolute;
@@ -1899,10 +1905,10 @@
     <section id="screenPlayerCount" class="screen" aria-label="Offline team selection">
       <div class="team-select-screen">
         <img class="team-layer base" src="assets/images/team-select-base.png" alt="Team selection board" />
-        <img id="teamOverlayRed" class="team-layer overlay" data-team="red" src="assets/images/team-select-red.png" alt="" />
-        <img id="teamOverlayPink" class="team-layer overlay" data-team="pink" src="assets/images/team-select-pink.png" alt="" />
-        <img id="teamOverlayGreen" class="team-layer overlay" data-team="green" src="assets/images/team-select-green.png" alt="" />
-        <img id="teamOverlayBlue" class="team-layer overlay" data-team="blue" src="assets/images/team-select-blue.png" alt="" />
+        <img id="teamOverlayRed" class="team-layer overlay" data-team-overlay="red" src="assets/images/team-select-red.png" alt="" />
+        <img id="teamOverlayPink" class="team-layer overlay" data-team-overlay="pink" src="assets/images/team-select-pink.png" alt="" />
+        <img id="teamOverlayGreen" class="team-layer overlay" data-team-overlay="green" src="assets/images/team-select-green.png" alt="" />
+        <img id="teamOverlayBlue" class="team-layer overlay" data-team-overlay="blue" src="assets/images/team-select-blue.png" alt="" />
         <button id="hitPink" class="team-hit-zone hit-pink" aria-label="Toggle pink team"></button>
         <button id="hitRed" class="team-hit-zone hit-red" aria-label="Toggle red team"></button>
         <button id="hitGreen" class="team-hit-zone hit-green" aria-label="Toggle green team"></button>
@@ -4487,6 +4493,12 @@
 
   // Offline color selection keeps rules untouched by only changing who controls each team.
   const selectedTeams = new Set();
+  const overlayMap = {
+    red: document.querySelector('[data-team-overlay="red"]'),
+    pink: document.querySelector('[data-team-overlay="pink"]'),
+    green: document.querySelector('[data-team-overlay="green"]'),
+    blue: document.querySelector('[data-team-overlay="blue"]')
+  };
   const displayTeamToGameTeam = { pink: 'yellow', red: 'red', green: 'green', blue: 'blue' };
   const gameTeamToDisplayTeam = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
   appState.matchConfig.humanTeams.forEach(team => {
@@ -4495,7 +4507,6 @@
   });
   function syncOfflineHumanTeams() {
     const orderedDisplayTeams = ['red', 'pink', 'green', 'blue'].filter(team => selectedTeams.has(team));
-    if (orderedDisplayTeams.length === 0) orderedDisplayTeams.push('green');
     appState.matchConfig.humanTeams = orderedDisplayTeams.map(team => displayTeamToGameTeam[team]);
     appState.matchConfig.playerCount = appState.matchConfig.humanTeams.length;
     appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
@@ -4527,7 +4538,6 @@
   }
 
   function renderOfflineTeamChoices() {
-    const overlayMap = { red: ui.teamOverlayRed, pink: ui.teamOverlayPink, green: ui.teamOverlayGreen, blue: ui.teamOverlayBlue };
     Object.entries(overlayMap).forEach(([team, el]) => { if (el) el.classList.toggle('visible', selectedTeams.has(team)); });
     ui.playerCountNextBtn.disabled = selectedTeams.size === 0;
   }
@@ -5003,17 +5013,17 @@
   ui.toggleReadyBtn.addEventListener('click', () => { sound.playButtonSound(); const localPlayer = appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId); if (localPlayer) OnlineLobbyController.setReady(!localPlayer.ready); });
   ui.leaveLobbyBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.leaveRoom(); });
 
-  function toggleOfflineTeam(team) {
+  function toggleTeam(team) {
     if (selectedTeams.has(team)) selectedTeams.delete(team);
     else selectedTeams.add(team);
     syncOfflineHumanTeams();
     renderOfflineTeamChoices();
     renderAppScreen();
   }
-  ui.hitPink?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleOfflineTeam('pink'); });
-  ui.hitRed?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleOfflineTeam('red'); });
-  ui.hitGreen?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleOfflineTeam('green'); });
-  ui.hitBlue?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleOfflineTeam('blue'); });
+  ui.hitPink?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleTeam('pink'); });
+  ui.hitRed?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleTeam('red'); });
+  ui.hitGreen?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleTeam('green'); });
+  ui.hitBlue?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleTeam('blue'); });
 
   ui.playerCountNextBtn = replaceButtonWithoutListeners(ui.playerCountNextBtn);
   ui.playerCountNextBtn.addEventListener('click', () => {
