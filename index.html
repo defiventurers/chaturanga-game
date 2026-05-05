@@ -1824,45 +1824,57 @@
       #moveLog .log-line:nth-child(n+2) { display: none; }
     }
   
-    .setup-step {
-      margin: 8px 0 10px;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 800;
+    .team-select-screen {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+    }
+    .team-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      pointer-events: none;
+      user-select: none;
+    }
+    .team-layer.overlay { opacity: 0; transition: opacity 160ms ease; }
+    .team-layer.overlay.visible { opacity: 1; }
+    .team-hit-zone {
+      position: absolute;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      z-index: 10;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Debug hit zone: POLLY/pink top-left of lower controls area. */
+    .hit-pink { left: 16%; bottom: 11.5%; width: 32%; height: 6%; }
+    /* Debug hit zone: RETSBA/red below pink. */
+    .hit-red { left: 16%; bottom: 4.5%; width: 32%; height: 6%; }
+    /* Debug hit zone: ABSTER/green top-right of lower controls area. */
+    .hit-green { right: 16%; bottom: 11.5%; width: 32%; height: 6%; }
+    /* Debug hit zone: PENGU/blue below green. */
+    .hit-blue { right: 16%; bottom: 4.5%; width: 32%; height: 6%; }
+    .continue-button {
+      position: absolute;
+      top: max(16px, env(safe-area-inset-top));
+      right: 16px;
+      z-index: 20;
+      border: 1px solid rgba(255, 236, 176, 0.95);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-weight: 900;
       letter-spacing: 0.08em;
-      text-transform: uppercase;
+      color: #2f2007;
+      background: linear-gradient(180deg, #fff2be 0%, #f8cb6b 100%);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34), 0 0 18px rgba(255, 221, 123, 0.45);
     }
-
-    .team-cards {
-      margin-top: 14px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .team-card {
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 14px;
-      padding: 10px;
-      background: rgba(255,255,255,0.05);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 800;
-    }
-
-    .team-card img { width: 32px; height: 32px; object-fit: contain; }
-    .team-card small { display:block; opacity:0.8; margin-top:2px; font-size: 0.75rem; font-weight: 600; }
-
-    .compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
-    .compact-grid .choice-card { padding: 12px; gap: 6px; border-radius: 16px; }
-    .strength-dots { color: var(--gold); letter-spacing: 0.1em; font-size: 0.8rem; }
-    .color-choice-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; margin-top: 8px; }
-    .color-choice {
-      border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); padding: 10px 8px; font-weight: 800;
-      text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .color-choice.selected { box-shadow: 0 0 0 2px rgba(255,255,255,0.2), 0 0 16px currentColor; }
+    .continue-button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
 </style>
 </head>
@@ -1884,17 +1896,21 @@
       </div>
     </section>
 
-    <section id="screenPlayerCount" class="screen" aria-label="Player count selection">
-      <div class="screen-panel">
-        <div class="eyebrow">Setup</div>
-        <div class="setup-step">Players → Colors</div>
-        <h1 style="font-size:2.1rem; line-height:1.08;">Choose Player Count</h1>
-        <div id="playerCountChoices" class="choice-grid compact-grid"></div>
-        <div id="offlineTeamChoices" class="summary-list" style="margin-top:14px;"></div>
-        <div class="screen-actions">
-          <button id="playerCountBackBtn" class="ghost">Back</button>
-          <button id="playerCountNextBtn" class="primary">Continue</button>
-        </div>
+    <section id="screenPlayerCount" class="screen" aria-label="Offline team selection">
+      <div class="team-select-screen">
+        <img class="team-layer base" src="assets/images/team-select-base.png" alt="Team selection board" />
+        <img id="teamOverlayRed" class="team-layer overlay" data-team="red" src="assets/images/team-select-red.png" alt="" />
+        <img id="teamOverlayPink" class="team-layer overlay" data-team="pink" src="assets/images/team-select-pink.png" alt="" />
+        <img id="teamOverlayGreen" class="team-layer overlay" data-team="green" src="assets/images/team-select-green.png" alt="" />
+        <img id="teamOverlayBlue" class="team-layer overlay" data-team="blue" src="assets/images/team-select-blue.png" alt="" />
+        <button id="hitPink" class="team-hit-zone hit-pink" aria-label="Toggle pink team"></button>
+        <button id="hitRed" class="team-hit-zone hit-red" aria-label="Toggle red team"></button>
+        <button id="hitGreen" class="team-hit-zone hit-green" aria-label="Toggle green team"></button>
+        <button id="hitBlue" class="team-hit-zone hit-blue" aria-label="Toggle blue team"></button>
+        <div id="playerCountChoices" class="hidden" aria-hidden="true"></div>
+        <div id="offlineTeamChoices" class="hidden" aria-hidden="true"></div>
+        <button id="playerCountBackBtn" class="hidden" aria-hidden="true" tabindex="-1">Back</button>
+        <button id="playerCountNextBtn" class="continue-button" disabled>CONTINUE</button>
       </div>
     </section>
 
@@ -2247,6 +2263,14 @@
       menuSummaryControl: document.getElementById('menuSummaryControl'),
       playerCountChoices: document.getElementById('playerCountChoices'),
       offlineTeamChoices: document.getElementById('offlineTeamChoices'),
+      hitPink: document.getElementById('hitPink'),
+      hitRed: document.getElementById('hitRed'),
+      hitGreen: document.getElementById('hitGreen'),
+      hitBlue: document.getElementById('hitBlue'),
+      teamOverlayRed: document.getElementById('teamOverlayRed'),
+      teamOverlayPink: document.getElementById('teamOverlayPink'),
+      teamOverlayGreen: document.getElementById('teamOverlayGreen'),
+      teamOverlayBlue: document.getElementById('teamOverlayBlue'),
       difficultyChoices: document.getElementById('difficultyChoices'),
       playerCountBackBtn: document.getElementById('playerCountBackBtn'),
       playerCountNextBtn: document.getElementById('playerCountNextBtn'),
@@ -4462,17 +4486,18 @@
   }
 
   // Offline color selection keeps rules untouched by only changing who controls each team.
+  const selectedTeams = new Set();
+  const displayTeamToGameTeam = { pink: 'yellow', red: 'red', green: 'green', blue: 'blue' };
+  const gameTeamToDisplayTeam = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
+  appState.matchConfig.humanTeams.forEach(team => {
+    const displayTeam = gameTeamToDisplayTeam[team];
+    if (displayTeam) selectedTeams.add(displayTeam);
+  });
   function syncOfflineHumanTeams() {
-    const needed = appState.matchConfig.playerCount;
-    const existing = (appState.matchConfig.humanTeams || []).filter(team => PLAYERS.includes(team));
-    const unique = [];
-    existing.forEach(team => { if (!unique.includes(team)) unique.push(team); });
-    while (unique.length < needed) {
-      const next = PLAYERS.find(team => !unique.includes(team));
-      if (!next) break;
-      unique.push(next);
-    }
-    appState.matchConfig.humanTeams = unique.slice(0, needed);
+    const orderedDisplayTeams = ['red', 'pink', 'green', 'blue'].filter(team => selectedTeams.has(team));
+    if (orderedDisplayTeams.length === 0) orderedDisplayTeams.push('green');
+    appState.matchConfig.humanTeams = orderedDisplayTeams.map(team => displayTeamToGameTeam[team]);
+    appState.matchConfig.playerCount = appState.matchConfig.humanTeams.length;
     appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
   }
 
@@ -4502,58 +4527,15 @@
   }
 
   function renderOfflineTeamChoices() {
-    syncOfflineHumanTeams();
-    ui.offlineTeamChoices.innerHTML = '';
-    const title = document.createElement('div');
-    title.className = 'summary-item';
-    title.innerHTML = `<span>Human Color${appState.matchConfig.playerCount > 1 ? 's' : ''}</span><strong>${appState.matchConfig.humanTeams.map(t => TEAM_LABEL[t]).join(', ')}</strong>`;
-    ui.offlineTeamChoices.appendChild(title);
-
-    const wrap = document.createElement('div');
-    wrap.className = 'color-choice-grid';
-
-    PLAYERS.forEach(team => {
-      const selected = appState.matchConfig.humanTeams.includes(team);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = `color-choice ${selected ? 'selected' : ''}`;
-      btn.style.color = `var(--${team === 'pink' ? 'yellow' : team})`;
-      btn.style.background = selected ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)';
-      btn.textContent = TEAM_LABEL[team];
-      btn.addEventListener('click', () => {
-        primeAudioAndPlayButton();
-        if (selected && appState.matchConfig.humanTeams.length > 1) {
-          appState.matchConfig.humanTeams = appState.matchConfig.humanTeams.filter(entry => entry !== team);
-        } else if (!selected) {
-          if (appState.matchConfig.humanTeams.length >= appState.matchConfig.playerCount) {
-            appState.matchConfig.humanTeams.shift();
-          }
-          appState.matchConfig.humanTeams.push(team);
-        }
-        syncOfflineHumanTeams();
-        renderOfflineTeamChoices();
-        renderAppScreen();
-      });
-      wrap.appendChild(btn);
-    });
-    ui.offlineTeamChoices.appendChild(wrap);
+    const overlayMap = { red: ui.teamOverlayRed, pink: ui.teamOverlayPink, green: ui.teamOverlayGreen, blue: ui.teamOverlayBlue };
+    Object.entries(overlayMap).forEach(([team, el]) => { if (el) el.classList.toggle('visible', selectedTeams.has(team)); });
+    ui.playerCountNextBtn.disabled = selectedTeams.size === 0;
   }
 
   const originalBuildSetupChoices = buildSetupChoices;
   buildSetupChoices = function () {
     originalBuildSetupChoices();
-    makeCardChoice(ui.playerCountChoices, [
-      { value: 1, title: '1 Player', meta: '1 human + 3 bots', description: 'Solo commander setup.' },
-      { value: 2, title: '2 Player', meta: '2 humans + 2 bots', description: 'Two local allies vs bots.' },
-      { value: 3, title: '3 Player', meta: '3 humans + 1 bot', description: 'Three humans, one bot.' },
-      { value: 4, title: '4 Player', meta: '4 humans', description: 'Full local table.' }
-    ], appState.matchConfig.playerCount, value => {
-      appState.matchConfig.playerCount = value;
-      syncOfflineHumanTeams();
-      renderOfflineTeamChoices();
-      renderAppScreen();
-      buildSetupChoices();
-    });
+    if (ui.playerCountChoices) ui.playerCountChoices.innerHTML = '';
 
     if (ui.playModeArtScreen) {
       ui.playModeArtScreen.classList.toggle('mode-offline', appState.playMode === 'offline');
@@ -5021,8 +5003,26 @@
   ui.toggleReadyBtn.addEventListener('click', () => { sound.playButtonSound(); const localPlayer = appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId); if (localPlayer) OnlineLobbyController.setReady(!localPlayer.ready); });
   ui.leaveLobbyBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.leaveRoom(); });
 
+  function toggleOfflineTeam(team) {
+    if (selectedTeams.has(team)) selectedTeams.delete(team);
+    else selectedTeams.add(team);
+    syncOfflineHumanTeams();
+    renderOfflineTeamChoices();
+    renderAppScreen();
+  }
+  ui.hitPink?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleOfflineTeam('pink'); });
+  ui.hitRed?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleOfflineTeam('red'); });
+  ui.hitGreen?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleOfflineTeam('green'); });
+  ui.hitBlue?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleOfflineTeam('blue'); });
+
   ui.playerCountNextBtn = replaceButtonWithoutListeners(ui.playerCountNextBtn);
-  ui.playerCountNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('difficulty'); });
+  ui.playerCountNextBtn.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    if (selectedTeams.size === 0) return;
+    localStorage.setItem('selectedTeams', JSON.stringify(Array.from(selectedTeams)));
+    syncOfflineHumanTeams();
+    setScreen('difficulty');
+  });
   ui.difficultyNextBtn = replaceButtonWithoutListeners(ui.difficultyNextBtn);
   ui.difficultyNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.tutorialEntry = 'flow'; setScreen('tutorial'); });
   ui.tutorialSkipBtn = replaceButtonWithoutListeners(ui.tutorialSkipBtn);
