@@ -1827,16 +1827,25 @@
     .team-select-screen {
       position: relative;
       width: 100vw;
-      height: 100vh;
+      height: 100dvh;
+      display: grid;
+      place-items: center;
       overflow: hidden;
       background: #000;
+      padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    }
+    .team-select-stage {
+      position: relative;
+      width: min(100%, calc((100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) * 9 / 16));
+      max-height: 100%;
+      aspect-ratio: 9 / 16;
     }
     .team-layer {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       object-position: center;
       pointer-events: none;
       user-select: none;
@@ -1868,19 +1877,16 @@
     .hit-blue { right: 16%; bottom: 4.5%; width: 32%; height: 6%; }
     .continue-button {
       position: absolute;
-      top: max(16px, env(safe-area-inset-top));
-      right: 16px;
-      z-index: 20;
-      border: 1px solid rgba(255, 236, 176, 0.95);
-      border-radius: 999px;
-      padding: 10px 18px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      color: #2f2007;
-      background: linear-gradient(180deg, #fff2be 0%, #f8cb6b 100%);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34), 0 0 18px rgba(255, 221, 123, 0.45);
+      z-index: 10;
+      border: 0;
+      background: transparent;
+      color: transparent;
+      padding: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
-    .continue-button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+    .continue-button:disabled { cursor: default; }
+    .hit-continue { left: 19%; bottom: 20.8%; width: 62%; height: 6.6%; }
 
 </style>
 </head>
@@ -1904,6 +1910,7 @@
 
     <section id="screenPlayerCount" class="screen" aria-label="Offline team selection">
       <div class="team-select-screen">
+        <div class="team-select-stage">
         <img class="team-layer base" src="assets/images/team-select-base.png" alt="Team selection board" />
         <img id="teamOverlayRed" class="team-layer overlay" data-team-overlay="red" src="assets/images/team-select-red.png" alt="" />
         <img id="teamOverlayPink" class="team-layer overlay" data-team-overlay="pink" src="assets/images/team-select-pink.png" alt="" />
@@ -1916,7 +1923,8 @@
         <div id="playerCountChoices" class="hidden" aria-hidden="true"></div>
         <div id="offlineTeamChoices" class="hidden" aria-hidden="true"></div>
         <button id="playerCountBackBtn" class="hidden" aria-hidden="true" tabindex="-1">Back</button>
-        <button id="playerCountNextBtn" class="continue-button" disabled>CONTINUE</button>
+        <button id="playerCountNextBtn" class="continue-button hit-continue" aria-label="Continue with selected teams" disabled></button>
+        </div>
       </div>
     </section>
 
