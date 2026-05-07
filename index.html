@@ -1825,19 +1825,18 @@
     }
   
     .team-select-screen {
-      position: relative;
       width: 100vw;
       height: 100dvh;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
       background: #000;
-      padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
     .team-select-stage {
       position: relative;
-      width: min(100%, calc((100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) * 9 / 16));
-      max-height: 100%;
+      width: min(100vw, calc(100dvh * 9 / 16));
+      height: min(100dvh, calc(100vw * 16 / 9));
       aspect-ratio: 9 / 16;
     }
     .team-layer {
@@ -1846,35 +1845,28 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
-      object-position: center;
       pointer-events: none;
       user-select: none;
+      display: block;
     }
     .team-layer.base { z-index: 1; }
-    .team-layer.overlay {
-      z-index: 2;
-      opacity: 0;
-      transition: opacity 160ms ease;
-      clip-path: inset(0 0 22% 0);
-    }
-    .team-layer.overlay.visible { opacity: 1; }
     .team-hit-zone {
       position: absolute;
       background: transparent;
       border: none;
       padding: 0;
+      margin: 0;
+      opacity: 1;
+      appearance: none;
       cursor: pointer;
-      z-index: 10;
+      z-index: 5;
       -webkit-tap-highlight-color: transparent;
     }
-    /* Debug hit zone: POLLY/pink top-left of lower controls area. */
-    .hit-pink { left: 16%; bottom: 11.5%; width: 32%; height: 6%; }
-    /* Debug hit zone: RETSBA/red below pink. */
-    .hit-red { left: 16%; bottom: 4.5%; width: 32%; height: 6%; }
-    /* Debug hit zone: ABSTER/green top-right of lower controls area. */
-    .hit-green { right: 16%; bottom: 11.5%; width: 32%; height: 6%; }
-    /* Debug hit zone: PENGU/blue below green. */
-    .hit-blue { right: 16%; bottom: 4.5%; width: 32%; height: 6%; }
+    .hit-dominion-continue { left: 32%; top: 21%; width: 36%; height: 5%; }
+    .hit-polly { left: 7%; top: 78%; width: 40%; height: 8%; }
+    .hit-abster { left: 53%; top: 78%; width: 40%; height: 8%; }
+    .hit-retsba { left: 7%; top: 88%; width: 40%; height: 8%; }
+    .hit-pengu { left: 53%; top: 88%; width: 40%; height: 8%; }
     .continue-button {
       position: absolute;
       z-index: 10;
@@ -1886,7 +1878,6 @@
       -webkit-tap-highlight-color: transparent;
     }
     .continue-button:disabled { cursor: default; }
-    .hit-continue { left: 19%; bottom: 20.8%; width: 62%; height: 6.6%; }
 
 </style>
 </head>
@@ -1911,19 +1902,15 @@
     <section id="screenPlayerCount" class="screen" aria-label="Offline team selection">
       <div class="team-select-screen">
         <div class="team-select-stage">
-        <img class="team-layer base" src="assets/images/team-select-base.png" alt="Team selection board" />
-        <img id="teamOverlayRed" class="team-layer overlay" data-team-overlay="red" src="assets/images/team-select-red.png" alt="" />
-        <img id="teamOverlayPink" class="team-layer overlay" data-team-overlay="pink" src="assets/images/team-select-pink.png" alt="" />
-        <img id="teamOverlayGreen" class="team-layer overlay" data-team-overlay="green" src="assets/images/team-select-green.png" alt="" />
-        <img id="teamOverlayBlue" class="team-layer overlay" data-team-overlay="blue" src="assets/images/team-select-blue.png" alt="" />
-        <button id="hitPink" class="team-hit-zone hit-pink" aria-label="Toggle pink team"></button>
-        <button id="hitRed" class="team-hit-zone hit-red" aria-label="Toggle red team"></button>
-        <button id="hitGreen" class="team-hit-zone hit-green" aria-label="Toggle green team"></button>
-        <button id="hitBlue" class="team-hit-zone hit-blue" aria-label="Toggle blue team"></button>
+        <img id="dominionStateImage" class="team-layer base" src="assets/images/state_none.png" alt="Dominion selection" />
+        <button id="hitPolly" class="team-hit-zone hit-polly" aria-label="Toggle POLLY"></button>
+        <button id="hitAbster" class="team-hit-zone hit-abster" aria-label="Toggle ABSTER"></button>
+        <button id="hitRetsba" class="team-hit-zone hit-retsba" aria-label="Toggle RETSBA"></button>
+        <button id="hitPengu" class="team-hit-zone hit-pengu" aria-label="Toggle PENGU"></button>
         <div id="playerCountChoices" class="hidden" aria-hidden="true"></div>
         <div id="offlineTeamChoices" class="hidden" aria-hidden="true"></div>
         <button id="playerCountBackBtn" class="hidden" aria-hidden="true" tabindex="-1">Back</button>
-        <button id="playerCountNextBtn" class="continue-button hit-continue" aria-label="Continue with selected teams" disabled></button>
+        <button id="playerCountNextBtn" class="continue-button hit-dominion-continue" aria-label="Continue" disabled></button>
         </div>
       </div>
     </section>
@@ -2277,14 +2264,11 @@
       menuSummaryControl: document.getElementById('menuSummaryControl'),
       playerCountChoices: document.getElementById('playerCountChoices'),
       offlineTeamChoices: document.getElementById('offlineTeamChoices'),
-      hitPink: document.getElementById('hitPink'),
-      hitRed: document.getElementById('hitRed'),
-      hitGreen: document.getElementById('hitGreen'),
-      hitBlue: document.getElementById('hitBlue'),
-      teamOverlayRed: document.getElementById('teamOverlayRed'),
-      teamOverlayPink: document.getElementById('teamOverlayPink'),
-      teamOverlayGreen: document.getElementById('teamOverlayGreen'),
-      teamOverlayBlue: document.getElementById('teamOverlayBlue'),
+      dominionStateImage: document.getElementById('dominionStateImage'),
+      hitPolly: document.getElementById('hitPolly'),
+      hitAbster: document.getElementById('hitAbster'),
+      hitRetsba: document.getElementById('hitRetsba'),
+      hitPengu: document.getElementById('hitPengu'),
       difficultyChoices: document.getElementById('difficultyChoices'),
       playerCountBackBtn: document.getElementById('playerCountBackBtn'),
       playerCountNextBtn: document.getElementById('playerCountNextBtn'),
@@ -4499,18 +4483,21 @@
     });
   }
 
-  // Offline color selection keeps rules untouched by only changing who controls each team.
-  const selectedTeams = new Set();
-  const overlayMap = {
-    red: document.querySelector('[data-team-overlay="red"]'),
-    pink: document.querySelector('[data-team-overlay="pink"]'),
-    green: document.querySelector('[data-team-overlay="green"]'),
-    blue: document.querySelector('[data-team-overlay="blue"]')
-  };
-  const displayTeamToGameTeam = { pink: 'yellow', red: 'red', green: 'green', blue: 'blue' };
+  const TEAM_ORDER = ['polly', 'abster', 'retsba', 'pengu'];
+  const TEAM_TO_GAME_TEAM = { polly: 'yellow', abster: 'green', retsba: 'red', pengu: 'blue' };
+  let selectedTeams = [];
+  function normalizeTeams(teams) {
+    return TEAM_ORDER.filter(team => teams.includes(team));
+  }
+  function getDominionStateImage(teams, mode) {
+    const normalized = normalizeTeams(teams);
+    if (normalized.length === 0) return 'assets/images/state_none.png';
+    if (mode === 'online') return `assets/images/state_${normalized[0]}.png`;
+    if (normalized.length === 4) return 'assets/images/state_all.png';
+    return `assets/images/state_${normalized.join('_')}.png`;
+  }
   function syncOfflineHumanTeams() {
-    const orderedDisplayTeams = ['red', 'pink', 'green', 'blue'].filter(team => selectedTeams.has(team));
-    appState.matchConfig.humanTeams = orderedDisplayTeams.map(team => displayTeamToGameTeam[team]);
+    appState.matchConfig.humanTeams = selectedTeams.map(team => TEAM_TO_GAME_TEAM[team]);
     appState.matchConfig.playerCount = appState.matchConfig.humanTeams.length;
     appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
   }
@@ -4540,9 +4527,20 @@
     });
   }
 
-  function renderOfflineTeamChoices() {
-    Object.entries(overlayMap).forEach(([team, el]) => { if (el) el.classList.toggle('visible', selectedTeams.has(team)); });
-    ui.playerCountNextBtn.disabled = selectedTeams.size === 0;
+  function canContinueForMode(teams, mode) {
+    if (mode === 'offline') return teams.length >= 1;
+    if (mode === 'online') return teams.length === 1;
+    return false;
+  }
+  function renderDominionSelection() {
+    if (ui.dominionStateImage) ui.dominionStateImage.src = getDominionStateImage(selectedTeams, appState.playMode);
+    ui.playerCountNextBtn.disabled = !canContinueForMode(selectedTeams, appState.playMode);
+    const teamLabels = { polly: 'POLLY', abster: 'ABSTER', retsba: 'RETSBA', pengu: 'PENGU' };
+    const actionWord = appState.playMode === 'offline' ? 'Toggle' : 'Select';
+    ui.hitPolly?.setAttribute('aria-label', `${actionWord} ${teamLabels.polly}`);
+    ui.hitAbster?.setAttribute('aria-label', `${actionWord} ${teamLabels.abster}`);
+    ui.hitRetsba?.setAttribute('aria-label', `${actionWord} ${teamLabels.retsba}`);
+    ui.hitPengu?.setAttribute('aria-label', `${actionWord} ${teamLabels.pengu}`);
   }
 
   const originalBuildSetupChoices = buildSetupChoices;
@@ -4565,7 +4563,7 @@
       buildSetupChoices();
     });
 
-    renderOfflineTeamChoices();
+    renderDominionSelection();
     renderOnlinePreferredTeamChoices();
   };
 
@@ -5016,23 +5014,32 @@
   ui.toggleReadyBtn.addEventListener('click', () => { sound.playButtonSound(); const localPlayer = appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId); if (localPlayer) OnlineLobbyController.setReady(!localPlayer.ready); });
   ui.leaveLobbyBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.leaveRoom(); });
 
-  function toggleTeam(team) {
-    if (selectedTeams.has(team)) selectedTeams.delete(team);
-    else selectedTeams.add(team);
+  function toggleOfflineTeam(team) {
+    const next = new Set(selectedTeams);
+    if (next.has(team)) next.delete(team);
+    else next.add(team);
+    selectedTeams = TEAM_ORDER.filter(t => next.has(t));
+  }
+  function selectOnlineTeam(team) {
+    selectedTeams = [team];
+  }
+  function handleTeamClick(team) {
+    if (appState.playMode === 'offline') toggleOfflineTeam(team);
+    else selectOnlineTeam(team);
     syncOfflineHumanTeams();
-    renderOfflineTeamChoices();
+    renderDominionSelection();
     renderAppScreen();
   }
-  ui.hitPink?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleTeam('pink'); });
-  ui.hitRed?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleTeam('red'); });
-  ui.hitGreen?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleTeam('green'); });
-  ui.hitBlue?.addEventListener('click', () => { primeAudioAndPlayButton(); toggleTeam('blue'); });
+  ui.hitPolly?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('polly'); });
+  ui.hitAbster?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('abster'); });
+  ui.hitRetsba?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('retsba'); });
+  ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
   ui.playerCountNextBtn = replaceButtonWithoutListeners(ui.playerCountNextBtn);
   ui.playerCountNextBtn.addEventListener('click', () => {
     primeAudioAndPlayButton();
-    if (selectedTeams.size === 0) return;
-    localStorage.setItem('selectedTeams', JSON.stringify(Array.from(selectedTeams)));
+    if (!canContinueForMode(selectedTeams, appState.playMode)) return;
+    localStorage.setItem('selectedTeams', JSON.stringify(selectedTeams));
     syncOfflineHumanTeams();
     setScreen('difficulty');
   });
