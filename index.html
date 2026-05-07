@@ -4500,11 +4500,6 @@
     blue: document.querySelector('[data-team-overlay="blue"]')
   };
   const displayTeamToGameTeam = { pink: 'yellow', red: 'red', green: 'green', blue: 'blue' };
-  const gameTeamToDisplayTeam = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
-  appState.matchConfig.humanTeams.forEach(team => {
-    const displayTeam = gameTeamToDisplayTeam[team];
-    if (displayTeam) selectedTeams.add(displayTeam);
-  });
   function syncOfflineHumanTeams() {
     const orderedDisplayTeams = ['red', 'pink', 'green', 'blue'].filter(team => selectedTeams.has(team));
     appState.matchConfig.humanTeams = orderedDisplayTeams.map(team => displayTeamToGameTeam[team]);
