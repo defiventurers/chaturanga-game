@@ -1070,6 +1070,26 @@
       filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35));
     }
 
+
+    .piece-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .piece-fallback {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+      font-weight: 900;
+      font-size: clamp(14px, 2vw, 22px);
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    }
     .piece .crest {
       position: absolute;
       top: -6px;
@@ -1835,10 +1855,10 @@
               <button id="menuHowBtn" class="secondary">How to Play</button>
             </div>
             <div class="team-cards">
-              <div class="team-card"><img src="assets/arctic/pieces/red-frost-king.svg" alt=""><div>Red<small>Retsba</small></div></div>
-              <div class="team-card"><img src="assets/arctic/pieces/blue-frost-king.svg" alt=""><div>Blue<small>Pengu</small></div></div>
-              <div class="team-card"><img src="assets/arctic/pieces/green-frost-king.svg" alt=""><div>Green<small>Abster</small></div></div>
-              <div class="team-card"><img src="assets/arctic/pieces/pink-frost-king.svg" alt=""><div>Pink<small>Polly</small></div></div>
+              <div class="team-card"><img src="/assets/arctic/pieces/red-frost-king.png" alt=""><div>Red<small>Retsba</small></div></div>
+              <div class="team-card"><img src="/assets/arctic/pieces/blue-frost-king.png" alt=""><div>Blue<small>Pengu</small></div></div>
+              <div class="team-card"><img src="/assets/arctic/pieces/green-frost-king.png" alt=""><div>Green<small>Abster</small></div></div>
+              <div class="team-card"><img src="/assets/arctic/pieces/pink-frost-king.png" alt=""><div>Pink<small>Polly</small></div></div>
             </div>
           </div>
           <div class="menu-card">
@@ -2145,15 +2165,89 @@
       ship: 'Icebreaker',
       pawn: 'Snow Guard'
     };
-    function getPieceAsset(team, type) {
-      const visualTeam = team === 'yellow' ? 'pink' : team;
-      const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
-      return `assets/arctic/pieces/${visualTeam}-${slug}.png`;
+    function normalizePieceColor(piece) {
+      const raw = piece?.color ?? piece?.team ?? piece?.player ?? piece?.owner ?? piece?.side ?? '';
+      const color = String(raw).toLowerCase().trim();
+      if (color === 'yellow' || color === 'polly') return 'pink';
+      if (color === 'retsba') return 'red';
+      if (color === 'abster') return 'green';
+      if (color === 'pengu') return 'blue';
+      return color;
     }
-    function getPieceFallbackAsset(team, type) {
-      const visualTeam = team === 'yellow' ? 'pink' : team;
-      const slug = PIECE_DISPLAY[type]?.asset || 'snow-guard';
-      return `assets/arctic/pieces/${visualTeam}-${slug}.svg`;
+    function getPieceTypeText(piece) {
+      return [piece?.type, piece?.kind, piece?.role, piece?.name, piece?.id, piece?.piece, piece?.rank, piece?.unit, piece?.variant, piece?.label, piece?.title, piece?.className]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .trim();
+    }
+    function getPieceAssetType(piece) {
+      const text = getPieceTypeText(piece);
+      console.log('Resolving piece asset type:', text, piece);
+      if (text === 'pawn' || text.includes('pawn') || text.includes('guard') || text.includes('snow') || text.includes('soldier')) return 'snow-guard';
+      if (text === 'ship' || text.includes('ship') || text.includes('boat') || text.includes('icebreaker') || text.includes('vessel')) return 'icebreaker';
+      if (text === 'horse' || text.includes('horse') || text.includes('unicorn') || text.includes('aurora') || text.includes('knight')) return 'aurora-unicorn';
+      if (text === 'elephant' || text.includes('elephant') || text.includes('mammoth') || text.includes('war-mammoth')) return 'war-mammoth';
+      if (text === 'king' || text.includes('king') || text.includes('frost-king') || text.includes('royal')) return 'frost-king';
+      console.error('Could not map piece type to asset:', piece);
+      return null;
+    }
+    function getPieceImageSrc(piece) {
+      const color = normalizePieceColor(piece);
+      const assetType = getPieceAssetType(piece);
+      if (!color || !assetType) {
+        console.error('Missing color or asset type:', { color, assetType, piece });
+        return null;
+      }
+      const src = `/assets/arctic/pieces/${color}-${assetType}.png`;
+      console.log('Piece image src:', src, piece);
+      return src;
+    }
+    function getPieceAsset(team, type) {
+      return getPieceImageSrc({ team, type });
+    }
+    function getPieceAltText(piece) {
+      const color = normalizePieceColor(piece);
+      const type = getPieceAssetType(piece) || 'piece';
+      return `${color} ${type}`;
+    }
+    function getPieceLabel(piece) {
+      return `${TEAM_LABEL[piece.team] || piece.team} ${PIECE_NAME[piece.type] || piece.type}`;
+    }
+    function getPieceLetter(piece) {
+      const text = getPieceTypeText(piece);
+      if (text.includes('king')) return 'K';
+      if (text.includes('elephant') || text.includes('mammoth')) return 'E';
+      if (text.includes('horse') || text.includes('unicorn') || text.includes('knight')) return 'H';
+      if (text.includes('ship') || text.includes('boat') || text.includes('icebreaker')) return 'S';
+      return 'P';
+    }
+    function renderPieceImage(piece, pieceElement) {
+      const src = getPieceImageSrc(piece);
+      pieceElement.querySelectorAll('.piece-img, .piece-fallback').forEach((el) => el.remove());
+      if (!src) {
+        const fallback = document.createElement('span');
+        fallback.className = 'piece-fallback';
+        fallback.textContent = getPieceLetter(piece);
+        pieceElement.appendChild(fallback);
+        return;
+      }
+      const img = document.createElement('img');
+      img.className = 'piece-art piece-img png-piece-full';
+      img.loading = 'eager';
+      img.decoding = 'async';
+      img.src = src;
+      img.alt = getPieceAltText(piece);
+      img.onload = () => { console.log('Loaded piece image:', src); };
+      img.onerror = () => {
+        console.error('FAILED piece image:', src, piece);
+        img.remove();
+        const fallback = document.createElement('span');
+        fallback.className = 'piece-fallback';
+        fallback.textContent = getPieceLetter(piece);
+        pieceElement.appendChild(fallback);
+      };
+      pieceElement.appendChild(img);
     }
     const PIECE_VALUE = {
       king: 1200,
@@ -2343,7 +2437,7 @@
           else cell.classList.add('possible');
         }
         const piece=tutorialState.tutorialBoard[row][col];
-        if (piece){ const el=document.createElement('div'); el.className='piece'; const img=document.createElement('img'); img.className='piece-art png-piece-full'; img.src=getPieceAsset(piece.team,piece.type); img.onerror=()=>{img.onerror=null;img.src=getPieceFallbackAsset(piece.team,piece.type);}; el.appendChild(img); cell.appendChild(el); }
+        if (piece){ const el=document.createElement('div'); el.className='piece'; renderPieceImage(piece, el); cell.appendChild(el); }
         ui.tutorialBoard.appendChild(cell);
       }
       renderTutorialArrows();
@@ -2872,6 +2966,17 @@
   const DOMINION_TO_INTERNAL_TEAM = { polly: 'yellow', retsba: 'red', abster: 'green', pengu: 'blue' };
   const COLOR_TO_INTERNAL_TEAM = { pink: 'yellow', yellow: 'yellow', red: 'red', green: 'green', blue: 'blue' };
   const INTERNAL_TEAM_TO_UI_COLOR = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
+  const DOMINION_TO_START_ZONE = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
+  const COLOR_TO_START_ZONE = { pink: 'upperLeft', yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
+  const DOMINION_START_ZONES = DOMINION_TO_START_ZONE;
+  const COLOR_START_ZONES = COLOR_TO_START_ZONE;
+  const START_ZONES = {
+    upperLeft: { king: [0, 3], backline: [[0, 2, 'elephant'], [0, 1, 'horse'], [0, 0, 'ship']], pawns: [[1,0],[1,1],[1,2],[1,3]] },
+    upperRight: { king: [3, 7], backline: [[2, 7, 'elephant'], [1, 7, 'horse'], [0, 7, 'ship']], pawns: [[0,6],[1,6],[2,6],[3,6]] },
+    lowerLeft: { king: [4, 0], backline: [[5, 0, 'elephant'], [6, 0, 'horse'], [7, 0, 'ship']], pawns: [[4,1],[5,1],[6,1],[7,1]] },
+    lowerRight: { king: [7, 4], backline: [[7, 5, 'elephant'], [7, 6, 'horse'], [7, 7, 'ship']], pawns: [[6,4],[6,5],[6,6],[6,7]] }
+  };
+  const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
   const TEAM_TO_COLOR = DOMINION_TO_UI_COLOR;
   const TEAM_TO_GAME_TEAM = DOMINION_TO_INTERNAL_TEAM;
 
@@ -3880,14 +3985,9 @@
         if (piece) {
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
-          const art = document.createElement('img');
-          art.className = 'piece-art png-piece-full';
-          art.loading = 'eager';
-          art.decoding = 'async';
-          art.src = getPieceAsset(piece.team, piece.type);
-          art.onerror = () => { art.onerror = null; art.src = getPieceFallbackAsset(piece.team, piece.type); };
-          art.alt = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}`;
-          token.appendChild(art);
+          console.log('PIECE DEBUG:', JSON.stringify(piece));
+          console.log('piece keys:', Object.keys(piece));
+          renderPieceImage(piece, token);
           if (piece.isRoyal) token.innerHTML += '<div class="crest" aria-hidden="true">✦</div>';
           token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
           cell.appendChild(token);
@@ -4460,16 +4560,7 @@
     img.src = src;
   });
 
-  const TEAM_START_ZONES = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
-  const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
-  const COLOR_START_ZONES = { pink: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
-  const COLOR_TO_START_ZONE = { yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
-  const START_ZONES = {
-    upperLeft: { king: [0, 3], backline: [[0, 2, 'elephant'], [0, 1, 'horse'], [0, 0, 'ship']], pawns: [[1,0],[1,1],[1,2],[1,3]] },
-    upperRight: { king: [3, 7], backline: [[2, 7, 'elephant'], [1, 7, 'horse'], [0, 7, 'ship']], pawns: [[0,6],[1,6],[2,6],[3,6]] },
-    lowerLeft: { king: [4, 0], backline: [[5, 0, 'elephant'], [6, 0, 'horse'], [7, 0, 'ship']], pawns: [[4,1],[5,1],[6,1],[7,1]] },
-    lowerRight: { king: [7, 4], backline: [[7, 5, 'elephant'], [7, 6, 'horse'], [7, 7, 'ship']], pawns: [[6,4],[6,5],[6,6],[6,7]] }
-  };
+  const TEAM_START_ZONES = DOMINION_START_ZONES;
 
   const selectedTeams = new Set();
   function normalizeTeams(teams) {
@@ -4534,6 +4625,10 @@
       window.setTimeout(() => {
         try {
           console.log('Starting offline match init');
+          console.log("START_ZONES:", typeof START_ZONES !== "undefined" ? START_ZONES : "MISSING");
+          console.log("COLOR_START_ZONES:", typeof COLOR_START_ZONES !== "undefined" ? COLOR_START_ZONES : "MISSING");
+          console.log("Selected teams:", localStorage.getItem("selectedTeams"));
+          console.log("Selected dominions:", localStorage.getItem("selectedDominions"));
           initializeOfflineMatchFromSelectedTeams({
             selectedInternalTeams,
             selectedUiColors,
@@ -4556,7 +4651,7 @@
       }, 350);
     } catch (error) {
       console.error('Failed before offline match initialization:', error);
-      alert('Offline match failed to start. Check console.');
+      alert('Offline match failed: ' + (error?.message || error));
       showDominionSelectionScreen();
     }
   }
@@ -4586,7 +4681,7 @@
         team: internalTeam,
         type: 'human',
         isBot: false,
-        startZone: TEAM_START_ZONES[dominion]
+        startZone: COLOR_TO_START_ZONE[internalTeam]
       };
     });
 
@@ -4599,6 +4694,16 @@
     localStorage.setItem('offlineMode', 'true');
     localStorage.setItem('playerCount', String(selectedInternalTeams.length));
     localStorage.setItem('offlinePlayerCount', String(selectedInternalTeams.length));
+
+    console.log('Mappings check:', {
+      COLOR_TO_START_ZONE,
+      DOMINION_TO_INTERNAL_TEAM,
+      COLOR_TO_INTERNAL_TEAM,
+      DOMINION_TO_START_ZONE
+    });
+    console.log('Selected dominions:', selectedDominions);
+    console.log('Selected internal teams:', selectedInternalTeams);
+    console.log('Offline players:', offlinePlayers);
 
     console.log('Selected dominions:', selectedDominions);
     console.log('Selected UI colors:', selectedUiColors);
@@ -4896,7 +5001,7 @@
         beginMatchFlowFromTutorialOriginal();
       } catch (error) {
         console.error('Offline match initialization failed:', error);
-        alert('Offline match failed to load. Check console for details.');
+        alert('Offline match failed: ' + (error?.message || error));
         setScreen('playerCount');
       }
     }
