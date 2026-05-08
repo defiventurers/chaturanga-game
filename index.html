@@ -2872,6 +2872,12 @@
   const DOMINION_TO_INTERNAL_TEAM = { polly: 'yellow', retsba: 'red', abster: 'green', pengu: 'blue' };
   const COLOR_TO_INTERNAL_TEAM = { pink: 'yellow', yellow: 'yellow', red: 'red', green: 'green', blue: 'blue' };
   const INTERNAL_TEAM_TO_UI_COLOR = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
+  const START_ZONES = {
+    upperLeft: { king: [0, 3], backline: [[0, 2, 'elephant'], [0, 1, 'horse'], [0, 0, 'ship']], pawns: [[1,0],[1,1],[1,2],[1,3]] },
+    upperRight: { king: [3, 7], backline: [[2, 7, 'elephant'], [1, 7, 'horse'], [0, 7, 'ship']], pawns: [[0,6],[1,6],[2,6],[3,6]] },
+    lowerLeft: { king: [4, 0], backline: [[5, 0, 'elephant'], [6, 0, 'horse'], [7, 0, 'ship']], pawns: [[4,1],[5,1],[6,1],[7,1]] },
+    lowerRight: { king: [7, 4], backline: [[7, 5, 'elephant'], [7, 6, 'horse'], [7, 7, 'ship']], pawns: [[6,4],[6,5],[6,6],[6,7]] }
+  };
   const DOMINION_START_ZONES = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
   const COLOR_START_ZONES = { pink: 'upperLeft', yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
   const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
@@ -4465,12 +4471,6 @@
 
   const TEAM_START_ZONES = DOMINION_START_ZONES;
   const COLOR_TO_START_ZONE = { yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
-  const START_ZONES = {
-    upperLeft: { king: [0, 3], backline: [[0, 2, 'elephant'], [0, 1, 'horse'], [0, 0, 'ship']], pawns: [[1,0],[1,1],[1,2],[1,3]] },
-    upperRight: { king: [3, 7], backline: [[2, 7, 'elephant'], [1, 7, 'horse'], [0, 7, 'ship']], pawns: [[0,6],[1,6],[2,6],[3,6]] },
-    lowerLeft: { king: [4, 0], backline: [[5, 0, 'elephant'], [6, 0, 'horse'], [7, 0, 'ship']], pawns: [[4,1],[5,1],[6,1],[7,1]] },
-    lowerRight: { king: [7, 4], backline: [[7, 5, 'elephant'], [7, 6, 'horse'], [7, 7, 'ship']], pawns: [[6,4],[6,5],[6,6],[6,7]] }
-  };
 
   const selectedTeams = new Set();
   function normalizeTeams(teams) {
@@ -4535,6 +4535,10 @@
       window.setTimeout(() => {
         try {
           console.log('Starting offline match init');
+          console.log("START_ZONES:", typeof START_ZONES !== "undefined" ? START_ZONES : "MISSING");
+          console.log("COLOR_START_ZONES:", typeof COLOR_START_ZONES !== "undefined" ? COLOR_START_ZONES : "MISSING");
+          console.log("Selected teams:", localStorage.getItem("selectedTeams"));
+          console.log("Selected dominions:", localStorage.getItem("selectedDominions"));
           initializeOfflineMatchFromSelectedTeams({
             selectedInternalTeams,
             selectedUiColors,
@@ -4557,7 +4561,7 @@
       }, 350);
     } catch (error) {
       console.error('Failed before offline match initialization:', error);
-      alert('Offline match failed to start. Check console.');
+      alert('Offline match failed: ' + (error?.message || error));
       showDominionSelectionScreen();
     }
   }
@@ -4897,7 +4901,7 @@
         beginMatchFlowFromTutorialOriginal();
       } catch (error) {
         console.error('Offline match initialization failed:', error);
-        alert('Offline match failed to load. Check console for details.');
+        alert('Offline match failed: ' + (error?.message || error));
         setScreen('playerCount');
       }
     }
