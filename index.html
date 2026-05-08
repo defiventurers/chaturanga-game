@@ -2872,6 +2872,9 @@
   const DOMINION_TO_INTERNAL_TEAM = { polly: 'yellow', retsba: 'red', abster: 'green', pengu: 'blue' };
   const COLOR_TO_INTERNAL_TEAM = { pink: 'yellow', yellow: 'yellow', red: 'red', green: 'green', blue: 'blue' };
   const INTERNAL_TEAM_TO_UI_COLOR = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
+  const DOMINION_START_ZONES = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
+  const COLOR_START_ZONES = { pink: 'upperLeft', yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
+  const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
   const TEAM_TO_COLOR = DOMINION_TO_UI_COLOR;
   const TEAM_TO_GAME_TEAM = DOMINION_TO_INTERNAL_TEAM;
 
@@ -4460,9 +4463,7 @@
     img.src = src;
   });
 
-  const TEAM_START_ZONES = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
-  const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
-  const COLOR_START_ZONES = { pink: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
+  const TEAM_START_ZONES = DOMINION_START_ZONES;
   const COLOR_TO_START_ZONE = { yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
   const START_ZONES = {
     upperLeft: { king: [0, 3], backline: [[0, 2, 'elephant'], [0, 1, 'horse'], [0, 0, 'ship']], pawns: [[1,0],[1,1],[1,2],[1,3]] },
@@ -4586,7 +4587,7 @@
         team: internalTeam,
         type: 'human',
         isBot: false,
-        startZone: TEAM_START_ZONES[dominion]
+        startZone: DOMINION_START_ZONES[dominion]
       };
     });
 
