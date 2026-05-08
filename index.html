@@ -2843,6 +2843,15 @@
       return PLAYERS.map(team => `${TEAM_LABEL[team]} ${controlMap[team]}`).join(', ');
     }
 
+    function getSelectedInternalTeamsFromStorage() {
+      const selectedInternalTeams = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
+      return Array.isArray(selectedInternalTeams) ? selectedInternalTeams.filter(team => PLAYERS.includes(team)) : [];
+    }
+
+    function isDominionSelectionModeActive() {
+      return appState.playMode === 'offline' && getSelectedInternalTeamsFromStorage().length > 0;
+    }
+
     function isBotPlayer(team) {
       return appState.matchConfig.controlMap[team] === 'bot';
     }
@@ -2894,6 +2903,10 @@
     }
 
     function getGameSummaryText() {
+      if (isDominionSelectionModeActive()) {
+        const selectedTeams = getSelectedInternalTeamsFromStorage();
+        return `${selectedTeams.length} team${selectedTeams.length !== 1 ? 's' : ''} local human match.`;
+      }
       const humans = Object.values(appState.matchConfig.controlMap).filter(v => v === 'human').length;
       const bots = 4 - humans;
       return `${humans} human${humans !== 1 ? 's' : ''}, ${bots} bot${bots !== 1 ? 's' : ''}, ${capitalize(appState.matchConfig.botDifficulty)} difficulty.`;
@@ -2901,13 +2914,19 @@
 
     function renderGameConfigPills() {
       ui.gameConfigPills.innerHTML = '';
-      const pills = [
-        `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`,
-        `${capitalize(appState.matchConfig.botDifficulty)} Bots`
-      ];
-      PLAYERS.forEach(team => {
-        pills.push(`${TEAM_LABEL[team]} ${appState.matchConfig.controlMap[team]}`);
-      });
+      const pills = [];
+      if (isDominionSelectionModeActive()) {
+        const selectedTeams = getSelectedInternalTeamsFromStorage();
+        pills.push(`${selectedTeams.length} Team${selectedTeams.length > 1 ? 's' : ''}`);
+        pills.push('Local');
+        selectedTeams.forEach(team => pills.push(`${TEAM_LABEL[team]} human`));
+      } else {
+        pills.push(`${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`);
+        pills.push(`${capitalize(appState.matchConfig.botDifficulty)} Bots`);
+        PLAYERS.forEach(team => {
+          pills.push(`${TEAM_LABEL[team]} ${appState.matchConfig.controlMap[team]}`);
+        });
+      }
       pills.forEach(text => {
         const div = document.createElement('div');
         div.className = 'config-pill';
@@ -3042,19 +3061,14 @@
     }
 
     function initializeBoard() {
-      const savedSelectedTeams = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
+      const selectedInternalTeams = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
+      const selectedDominions = JSON.parse(localStorage.getItem('selectedDominions') || '[]');
+      const offlinePlayers = JSON.parse(localStorage.getItem('offlinePlayers') || '[]');
       const savedSelectedTeamStartZones = JSON.parse(localStorage.getItem('selectedTeamStartZones') || '{}');
-      const offlineColors = Array.isArray(savedSelectedTeams)
-        ? savedSelectedTeams.filter(color => Object.hasOwn(COLOR_TO_INTERNAL_TEAM, color))
-        : [];
-      const activeOfflineColors = offlineColors.length ? offlineColors : ['pink', 'green', 'red', 'blue'];
-      const activeInternalTeams = activeOfflineColors.map(color => COLOR_TO_INTERNAL_TEAM[color]);
-      const selectedTeamStartZones = activeOfflineColors.reduce((acc, color) => {
-        acc[color] = savedSelectedTeamStartZones[color] || COLOR_START_ZONES[color];
-        return acc;
-      }, {});
-      console.log('Selected teams:', activeOfflineColors);
-      console.log('Selected start zones:', selectedTeamStartZones);
+      console.log('INIT selectedInternalTeams:', selectedInternalTeams);
+      console.log('INIT selectedDominions:', selectedDominions);
+      console.log('INIT offlinePlayers:', offlinePlayers);
+      const isDominionSelectionMode = Array.isArray(selectedInternalTeams) && selectedInternalTeams.length > 0;
       const b = state.board;
       const placeTeam = (team, zoneName) => {
         const zone = START_ZONES[zoneName];
@@ -3063,11 +3077,30 @@
         zone.backline.forEach(([r,c,type]) => b[r][c] = makePiece(team, type));
         zone.pawns.forEach(([r,c]) => b[r][c] = makePiece(team, 'pawn'));
       };
-      if (appState.playMode === 'offline') {
-        activeInternalTeams.forEach(team => {
+      if (appState.playMode === 'offline' && isDominionSelectionMode) {
+        const gameState = state;
+        gameState.activeTeams = selectedInternalTeams.slice();
+        gameState.players = selectedInternalTeams.map((team, index) => ({
+          id: index + 1,
+          color: team,
+          team,
+          type: 'human',
+          isBot: false,
+          active: true
+        }));
+        gameState.turnOrder = ['yellow', 'green', 'red', 'blue'].filter((team) => selectedInternalTeams.includes(team));
+        gameState.currentTurn = gameState.turnOrder[0];
+        console.log('SPAWNING SELECTED TEAMS:', selectedInternalTeams);
+        selectedInternalTeams.forEach(team => {
+          console.log('Spawning team:', team);
           const color = INTERNAL_TEAM_TO_UI_COLOR[team];
-          placeTeam(team, selectedTeamStartZones[color] || COLOR_TO_START_ZONE[team]);
+          placeTeam(team, savedSelectedTeamStartZones[color] || COLOR_TO_START_ZONE[team]);
         });
+        console.log('Board pieces after spawn:', gameState.pieces || state.board);
+        return;
+      }
+      if (appState.playMode === 'offline') {
+        PLAYERS.forEach(team => placeTeam(team, COLOR_TO_START_ZONE[team]));
         return;
       }
       TEAM_ORDER.forEach(teamKey => {
@@ -4147,7 +4180,8 @@
 
     function renderPlayerPills() {
       ui.playerPills.innerHTML = '';
-      PLAYERS.forEach(team => {
+      const displayTeams = isDominionSelectionModeActive() ? getSelectedInternalTeamsFromStorage() : PLAYERS;
+      displayTeams.forEach(team => {
         const pill = document.createElement('div');
         const isCurrent = team === getCurrentTeam() && !state.gameOver;
         const controlType = appState.matchConfig.controlMap[team];
@@ -4542,9 +4576,16 @@
     }
   });
 
-  appState.matchConfig.playerCount = 1;
-  appState.matchConfig.humanTeams = ['green'];
-  appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
+  const bootSelectedTeams = getSelectedInternalTeamsFromStorage();
+  if (bootSelectedTeams.length > 0) {
+    appState.matchConfig.playerCount = bootSelectedTeams.length;
+    appState.matchConfig.humanTeams = bootSelectedTeams.slice();
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(bootSelectedTeams);
+  } else {
+    appState.matchConfig.playerCount = 1;
+    appState.matchConfig.humanTeams = ['green'];
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
+  }
 
   const params = new URLSearchParams(location.search);
   const autoRoomId = (params.get('room') || '').trim().toUpperCase();
