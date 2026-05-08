@@ -2165,33 +2165,89 @@
       ship: 'Icebreaker',
       pawn: 'Snow Guard'
     };
+    function normalizePieceColor(piece) {
+      const raw = piece?.color ?? piece?.team ?? piece?.player ?? piece?.owner ?? piece?.side ?? '';
+      const color = String(raw).toLowerCase().trim();
+      if (color === 'yellow' || color === 'polly') return 'pink';
+      if (color === 'retsba') return 'red';
+      if (color === 'abster') return 'green';
+      if (color === 'pengu') return 'blue';
+      return color;
+    }
+    function getPieceTypeText(piece) {
+      return [piece?.type, piece?.kind, piece?.role, piece?.name, piece?.id, piece?.piece, piece?.rank, piece?.unit, piece?.variant, piece?.label, piece?.title, piece?.className]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .trim();
+    }
+    function getPieceAssetType(piece) {
+      const text = getPieceTypeText(piece);
+      console.log('Resolving piece asset type:', text, piece);
+      if (text === 'pawn' || text.includes('pawn') || text.includes('guard') || text.includes('snow') || text.includes('soldier')) return 'snow-guard';
+      if (text === 'ship' || text.includes('ship') || text.includes('boat') || text.includes('icebreaker') || text.includes('vessel')) return 'icebreaker';
+      if (text === 'horse' || text.includes('horse') || text.includes('unicorn') || text.includes('aurora') || text.includes('knight')) return 'aurora-unicorn';
+      if (text === 'elephant' || text.includes('elephant') || text.includes('mammoth') || text.includes('war-mammoth')) return 'war-mammoth';
+      if (text === 'king' || text.includes('king') || text.includes('frost-king') || text.includes('royal')) return 'frost-king';
+      console.error('Could not map piece type to asset:', piece);
+      return null;
+    }
     function getPieceImageSrc(piece) {
-      const rawColor = piece?.color || piece?.team;
-      const color = rawColor === 'yellow' ? 'pink' : rawColor;
-      const rawType = piece?.type || piece?.role || piece?.kind || piece?.name || '';
-      const type = String(rawType).toLowerCase();
-      let assetName;
-      if (type.includes('guard') || type.includes('pawn') || type.includes('snow')) assetName = 'snow-guard';
-      else if (type.includes('unicorn') || type.includes('horse')) assetName = 'aurora-unicorn';
-      else if (type.includes('mammoth') || type.includes('elephant')) assetName = 'war-mammoth';
-      else if (type.includes('king')) assetName = 'frost-king';
-      else if (type.includes('ship') || type.includes('boat') || type.includes('icebreaker')) assetName = 'icebreaker';
-      else { console.warn('Unknown piece type for image:', piece); assetName = 'snow-guard'; }
-      return `/assets/arctic/pieces/${color}-${assetName}.png`;
+      const color = normalizePieceColor(piece);
+      const assetType = getPieceAssetType(piece);
+      if (!color || !assetType) {
+        console.error('Missing color or asset type:', { color, assetType, piece });
+        return null;
+      }
+      const src = `/assets/arctic/pieces/${color}-${assetType}.png`;
+      console.log('Piece image src:', src, piece);
+      return src;
     }
     function getPieceAsset(team, type) {
       return getPieceImageSrc({ team, type });
+    }
+    function getPieceAltText(piece) {
+      const color = normalizePieceColor(piece);
+      const type = getPieceAssetType(piece) || 'piece';
+      return `${color} ${type}`;
     }
     function getPieceLabel(piece) {
       return `${TEAM_LABEL[piece.team] || piece.team} ${PIECE_NAME[piece.type] || piece.type}`;
     }
     function getPieceLetter(piece) {
-      const type = String(piece?.type || piece?.role || piece?.kind || piece?.name || '').toLowerCase();
-      if (type.includes('king')) return 'K';
-      if (type.includes('mammoth') || type.includes('elephant')) return 'E';
-      if (type.includes('unicorn') || type.includes('horse')) return 'H';
-      if (type.includes('ship') || type.includes('boat') || type.includes('icebreaker')) return 'S';
+      const text = getPieceTypeText(piece);
+      if (text.includes('king')) return 'K';
+      if (text.includes('elephant') || text.includes('mammoth')) return 'E';
+      if (text.includes('horse') || text.includes('unicorn') || text.includes('knight')) return 'H';
+      if (text.includes('ship') || text.includes('boat') || text.includes('icebreaker')) return 'S';
       return 'P';
+    }
+    function renderPieceImage(piece, pieceElement) {
+      const src = getPieceImageSrc(piece);
+      pieceElement.querySelectorAll('.piece-img, .piece-fallback').forEach((el) => el.remove());
+      if (!src) {
+        const fallback = document.createElement('span');
+        fallback.className = 'piece-fallback';
+        fallback.textContent = getPieceLetter(piece);
+        pieceElement.appendChild(fallback);
+        return;
+      }
+      const img = document.createElement('img');
+      img.className = 'piece-art piece-img png-piece-full';
+      img.loading = 'eager';
+      img.decoding = 'async';
+      img.src = src;
+      img.alt = getPieceAltText(piece);
+      img.onload = () => { console.log('Loaded piece image:', src); };
+      img.onerror = () => {
+        console.error('FAILED piece image:', src, piece);
+        img.remove();
+        const fallback = document.createElement('span');
+        fallback.className = 'piece-fallback';
+        fallback.textContent = getPieceLetter(piece);
+        pieceElement.appendChild(fallback);
+      };
+      pieceElement.appendChild(img);
     }
     const PIECE_VALUE = {
       king: 1200,
@@ -2381,7 +2437,7 @@
           else cell.classList.add('possible');
         }
         const piece=tutorialState.tutorialBoard[row][col];
-        if (piece){ const el=document.createElement('div'); el.className='piece'; const img=document.createElement('img'); img.className='piece-art png-piece-full'; img.src=getPieceAsset(piece.team,piece.type); img.onerror=()=>{img.onerror=null;img.src=getPieceFallbackAsset(piece.team,piece.type);}; el.appendChild(img); cell.appendChild(el); }
+        if (piece){ const el=document.createElement('div'); el.className='piece'; renderPieceImage(piece, el); cell.appendChild(el); }
         ui.tutorialBoard.appendChild(cell);
       }
       renderTutorialArrows();
@@ -3929,23 +3985,9 @@
         if (piece) {
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
-          const art = document.createElement('img');
-          art.className = 'piece-art piece-img png-piece-full';
-          art.loading = 'eager';
-          art.decoding = 'async';
-          art.src = getPieceImageSrc(piece);
-          art.alt = getPieceLabel(piece);
-          art.onerror = () => {
-            console.error('Missing piece image:', art.src, piece);
-            art.style.display = 'none';
-            if (!token.querySelector('.piece-fallback')) {
-              const fallback = document.createElement('span');
-              fallback.className = 'piece-fallback';
-              fallback.textContent = getPieceLetter(piece);
-              token.appendChild(fallback);
-            }
-          };
-          token.appendChild(art);
+          console.log('PIECE DEBUG:', JSON.stringify(piece));
+          console.log('piece keys:', Object.keys(piece));
+          renderPieceImage(piece, token);
           if (piece.isRoyal) token.innerHTML += '<div class="crest" aria-hidden="true">✦</div>';
           token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
           cell.appendChild(token);
