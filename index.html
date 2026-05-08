@@ -2882,22 +2882,37 @@
     }
 
     function initializeBoard() {
-      const selectedTeamArray = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
-      const selectedTeamStartZones = JSON.parse(localStorage.getItem('selectedTeamStartZones') || '{}');
-      const activeTeams = appState.playMode === 'offline' ? selectedTeamArray : TEAM_ORDER;
+      const savedSelectedTeams = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
+      const savedSelectedTeamStartZones = JSON.parse(localStorage.getItem('selectedTeamStartZones') || '{}');
+      const offlineColors = Array.isArray(savedSelectedTeams)
+        ? savedSelectedTeams.filter(color => Object.hasOwn(COLOR_TO_INTERNAL_TEAM, color))
+        : [];
+      const activeOfflineColors = offlineColors.length ? offlineColors : ['pink', 'green', 'red', 'blue'];
+      const activeInternalTeams = activeOfflineColors.map(color => COLOR_TO_INTERNAL_TEAM[color]);
+      const selectedTeamStartZones = activeOfflineColors.reduce((acc, color) => {
+        acc[color] = savedSelectedTeamStartZones[color] || COLOR_START_ZONES[color];
+        return acc;
+      }, {});
+      console.log('Selected teams:', activeOfflineColors);
+      console.log('Selected start zones:', selectedTeamStartZones);
       const b = state.board;
-      const placeTeam = (color, zoneName) => {
+      const placeTeam = (team, zoneName) => {
         const zone = START_ZONES[zoneName];
         if (!zone) return;
-        const [kr, kc] = zone.king; b[kr][kc] = makePiece(color, 'king', true);
-        zone.backline.forEach(([r,c,type]) => b[r][c] = makePiece(color, type));
-        zone.pawns.forEach(([r,c]) => b[r][c] = makePiece(color, 'pawn'));
+        const [kr, kc] = zone.king; b[kr][kc] = makePiece(team, 'king', true);
+        zone.backline.forEach(([r,c,type]) => b[r][c] = makePiece(team, type));
+        zone.pawns.forEach(([r,c]) => b[r][c] = makePiece(team, 'pawn'));
       };
-      activeTeams.forEach(teamKey => {
-        const color = TEAM_TO_GAME_TEAM[teamKey];
-        const defaultZone = COLOR_TO_START_ZONE[color];
-        const zoneKey = appState.playMode === 'offline' ? (selectedTeamStartZones[teamKey] || defaultZone) : defaultZone;
-        placeTeam(color, zoneKey);
+      if (appState.playMode === 'offline') {
+        activeInternalTeams.forEach(team => {
+          const color = INTERNAL_TEAM_TO_COLOR[team];
+          placeTeam(team, selectedTeamStartZones[color] || COLOR_TO_START_ZONE[team]);
+        });
+        return;
+      }
+      TEAM_ORDER.forEach(teamKey => {
+        const team = TEAM_TO_GAME_TEAM[teamKey];
+        placeTeam(team, COLOR_TO_START_ZONE[team]);
       });
     }
 
@@ -4403,6 +4418,9 @@
   }
 
   const TEAM_ORDER = ['polly', 'abster', 'retsba', 'pengu'];
+  const TEAM_TO_COLOR = { polly: 'pink', abster: 'green', retsba: 'red', pengu: 'blue' };
+  const COLOR_TO_INTERNAL_TEAM = { pink: 'yellow', green: 'green', red: 'red', blue: 'blue' };
+  const INTERNAL_TEAM_TO_COLOR = { yellow: 'pink', green: 'green', red: 'red', blue: 'blue' };
   const TEAM_TO_GAME_TEAM = { polly: 'yellow', abster: 'green', retsba: 'red', pengu: 'blue' };
   const TEAM_STATE_IMAGES = {
     '': '/images/state_none.png',
@@ -4434,6 +4452,7 @@
   });
 
   const TEAM_START_ZONES = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
+  const COLOR_START_ZONES = { pink: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
   const COLOR_TO_START_ZONE = { yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
   const START_ZONES = {
     upperLeft: { king: [0, 3], backline: [[0, 2, 'elephant'], [0, 1, 'horse'], [0, 0, 'ship']], pawns: [[1,0],[1,1],[1,2],[1,3]] },
@@ -4736,9 +4755,15 @@
   const OfflineController = {
     start() {
       appState.playMode = 'offline';
-      syncOfflineHumanTeams();
-      appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
-      beginMatchFlowFromTutorialOriginal();
+      try {
+        syncOfflineHumanTeams();
+        appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
+        beginMatchFlowFromTutorialOriginal();
+      } catch (error) {
+        console.error('Offline match initialization failed:', error);
+        alert('Offline match failed to load. Check console for details.');
+        setScreen('playerCount');
+      }
     }
   };
 
@@ -4979,13 +5004,35 @@
   ui.playerCountNextBtn.addEventListener('click', () => {
     primeAudioAndPlayButton();
     if (!canContinueForMode(selectedTeams, appState.playMode)) return;
-    const selectedTeamArray = TEAM_ORDER.filter(team => selectedTeams.has(team));
-    localStorage.setItem('selectedTeams', JSON.stringify(selectedTeamArray));
-    const selectedTeamStartZones = selectedTeamArray.reduce((acc, team) => {
-      acc[team] = TEAM_START_ZONES[team];
+    const selectedDominions = TEAM_ORDER.filter(team => selectedTeams.has(team));
+    const selectedColors = selectedDominions.map(team => TEAM_TO_COLOR[team]);
+    localStorage.setItem('selectedDominions', JSON.stringify(selectedDominions));
+    localStorage.setItem('selectedTeams', JSON.stringify(selectedColors));
+    localStorage.setItem('offlineSelectedTeams', JSON.stringify(selectedColors));
+    localStorage.setItem('offlineMode', 'true');
+    localStorage.setItem('playerCount', String(selectedColors.length));
+    localStorage.setItem('offlinePlayerCount', String(selectedColors.length));
+    const selectedTeamStartZones = selectedColors.reduce((acc, color) => {
+      acc[color] = COLOR_START_ZONES[color];
       return acc;
     }, {});
     localStorage.setItem('selectedTeamStartZones', JSON.stringify(selectedTeamStartZones));
+
+    const players = selectedColors.map((color, index) => ({
+      id: index + 1,
+      color,
+      team: color,
+      type: 'human',
+      isBot: false,
+      startZone: COLOR_START_ZONES[color]
+    }));
+    const turnOrder = ['pink', 'green', 'red', 'blue'];
+    const activeTurnOrder = turnOrder.filter(color => selectedColors.includes(color));
+    console.log('Selected teams:', selectedColors);
+    console.log('Selected start zones:', selectedTeamStartZones);
+    console.log('Players:', players);
+    console.log('Active turn order:', activeTurnOrder);
+
     syncOfflineHumanTeams();
     setScreen('difficulty');
   });
