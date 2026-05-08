@@ -3079,24 +3079,44 @@
       };
       if (appState.playMode === 'offline' && isDominionSelectionMode) {
         const gameState = state;
-        gameState.activeTeams = selectedInternalTeams.slice();
-        gameState.players = selectedInternalTeams.map((team, index) => ({
-          id: index + 1,
-          color: team,
-          team,
-          type: 'human',
-          isBot: false,
-          active: true
-        }));
-        gameState.turnOrder = ['yellow', 'green', 'red', 'blue'].filter((team) => selectedInternalTeams.includes(team));
+        const ALL_ENGINE_TEAMS = ['yellow', 'green', 'red', 'blue'];
+        const activeTeams = Array.isArray(selectedInternalTeams) && selectedInternalTeams.length > 0
+          ? selectedInternalTeams.slice()
+          : ['red'];
+        const playersByTeam = {};
+        ALL_ENGINE_TEAMS.forEach((team) => {
+          const isActive = activeTeams.includes(team);
+          playersByTeam[team] = {
+            id: team,
+            color: team,
+            team,
+            alive: isActive,
+            active: isActive,
+            eliminated: !isActive,
+            isBot: false,
+            type: isActive ? 'human' : 'inactive',
+            control: isActive ? 'human' : 'inactive',
+            royalAlive: isActive
+          };
+        });
+
+        gameState.playersByTeam = playersByTeam;
+        gameState.players = playersByTeam;
+        gameState.playerList = ALL_ENGINE_TEAMS.map((team) => playersByTeam[team]);
+        gameState.activeTeams = activeTeams;
+        gameState.turnOrder = ALL_ENGINE_TEAMS.filter((team) => activeTeams.includes(team));
         gameState.currentTurn = gameState.turnOrder[0];
-        console.log('SPAWNING SELECTED TEAMS:', selectedInternalTeams);
-        selectedInternalTeams.forEach(team => {
-          console.log('Spawning team:', team);
+        gameState.currentPlayerIndex = PLAYERS.findIndex((team) => team === gameState.currentTurn);
+
+        console.log('OFFLINE ACTIVE TEAMS:', activeTeams);
+        console.log('OFFLINE PLAYERS BY TEAM:', playersByTeam);
+        console.log('OFFLINE TURN ORDER:', gameState.turnOrder);
+        console.log('OFFLINE CURRENT TURN:', gameState.currentTurn);
+
+        activeTeams.forEach(team => {
           const color = INTERNAL_TEAM_TO_UI_COLOR[team];
           placeTeam(team, savedSelectedTeamStartZones[color] || COLOR_TO_START_ZONE[team]);
         });
-        console.log('Board pieces after spawn:', gameState.pieces || state.board);
         return;
       }
       if (appState.playMode === 'offline') {
@@ -3169,8 +3189,28 @@
       return PLAYERS[stateRef.currentPlayerIndex];
     }
 
+    function getPlayerByTeam(team, stateRef = state) {
+      const players = stateRef.playersByTeam || stateRef.players || {};
+      if (Array.isArray(players)) {
+        return players.find((player) => player && (player.color === team || player.team === team));
+      }
+      return players[team];
+    }
+
+    function isTeamAlive(team, stateRef = state) {
+      const player = getPlayerByTeam(team, stateRef);
+      if (!player) {
+        console.warn('isTeamAlive: missing player for team:', team, {
+          players: stateRef.players,
+          playersByTeam: stateRef.playersByTeam
+        });
+        return false;
+      }
+      return Boolean(player.alive);
+    }
+
     function getLiveTeams(stateRef = state) {
-      return PLAYERS.filter(team => stateRef.players[team].alive);
+      return PLAYERS.filter(team => isTeamAlive(team, stateRef));
     }
 
     function handleCellClick(row, col) {
@@ -3195,7 +3235,7 @@
         }
       }
 
-      if (!piece || piece.team !== currentTeam || !state.players[currentTeam].alive) {
+      if (!piece || piece.team !== currentTeam || !isTeamAlive(currentTeam, state)) {
         clearSelection();
         render();
         sound.playInvalidSound();
@@ -3445,8 +3485,12 @@
     }
 
     function eliminatePlayerOnState(stateRef, team) {
-      stateRef.players[team].alive = false;
-      stateRef.players[team].royalAlive = false;
+      const player = getPlayerByTeam(team, stateRef);
+      if (player) {
+        player.alive = false;
+        player.royalAlive = false;
+      }
+      
       for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
           const piece = stateRef.board[row][col];
@@ -3520,8 +3564,12 @@
 
     function eliminatePlayer(team, attackerTeam) {
       sound.playEliminationSound();
-      state.players[team].alive = false;
-      state.players[team].royalAlive = false;
+      const player = getPlayerByTeam(team, state);
+      if (player) {
+        player.alive = false;
+        player.royalAlive = false;
+      }
+      
 
       for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
@@ -3557,7 +3605,7 @@
       do {
         state.currentPlayerIndex = (state.currentPlayerIndex + 1) % PLAYERS.length;
         safety++;
-      } while (!state.players[getCurrentTeam()].alive && safety < 10);
+      } while (!isTeamAlive(getCurrentTeam(), state) && safety < 10);
 
       appState.botStatusText = '';
       render();
@@ -3775,11 +3823,11 @@
     }
 
     function evaluateBoardForTeam(stateRef, team) {
-      if (!stateRef.players[team].alive) return -20000;
+      if (!isTeamAlive(team, stateRef)) return -20000;
       let score = 0;
 
       for (const side of PLAYERS) {
-        if (!stateRef.players[side].alive) continue;
+        if (!isTeamAlive(side, stateRef)) continue;
         let material = 0;
         let kings = 0;
         let mobility = 0;
@@ -3817,7 +3865,7 @@
     function countThreatsOnSquare(stateRef, targetRow, targetCol, team) {
       let threatScore = 0;
       for (const enemy of PLAYERS) {
-        if (enemy === team || !stateRef.players[enemy].alive) continue;
+        if (enemy === team || !isTeamAlive(enemy, stateRef)) continue;
         for (let dieIndex = 0; dieIndex < 2; dieIndex++) {
           if (stateRef.dice.used[dieIndex]) continue;
           for (let row = 0; row < ROWS; row++) {
@@ -3872,7 +3920,7 @@
         if (action.promotionType === 'king') score += 220;
       }
       if (action.captured && action.captured.type === 'king') score += 800;
-      if (baseState.players[action.movingTeam].alive && simulated.players[action.captured?.team || action.movingTeam].alive === false && action.captured) {
+      if (isTeamAlive(action.movingTeam, baseState) && isTeamAlive(action.captured?.team || action.movingTeam, simulated) === false && action.captured) {
         score += 1500;
       }
 
@@ -4185,8 +4233,8 @@
         const pill = document.createElement('div');
         const isCurrent = team === getCurrentTeam() && !state.gameOver;
         const controlType = appState.matchConfig.controlMap[team];
-        const label = !state.players[team].alive ? 'Eliminated' : isCurrent ? `${capitalize(controlType)} • current` : capitalize(controlType);
-        pill.className = `pill ${state.players[team].alive ? '' : 'dead'} ${isCurrent ? 'current' : ''}`.trim();
+        const label = !isTeamAlive(team, state) ? 'Eliminated' : isCurrent ? `${capitalize(controlType)} • current` : capitalize(controlType);
+        pill.className = `pill ${isTeamAlive(team, state) ? '' : 'dead'} ${isCurrent ? 'current' : ''}`.trim();
         pill.innerHTML = `
           <div class="pill-left">
             <span class="pill-swatch ${TEAM_CLASS[team]}" aria-hidden="true"></span>
@@ -4688,7 +4736,9 @@
 
     state.turnOrder = activeTurnOrder;
     state.activeTeams = selectedInternalTeams.slice();
-    state.players = offlinePlayers.slice();
+    // players are initialized in initializeBoard with full team map
+    state.playersByTeam = null;
+    state.players = createPlayerState();
     state.currentTurn = activeTurnOrder[0];
     state.currentPlayerIndex = PLAYERS.findIndex(team => team === selectedInternalTeams[0]);
 
