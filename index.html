@@ -2864,7 +2864,21 @@
     function resetGame() {
       state.board = createEmptyBoard();
       state.players = createPlayerState();
+      if (appState.playMode === 'offline') {
+        const selectedColors = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
+        const activeTeams = new Set((selectedColors || []).map(normalizePlayableColor).filter(Boolean));
+        PLAYERS.forEach(team => {
+          if (!activeTeams.has(team)) {
+            state.players[team].alive = false;
+            state.players[team].royalAlive = false;
+          }
+        });
+      }
       state.currentPlayerIndex = 0;
+      if (appState.playMode === 'offline') {
+        const firstActiveIndex = PLAYERS.findIndex(team => state.players[team].alive);
+        if (firstActiveIndex >= 0) state.currentPlayerIndex = firstActiveIndex;
+      }
       state.selected = null;
       state.legalMoves = [];
       state.dice.values = [null, null];
@@ -2882,9 +2896,9 @@
     }
 
     function initializeBoard() {
-      const selectedTeamArray = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
+      const storedSelectedTeams = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
       const selectedTeamStartZones = JSON.parse(localStorage.getItem('selectedTeamStartZones') || '{}');
-      const activeTeams = appState.playMode === 'offline' ? selectedTeamArray : TEAM_ORDER;
+      const activeTeams = appState.playMode === 'offline' ? storedSelectedTeams : PLAYERS;
       const b = state.board;
       const placeTeam = (color, zoneName) => {
         const zone = START_ZONES[zoneName];
@@ -2893,10 +2907,11 @@
         zone.backline.forEach(([r,c,type]) => b[r][c] = makePiece(color, type));
         zone.pawns.forEach(([r,c]) => b[r][c] = makePiece(color, 'pawn'));
       };
-      activeTeams.forEach(teamKey => {
-        const color = TEAM_TO_GAME_TEAM[teamKey];
+      activeTeams.forEach(teamOrColor => {
+        const color = normalizePlayableColor(teamOrColor);
+        if (!color) return;
         const defaultZone = COLOR_TO_START_ZONE[color];
-        const zoneKey = appState.playMode === 'offline' ? (selectedTeamStartZones[teamKey] || defaultZone) : defaultZone;
+        const zoneKey = appState.playMode === 'offline' ? (selectedTeamStartZones[teamOrColor] || selectedTeamStartZones[color] || defaultZone) : defaultZone;
         placeTeam(color, zoneKey);
       });
     }
@@ -4403,7 +4418,8 @@
   }
 
   const TEAM_ORDER = ['polly', 'abster', 'retsba', 'pengu'];
-  const TEAM_TO_GAME_TEAM = { polly: 'yellow', abster: 'green', retsba: 'red', pengu: 'blue' };
+  const TEAM_TO_COLOR = { polly: 'pink', abster: 'green', retsba: 'red', pengu: 'blue' };
+  const COLOR_TO_GAME_TEAM = { pink: 'yellow', green: 'green', red: 'red', blue: 'blue' };
   const TEAM_STATE_IMAGES = {
     '': '/images/state_none.png',
     polly: '/images/state_polly.png',
@@ -4434,7 +4450,15 @@
   });
 
   const TEAM_START_ZONES = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
+  const COLOR_START_ZONES = { pink: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
   const COLOR_TO_START_ZONE = { yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
+  function normalizePlayableColor(teamOrColor) {
+    if (!teamOrColor) return null;
+    if (PLAYERS.includes(teamOrColor)) return teamOrColor;
+    if (COLOR_TO_GAME_TEAM[teamOrColor]) return COLOR_TO_GAME_TEAM[teamOrColor];
+    if (TEAM_TO_COLOR[teamOrColor]) return COLOR_TO_GAME_TEAM[TEAM_TO_COLOR[teamOrColor]];
+    return null;
+  }
   const START_ZONES = {
     upperLeft: { king: [0, 3], backline: [[0, 2, 'elephant'], [0, 1, 'horse'], [0, 0, 'ship']], pawns: [[1,0],[1,1],[1,2],[1,3]] },
     upperRight: { king: [3, 7], backline: [[2, 7, 'elephant'], [1, 7, 'horse'], [0, 7, 'ship']], pawns: [[0,6],[1,6],[2,6],[3,6]] },
@@ -4450,7 +4474,7 @@
     return TEAM_ORDER.filter(team => selectedTeams.has(team)).join('_');
   }
   function syncOfflineHumanTeams() {
-    appState.matchConfig.humanTeams = Array.from(selectedTeams).map(team => TEAM_TO_GAME_TEAM[team]);
+    appState.matchConfig.humanTeams = Array.from(selectedTeams).map(team => normalizePlayableColor(TEAM_TO_COLOR[team])).filter(Boolean);
     appState.matchConfig.playerCount = appState.matchConfig.humanTeams.length;
     appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
   }
@@ -4736,9 +4760,33 @@
   const OfflineController = {
     start() {
       appState.playMode = 'offline';
-      syncOfflineHumanTeams();
-      appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
-      beginMatchFlowFromTutorialOriginal();
+      let selectedColors = [];
+      try {
+        selectedColors = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
+      } catch (error) {
+        console.error('Failed to parse selectedTeams from localStorage:', error);
+      }
+      if (!Array.isArray(selectedColors) || selectedColors.length === 0) {
+        console.warn('No selected teams found for offline mode. Returning to team selection.');
+        setScreen('playerCount');
+        return;
+      }
+      const selectedGameTeams = selectedColors.map(normalizePlayableColor).filter(Boolean);
+      if (!selectedGameTeams.length) {
+        console.warn('No valid playable teams found for offline mode. Returning to team selection.');
+        setScreen('playerCount');
+        return;
+      }
+      appState.matchConfig.humanTeams = selectedGameTeams;
+      appState.matchConfig.playerCount = selectedGameTeams.length;
+      appState.matchConfig.controlMap = getControlMapForHumanTeams(selectedGameTeams);
+      try {
+        beginMatchFlowFromTutorialOriginal();
+      } catch (error) {
+        console.error('Offline match initialization failed:', error);
+        alert('Offline match failed to load. Check console for details.');
+        setScreen('playerCount');
+      }
     }
   };
 
@@ -4979,13 +5027,36 @@
   ui.playerCountNextBtn.addEventListener('click', () => {
     primeAudioAndPlayButton();
     if (!canContinueForMode(selectedTeams, appState.playMode)) return;
-    const selectedTeamArray = TEAM_ORDER.filter(team => selectedTeams.has(team));
-    localStorage.setItem('selectedTeams', JSON.stringify(selectedTeamArray));
-    const selectedTeamStartZones = selectedTeamArray.reduce((acc, team) => {
-      acc[team] = TEAM_START_ZONES[team];
+    const selectedDominions = TEAM_ORDER.filter(team => selectedTeams.has(team));
+    const selectedColors = selectedDominions.map(team => TEAM_TO_COLOR[team]);
+    localStorage.setItem('selectedDominions', JSON.stringify(selectedDominions));
+    localStorage.setItem('selectedTeams', JSON.stringify(selectedColors));
+    localStorage.setItem('offlineSelectedTeams', JSON.stringify(selectedColors));
+    localStorage.setItem('offlineMode', 'true');
+    localStorage.setItem('playerCount', String(selectedColors.length));
+    localStorage.setItem('offlinePlayerCount', String(selectedColors.length));
+    const selectedTeamStartZones = selectedColors.reduce((acc, color) => {
+      acc[color] = COLOR_START_ZONES[color];
       return acc;
     }, {});
     localStorage.setItem('selectedTeamStartZones', JSON.stringify(selectedTeamStartZones));
+    const players = selectedColors.map((color, index) => ({
+      id: index + 1,
+      color,
+      team: color,
+      type: 'human',
+      isBot: false,
+      startZone: COLOR_START_ZONES[color]
+    }));
+    const TURN_ORDER = ['pink', 'green', 'red', 'blue'];
+    const activeTurnOrder = TURN_ORDER.filter(color => selectedColors.includes(color));
+    localStorage.setItem('offlinePlayers', JSON.stringify(players));
+    localStorage.setItem('offlineTurnOrder', JSON.stringify(activeTurnOrder));
+    localStorage.setItem('offlineCurrentTurn', activeTurnOrder[0] || '');
+    console.log('Selected teams:', selectedColors);
+    console.log('Selected start zones:', selectedTeamStartZones);
+    console.log('Players:', players);
+    console.log('Active turn order:', activeTurnOrder);
     syncOfflineHumanTeams();
     setScreen('difficulty');
   });
