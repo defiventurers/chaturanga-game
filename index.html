@@ -2165,49 +2165,90 @@
       ship: 'Icebreaker',
       pawn: 'Snow Guard'
     };
-    function normalizePieceColor(piece) {
-      const raw = piece?.color ?? piece?.team ?? piece?.player ?? piece?.owner ?? piece?.side ?? '';
-      const color = String(raw).toLowerCase().trim();
-      if (color === 'yellow' || color === 'polly') return 'pink';
-      if (color === 'retsba') return 'red';
-      if (color === 'abster') return 'green';
-      if (color === 'pengu') return 'blue';
-      return color;
+    function getPieceAssetColor(piece) {
+      const rawColor = String(
+        piece.color ||
+        piece.team ||
+        piece.owner ||
+        piece.side ||
+        ''
+      ).toLowerCase().trim();
+
+      if (rawColor === 'yellow') return 'pink';
+      if (rawColor === 'polly') return 'pink';
+      if (rawColor === 'retsba') return 'red';
+      if (rawColor === 'abster') return 'green';
+      if (rawColor === 'pengu') return 'blue';
+
+      return rawColor;
     }
+
+
     function getPieceTypeText(piece) {
-      return [piece?.type, piece?.kind, piece?.role, piece?.name, piece?.id, piece?.piece, piece?.rank, piece?.unit, piece?.variant, piece?.label, piece?.title, piece?.className]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .trim();
+      return String(
+        piece.type ||
+        piece.kind ||
+        piece.role ||
+        piece.name ||
+        piece.piece ||
+        piece.unit ||
+        piece.rank ||
+        ''
+      ).toLowerCase().trim();
     }
+
     function getPieceAssetType(piece) {
-      const text = getPieceTypeText(piece);
-      console.log('Resolving piece asset type:', text, piece);
-      if (text === 'pawn' || text.includes('pawn') || text.includes('guard') || text.includes('snow') || text.includes('soldier')) return 'snow-guard';
-      if (text === 'ship' || text.includes('ship') || text.includes('boat') || text.includes('icebreaker') || text.includes('vessel')) return 'icebreaker';
-      if (text === 'horse' || text.includes('horse') || text.includes('unicorn') || text.includes('aurora') || text.includes('knight')) return 'aurora-unicorn';
-      if (text === 'elephant' || text.includes('elephant') || text.includes('mammoth') || text.includes('war-mammoth')) return 'war-mammoth';
-      if (text === 'king' || text.includes('king') || text.includes('frost-king') || text.includes('royal')) return 'frost-king';
-      console.error('Could not map piece type to asset:', piece);
+      const rawType = String(
+        piece.type ||
+        piece.kind ||
+        piece.role ||
+        piece.name ||
+        piece.piece ||
+        piece.unit ||
+        piece.rank ||
+        ''
+      ).toLowerCase().trim();
+
+      if (rawType === 'pawn' || rawType.includes('pawn')) {
+        return 'snow-guard';
+      }
+
+      if (rawType === 'ship' || rawType.includes('ship')) {
+        return 'icebreaker';
+      }
+
+      if (rawType === 'horse' || rawType.includes('horse')) {
+        return 'aurora-unicorn';
+      }
+
+      if (rawType === 'elephant' || rawType.includes('elephant')) {
+        return 'war-mammoth';
+      }
+
+      if (rawType === 'king' || rawType.includes('king')) {
+        return 'frost-king';
+      }
+
+      console.error('Unknown piece type:', rawType, piece);
       return null;
     }
+
     function getPieceImageSrc(piece) {
-      const color = normalizePieceColor(piece);
+      const color = getPieceAssetColor(piece);
       const assetType = getPieceAssetType(piece);
+
       if (!color || !assetType) {
-        console.error('Missing color or asset type:', { color, assetType, piece });
+        console.error('Cannot resolve piece image:', { color, assetType, piece });
         return null;
       }
-      const src = `/assets/arctic/pieces/${color}-${assetType}.png`;
-      console.log('Piece image src:', src, piece);
-      return src;
+
+      return `/assets/arctic/pieces/${color}-${assetType}.png`;
     }
     function getPieceAsset(team, type) {
       return getPieceImageSrc({ team, type });
     }
     function getPieceAltText(piece) {
-      const color = normalizePieceColor(piece);
+      const color = getPieceAssetColor(piece);
       const type = getPieceAssetType(piece) || 'piece';
       return `${color} ${type}`;
     }
@@ -2233,14 +2274,14 @@
         return;
       }
       const img = document.createElement('img');
-      img.className = 'piece-art piece-img png-piece-full';
+      img.className = 'piece-img';
       img.loading = 'eager';
       img.decoding = 'async';
       img.src = src;
-      img.alt = getPieceAltText(piece);
+      img.alt = `${getPieceAssetColor(piece)} ${getPieceAssetType(piece)}`;
       img.onload = () => { console.log('Loaded piece image:', src); };
       img.onerror = () => {
-        console.error('FAILED piece image:', src, piece);
+        console.error('FAILED PIECE IMAGE:', img.src, piece);
         img.remove();
         const fallback = document.createElement('span');
         fallback.className = 'piece-fallback';
