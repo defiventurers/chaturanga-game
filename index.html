@@ -4423,6 +4423,16 @@
     polly_abster_retsba_pengu: '/images/state_all.png'
   };
 
+  [
+    '/images/state_none.png',
+    '/images/state_all.png'
+  ].forEach((src) => {
+    const img = new Image();
+    img.onload = () => console.log('Loaded image:', src);
+    img.onerror = () => console.error('Failed image:', src);
+    img.src = src;
+  });
+
   const TEAM_START_ZONES = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
   const COLOR_TO_START_ZONE = { yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
   const START_ZONES = {
