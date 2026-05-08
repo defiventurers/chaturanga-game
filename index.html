@@ -2866,6 +2866,15 @@
       setScreen('menu');
     }
 
+  const DOMINION_ORDER = ['polly', 'abster', 'retsba', 'pengu'];
+  const TEAM_ORDER = DOMINION_ORDER;
+  const DOMINION_TO_UI_COLOR = { polly: 'pink', retsba: 'red', abster: 'green', pengu: 'blue' };
+  const DOMINION_TO_INTERNAL_TEAM = { polly: 'yellow', retsba: 'red', abster: 'green', pengu: 'blue' };
+  const COLOR_TO_INTERNAL_TEAM = { pink: 'yellow', yellow: 'yellow', red: 'red', green: 'green', blue: 'blue' };
+  const INTERNAL_TEAM_TO_UI_COLOR = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
+  const TEAM_TO_COLOR = DOMINION_TO_UI_COLOR;
+  const TEAM_TO_GAME_TEAM = DOMINION_TO_INTERNAL_TEAM;
+
     function resetGame() {
       state.board = createEmptyBoard();
       state.players = createPlayerState();
@@ -2910,7 +2919,7 @@
       };
       if (appState.playMode === 'offline') {
         activeInternalTeams.forEach(team => {
-          const color = INTERNAL_TEAM_TO_COLOR[team];
+          const color = INTERNAL_TEAM_TO_UI_COLOR[team];
           placeTeam(team, selectedTeamStartZones[color] || COLOR_TO_START_ZONE[team]);
         });
         return;
@@ -4422,11 +4431,6 @@
     });
   }
 
-  const TEAM_ORDER = ['polly', 'abster', 'retsba', 'pengu'];
-  const TEAM_TO_COLOR = { polly: 'pink', abster: 'green', retsba: 'red', pengu: 'blue' };
-  const COLOR_TO_INTERNAL_TEAM = { pink: 'yellow', green: 'green', red: 'red', blue: 'blue' };
-  const INTERNAL_TEAM_TO_COLOR = { yellow: 'pink', green: 'green', red: 'red', blue: 'blue' };
-  const TEAM_TO_GAME_TEAM = { polly: 'yellow', abster: 'green', retsba: 'red', pengu: 'blue' };
   const TEAM_STATE_IMAGES = {
     '': '/images/state_none.png',
     polly: '/images/state_polly.png',
@@ -4457,9 +4461,7 @@
   });
 
   const TEAM_START_ZONES = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
-  const DOMINION_TO_UI_COLOR = { polly: 'pink', retsba: 'red', abster: 'green', pengu: 'blue' };
-  const DOMINION_TO_ENGINE_COLOR = { polly: 'yellow', retsba: 'red', abster: 'green', pengu: 'blue' };
-  const DOMINION_ORDER = ['polly', 'abster', 'retsba', 'pengu'];
+  const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
   const COLOR_START_ZONES = { pink: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
   const COLOR_TO_START_ZONE = { yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
   const START_ZONES = {
@@ -4499,13 +4501,15 @@
   }
 
   function initializeOfflineMatchFromSelectedTeams(config) {
-    const { selectedColors, selectedTeamStartZones, offlinePlayers } = config;
-    if (!Array.isArray(selectedColors) || selectedColors.length === 0) throw new Error('No selected colors passed into offline match.');
-    const selectedInternalTeams = selectedColors.map(color => COLOR_TO_INTERNAL_TEAM[color]).filter(Boolean);
-    const activeTurnOrder = ['yellow', 'green', 'red', 'blue'].filter((team) => selectedInternalTeams.includes(team));
+    if (typeof COLOR_TO_INTERNAL_TEAM === 'undefined') {
+      throw new Error('COLOR_TO_INTERNAL_TEAM mapping missing');
+    }
+    const { selectedInternalTeams, selectedUiColors, selectedTeamStartZones, offlinePlayers } = config;
+    if (!Array.isArray(selectedInternalTeams) || selectedInternalTeams.length === 0) throw new Error('No selected internal teams passed into offline match.');
+    const activeTurnOrder = INTERNAL_TURN_ORDER.filter((team) => selectedInternalTeams.includes(team));
     if (activeTurnOrder.length === 0) throw new Error('No active turn order generated.');
     console.log('Active turn order:', activeTurnOrder);
-    appState.matchConfig.playerCount = selectedColors.length;
+    appState.matchConfig.playerCount = selectedInternalTeams.length;
     appState.matchConfig.humanTeams = selectedInternalTeams;
     appState.matchConfig.controlMap = getControlMapForHumanTeams(selectedInternalTeams);
 
@@ -4518,9 +4522,9 @@
     resetGame();
   }
 
-  function startOfflineMatchFromDominions(selectedColors, selectedTeamStartZones, offlinePlayers) {
+  function startOfflineMatchFromDominions(selectedInternalTeams, selectedUiColors, selectedTeamStartZones, offlinePlayers) {
     try {
-      showLoadingScreenForOfflineMatch(selectedColors.length);
+      showLoadingScreenForOfflineMatch(selectedInternalTeams.length);
       let offlineLoadTimeout = window.setTimeout(() => {
         console.error('Offline match loading timed out.');
         alert('Offline match loading timed out. Returning to team selection.');
@@ -4531,7 +4535,8 @@
         try {
           console.log('Starting offline match init');
           initializeOfflineMatchFromSelectedTeams({
-            selectedColors,
+            selectedInternalTeams,
+            selectedUiColors,
             selectedTeamStartZones,
             offlinePlayers
           });
@@ -4563,39 +4568,44 @@
       console.warn('No dominions selected.');
       return;
     }
-    const selectedColors = selectedDominions.map((dominion) => DOMINION_TO_UI_COLOR[dominion]);
-    const selectedTeamStartZones = selectedColors.reduce((acc, color) => {
+    const selectedUiColors = selectedDominions.map((dominion) => DOMINION_TO_UI_COLOR[dominion]);
+    const selectedInternalTeams = selectedDominions.map((dominion) => DOMINION_TO_INTERNAL_TEAM[dominion]);
+    const selectedTeamStartZones = selectedDominions.reduce((acc, dominion) => {
+      const color = DOMINION_TO_UI_COLOR[dominion];
       acc[color] = COLOR_START_ZONES[color];
       return acc;
     }, {});
     const offlinePlayers = selectedDominions.map((dominion, index) => {
-      const engineColor = DOMINION_TO_ENGINE_COLOR[dominion];
+      const internalTeam = DOMINION_TO_INTERNAL_TEAM[dominion];
+      const uiColor = DOMINION_TO_UI_COLOR[dominion];
       return {
         id: index + 1,
         dominion,
-        uiColor: DOMINION_TO_UI_COLOR[dominion],
-        color: engineColor,
-        team: engineColor,
+        uiColor,
+        color: internalTeam,
+        team: internalTeam,
         type: 'human',
         isBot: false,
-        startZone: COLOR_START_ZONES[DOMINION_TO_UI_COLOR[dominion]]
+        startZone: TEAM_START_ZONES[dominion]
       };
     });
 
     localStorage.setItem('selectedDominions', JSON.stringify(selectedDominions));
-    localStorage.setItem('selectedTeams', JSON.stringify(selectedColors));
-    localStorage.setItem('offlineSelectedTeams', JSON.stringify(selectedColors));
+    localStorage.setItem('selectedUiColors', JSON.stringify(selectedUiColors));
+    localStorage.setItem('selectedTeams', JSON.stringify(selectedInternalTeams));
+    localStorage.setItem('offlineSelectedTeams', JSON.stringify(selectedInternalTeams));
     localStorage.setItem('selectedTeamStartZones', JSON.stringify(selectedTeamStartZones));
     localStorage.setItem('offlinePlayers', JSON.stringify(offlinePlayers));
     localStorage.setItem('offlineMode', 'true');
-    localStorage.setItem('playerCount', String(selectedColors.length));
-    localStorage.setItem('offlinePlayerCount', String(selectedColors.length));
+    localStorage.setItem('playerCount', String(selectedInternalTeams.length));
+    localStorage.setItem('offlinePlayerCount', String(selectedInternalTeams.length));
 
     console.log('Selected dominions:', selectedDominions);
-    console.log('Selected UI colors:', selectedColors);
+    console.log('Selected UI colors:', selectedUiColors);
+    console.log('Selected internal teams:', selectedInternalTeams);
     console.log('Offline players:', offlinePlayers);
     console.log('Calling old offline start function...');
-    startOfflineMatchFromDominions(selectedColors, selectedTeamStartZones, offlinePlayers);
+    startOfflineMatchFromDominions(selectedInternalTeams, selectedUiColors, selectedTeamStartZones, offlinePlayers);
     console.log('Game screen should now load');
   }
 
