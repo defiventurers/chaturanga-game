@@ -3080,23 +3080,24 @@
       if (appState.playMode === 'offline' && isDominionSelectionMode) {
         const gameState = state;
         const ALL_ENGINE_TEAMS = ['yellow', 'green', 'red', 'blue'];
-        const activeTeams = Array.isArray(selectedInternalTeams) && selectedInternalTeams.length > 0
+        const humanTeams = Array.isArray(selectedInternalTeams) && selectedInternalTeams.length > 0
           ? selectedInternalTeams.slice()
           : ['red'];
+        const activeTeams = ALL_ENGINE_TEAMS.slice();
         const playersByTeam = {};
         ALL_ENGINE_TEAMS.forEach((team) => {
-          const isActive = activeTeams.includes(team);
+          const isHuman = humanTeams.includes(team);
           playersByTeam[team] = {
             id: team,
             color: team,
             team,
-            alive: isActive,
-            active: isActive,
-            eliminated: !isActive,
-            isBot: false,
-            type: isActive ? 'human' : 'inactive',
-            control: isActive ? 'human' : 'inactive',
-            royalAlive: isActive
+            alive: true,
+            active: true,
+            eliminated: false,
+            isBot: !isHuman,
+            type: isHuman ? 'human' : 'bot',
+            control: isHuman ? 'human' : 'bot',
+            royalAlive: true
           };
         });
 
@@ -3104,16 +3105,16 @@
         gameState.players = playersByTeam;
         gameState.playerList = ALL_ENGINE_TEAMS.map((team) => playersByTeam[team]);
         gameState.activeTeams = activeTeams;
-        gameState.turnOrder = ALL_ENGINE_TEAMS.filter((team) => activeTeams.includes(team));
+        gameState.turnOrder = INTERNAL_TURN_ORDER.filter((team) => activeTeams.includes(team));
         gameState.currentTurn = gameState.turnOrder[0];
         gameState.currentPlayerIndex = PLAYERS.findIndex((team) => team === gameState.currentTurn);
 
-        console.log('OFFLINE ACTIVE TEAMS:', activeTeams);
+        console.log('OFFLINE HUMAN TEAMS:', humanTeams);
         console.log('OFFLINE PLAYERS BY TEAM:', playersByTeam);
         console.log('OFFLINE TURN ORDER:', gameState.turnOrder);
         console.log('OFFLINE CURRENT TURN:', gameState.currentTurn);
 
-        activeTeams.forEach(team => {
+        ALL_ENGINE_TEAMS.forEach(team => {
           const color = INTERNAL_TEAM_TO_UI_COLOR[team];
           placeTeam(team, savedSelectedTeamStartZones[color] || COLOR_TO_START_ZONE[team]);
         });
@@ -5366,7 +5367,8 @@
     selectedTeams.add(team);
   }
   function handleTeamClick(team) {
-    if (appState.playMode === 'offline') toggleOfflineTeam(team);
+    const inOfflineSelectionScreen = appState.screen === 'playerCount';
+    if (appState.playMode === 'offline' || inOfflineSelectionScreen) toggleOfflineTeam(team);
     else selectOnlineTeam(team);
     syncOfflineHumanTeams();
     renderDominionSelection();
