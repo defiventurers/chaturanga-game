@@ -5366,7 +5366,8 @@
     selectedTeams.add(team);
   }
   function handleTeamClick(team) {
-    if (appState.playMode === 'offline') toggleOfflineTeam(team);
+    const inOfflineSelectionScreen = appState.screen === 'playerCount';
+    if (appState.playMode === 'offline' || inOfflineSelectionScreen) toggleOfflineTeam(team);
     else selectOnlineTeam(team);
     syncOfflineHumanTeams();
     renderDominionSelection();
