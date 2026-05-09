@@ -3186,7 +3186,12 @@
     }
 
     function getCurrentTeam(stateRef = state) {
-      return PLAYERS[stateRef.currentPlayerIndex];
+      if (Array.isArray(stateRef.turnOrder) && stateRef.turnOrder.length > 0) {
+        const indexedTeam = stateRef.turnOrder[stateRef.currentPlayerIndex];
+        if (indexedTeam) return indexedTeam;
+        return stateRef.turnOrder[0];
+      }
+      return PLAYERS[stateRef.currentPlayerIndex] || PLAYERS[0];
     }
 
     function getPlayerByTeam(team, stateRef = state) {
@@ -4740,7 +4745,7 @@
     state.playersByTeam = null;
     state.players = createPlayerState();
     state.currentTurn = activeTurnOrder[0];
-    state.currentPlayerIndex = PLAYERS.findIndex(team => team === selectedInternalTeams[0]);
+    state.currentPlayerIndex = 0;
 
     resetGame();
   }
