@@ -3086,7 +3086,7 @@
         const activeTeams = ALL_ENGINE_TEAMS.slice();
         const playersByTeam = {};
         ALL_ENGINE_TEAMS.forEach((team) => {
-          const isHuman = humanTeams.includes(team);
+          const isHuman = true;
           playersByTeam[team] = {
             id: team,
             color: team,
@@ -4234,7 +4234,7 @@
 
     function renderPlayerPills() {
       ui.playerPills.innerHTML = '';
-      const displayTeams = isDominionSelectionModeActive() ? getSelectedInternalTeamsFromStorage() : PLAYERS;
+      const displayTeams = PLAYERS;
       displayTeams.forEach(team => {
         const pill = document.createElement('div');
         const isCurrent = team === getCurrentTeam() && !state.gameOver;
@@ -4733,15 +4733,14 @@
     }
     const { selectedInternalTeams, selectedUiColors, selectedTeamStartZones, offlinePlayers } = config;
     if (!Array.isArray(selectedInternalTeams) || selectedInternalTeams.length === 0) throw new Error('No selected internal teams passed into offline match.');
-    const activeTurnOrder = INTERNAL_TURN_ORDER.filter((team) => selectedInternalTeams.includes(team));
-    if (activeTurnOrder.length === 0) throw new Error('No active turn order generated.');
+    const activeTurnOrder = INTERNAL_TURN_ORDER.slice();
     console.log('Active turn order:', activeTurnOrder);
-    appState.matchConfig.playerCount = selectedInternalTeams.length;
-    appState.matchConfig.humanTeams = selectedInternalTeams;
-    appState.matchConfig.controlMap = getControlMapForHumanTeams(selectedInternalTeams);
+    appState.matchConfig.playerCount = PLAYERS.length;
+    appState.matchConfig.humanTeams = PLAYERS.slice();
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(PLAYERS);
 
     state.turnOrder = activeTurnOrder;
-    state.activeTeams = selectedInternalTeams.slice();
+    state.activeTeams = PLAYERS.slice();
     // players are initialized in initializeBoard with full team map
     state.playersByTeam = null;
     state.players = createPlayerState();
