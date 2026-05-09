@@ -3080,23 +3080,24 @@
       if (appState.playMode === 'offline' && isDominionSelectionMode) {
         const gameState = state;
         const ALL_ENGINE_TEAMS = ['yellow', 'green', 'red', 'blue'];
-        const activeTeams = Array.isArray(selectedInternalTeams) && selectedInternalTeams.length > 0
+        const humanTeams = Array.isArray(selectedInternalTeams) && selectedInternalTeams.length > 0
           ? selectedInternalTeams.slice()
           : ['red'];
+        const activeTeams = ALL_ENGINE_TEAMS.slice();
         const playersByTeam = {};
         ALL_ENGINE_TEAMS.forEach((team) => {
-          const isActive = activeTeams.includes(team);
+          const isHuman = true;
           playersByTeam[team] = {
             id: team,
             color: team,
             team,
-            alive: isActive,
-            active: isActive,
-            eliminated: !isActive,
-            isBot: false,
-            type: isActive ? 'human' : 'inactive',
-            control: isActive ? 'human' : 'inactive',
-            royalAlive: isActive
+            alive: true,
+            active: true,
+            eliminated: false,
+            isBot: !isHuman,
+            type: isHuman ? 'human' : 'bot',
+            control: isHuman ? 'human' : 'bot',
+            royalAlive: true
           };
         });
 
@@ -3104,16 +3105,16 @@
         gameState.players = playersByTeam;
         gameState.playerList = ALL_ENGINE_TEAMS.map((team) => playersByTeam[team]);
         gameState.activeTeams = activeTeams;
-        gameState.turnOrder = ALL_ENGINE_TEAMS.filter((team) => activeTeams.includes(team));
+        gameState.turnOrder = INTERNAL_TURN_ORDER.filter((team) => activeTeams.includes(team));
         gameState.currentTurn = gameState.turnOrder[0];
         gameState.currentPlayerIndex = PLAYERS.findIndex((team) => team === gameState.currentTurn);
 
-        console.log('OFFLINE ACTIVE TEAMS:', activeTeams);
+        console.log('OFFLINE HUMAN TEAMS:', humanTeams);
         console.log('OFFLINE PLAYERS BY TEAM:', playersByTeam);
         console.log('OFFLINE TURN ORDER:', gameState.turnOrder);
         console.log('OFFLINE CURRENT TURN:', gameState.currentTurn);
 
-        activeTeams.forEach(team => {
+        ALL_ENGINE_TEAMS.forEach(team => {
           const color = INTERNAL_TEAM_TO_UI_COLOR[team];
           placeTeam(team, savedSelectedTeamStartZones[color] || COLOR_TO_START_ZONE[team]);
         });
@@ -4233,7 +4234,7 @@
 
     function renderPlayerPills() {
       ui.playerPills.innerHTML = '';
-      const displayTeams = isDominionSelectionModeActive() ? getSelectedInternalTeamsFromStorage() : PLAYERS;
+      const displayTeams = PLAYERS;
       displayTeams.forEach(team => {
         const pill = document.createElement('div');
         const isCurrent = team === getCurrentTeam() && !state.gameOver;
@@ -4732,15 +4733,14 @@
     }
     const { selectedInternalTeams, selectedUiColors, selectedTeamStartZones, offlinePlayers } = config;
     if (!Array.isArray(selectedInternalTeams) || selectedInternalTeams.length === 0) throw new Error('No selected internal teams passed into offline match.');
-    const activeTurnOrder = INTERNAL_TURN_ORDER.filter((team) => selectedInternalTeams.includes(team));
-    if (activeTurnOrder.length === 0) throw new Error('No active turn order generated.');
+    const activeTurnOrder = INTERNAL_TURN_ORDER.slice();
     console.log('Active turn order:', activeTurnOrder);
-    appState.matchConfig.playerCount = selectedInternalTeams.length;
-    appState.matchConfig.humanTeams = selectedInternalTeams;
-    appState.matchConfig.controlMap = getControlMapForHumanTeams(selectedInternalTeams);
+    appState.matchConfig.playerCount = PLAYERS.length;
+    appState.matchConfig.humanTeams = PLAYERS.slice();
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(PLAYERS);
 
     state.turnOrder = activeTurnOrder;
-    state.activeTeams = selectedInternalTeams.slice();
+    state.activeTeams = PLAYERS.slice();
     // players are initialized in initializeBoard with full team map
     state.playersByTeam = null;
     state.players = createPlayerState();
@@ -5366,7 +5366,8 @@
     selectedTeams.add(team);
   }
   function handleTeamClick(team) {
-    if (appState.playMode === 'offline') toggleOfflineTeam(team);
+    const inOfflineSelectionScreen = appState.screen === 'playerCount';
+    if (appState.playMode === 'offline' || inOfflineSelectionScreen) toggleOfflineTeam(team);
     else selectOnlineTeam(team);
     syncOfflineHumanTeams();
     renderDominionSelection();
