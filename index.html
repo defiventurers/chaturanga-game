@@ -3039,12 +3039,23 @@
   const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
   const TEAM_TO_COLOR = DOMINION_TO_UI_COLOR;
   const TEAM_TO_GAME_TEAM = DOMINION_TO_INTERNAL_TEAM;
-  const SNOW_GUARD_DIRECTION_BY_CORNER = { lowerLeft: 'up', upperLeft: 'right', upperRight: 'down', lowerRight: 'left' };
-
-  function getSnowGuardDirection(startingCorner) {
-    const direction = SNOW_GUARD_DIRECTION_BY_CORNER[startingCorner];
-    if (!direction) throw new Error(`Invalid starting corner: ${startingCorner}`);
-    return direction;
+  function getSnowGuardDirectionFromCorner(startingCorner) {
+    switch (startingCorner) {
+      case 'lowerLeft':
+      case 'bottom-left':
+        return { dirRow: 1, dirCol: 0, label: 'up' };
+      case 'upperLeft':
+      case 'top-left':
+        return { dirRow: 0, dirCol: 1, label: 'right' };
+      case 'upperRight':
+      case 'top-right':
+        return { dirRow: -1, dirCol: 0, label: 'down' };
+      case 'lowerRight':
+      case 'bottom-right':
+        return { dirRow: 0, dirCol: -1, label: 'left' };
+      default:
+        throw new Error(`Invalid starting corner for Snow Guard: ${startingCorner}`);
+    }
   }
 
   function buildOfflineMatchSetup(selectedInternalTeams) {
@@ -3061,7 +3072,7 @@
         name: TEAM_LABEL[team],
         controlType: uniqueHumans.includes(team) ? 'human' : 'bot',
         startingCorner,
-        snowGuardDirection: getSnowGuardDirection(startingCorner)
+        snowGuardDirection: getSnowGuardDirectionFromCorner(startingCorner).label
       };
     });
     return { humanTeams: uniqueHumans, teamConfigs };
@@ -3357,22 +3368,20 @@
       return teamIndex >= 0 ? STARTING_CORNER_SEQUENCE[teamIndex] : null;
     }
 
-    function getPawnForwardVector(team) {
-      const startZone = getTeamStartZone(team);
-      if (startZone === 'lowerLeft') return { dirRow: -1, dirCol: 0 };
-      if (startZone === 'lowerRight') return { dirRow: 0, dirCol: -1 };
-      if (startZone === 'upperRight') return { dirRow: 1, dirCol: 0 };
-      if (startZone === 'upperLeft') return { dirRow: 0, dirCol: 1 };
-      return { dirRow: 0, dirCol: 0 };
+    function getPawnForwardVector(team, stateRef = state, piece = null, row = null, col = null) {
+      const teamConfig = stateRef.teamConfigs?.[team];
+      const startingCorner = teamConfig?.startingCorner || getTeamStartZone(team);
+      const direction = getSnowGuardDirectionFromCorner(startingCorner);
+      return { ...direction, startingCorner, teamId: team, pieceSquare: (row !== null && col !== null) ? toCoord(row, col) : null };
     }
 
-    function getPossibleTargetsOnBoard(board, row, col, type, team) {
+    function getPossibleTargetsOnBoard(board, row, col, type, team, stateRef = state) {
       switch (type) {
         case 'king': return getKingMovesOnBoard(board, row, col, team);
         case 'elephant': return getElephantMovesOnBoard(board, row, col, team);
         case 'horse': return getHorseMovesOnBoard(board, row, col, team);
         case 'ship': return getShipMovesOnBoard(board, row, col, team);
-        case 'pawn': return getPawnMovesOnBoard(board, row, col, team);
+        case 'pawn': return getPawnMovesOnBoard(board, row, col, team, stateRef);
         default: return [];
       }
     }
@@ -3438,9 +3447,10 @@
       return moves;
     }
 
-    function getPawnMovesOnBoard(board, row, col, team) {
+    function getPawnMovesOnBoard(board, row, col, team, stateRef = state) {
       const moves = [];
-      const { dirRow, dirCol } = getPawnForwardVector(team);
+      const direction = getPawnForwardVector(team, stateRef, board[row]?.[col], row, col);
+      const { dirRow, dirCol } = direction;
 
       const forwardRow = row + dirRow;
       const forwardCol = col + dirCol;
@@ -3458,6 +3468,15 @@
         }
       }
 
+      const legalMoves = moves.map(([r, c]) => toCoord(r, c));
+      console.log('Snow Guard move debug', {
+        teamId: direction.teamId,
+        pieceSquare: direction.pieceSquare,
+        assignedStartingCorner: direction.startingCorner,
+        calculatedDirection: direction.label,
+        legalMoves
+      });
+
       return moves;
     }
 
@@ -3467,7 +3486,7 @@
       if (stateRef.dice.used[dieIndex]) return [];
       const dieValue = stateRef.dice.values[dieIndex];
       if (!dieValue || !DICE_ROLLS[dieValue].includes(piece.type)) return [];
-      const targets = getPossibleTargetsOnBoard(stateRef.board, row, col, piece.type, piece.team);
+      const targets = getPossibleTargetsOnBoard(stateRef.board, row, col, piece.type, piece.team, stateRef);
       return targets.map(([toRow, toCol]) => ({
         fromRow: row,
         fromCol: col,
