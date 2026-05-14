@@ -3368,11 +3368,13 @@
       return teamIndex >= 0 ? STARTING_CORNER_SEQUENCE[teamIndex] : null;
     }
 
-    function getPawnForwardVector(team, stateRef = state, piece = null, row = null, col = null) {
+    function getPawnForwardVector(team, stateRef = state) {
       const teamConfig = stateRef.teamConfigs?.[team];
       const startingCorner = teamConfig?.startingCorner || getTeamStartZone(team);
-      const direction = getSnowGuardDirectionFromCorner(startingCorner);
-      return { ...direction, startingCorner, teamId: team, pieceSquare: (row !== null && col !== null) ? toCoord(row, col) : null };
+      return {
+        ...getSnowGuardDirectionFromCorner(startingCorner),
+        startingCorner
+      };
     }
 
     function getPossibleTargetsOnBoard(board, row, col, type, team, stateRef = state) {
@@ -3449,7 +3451,7 @@
 
     function getPawnMovesOnBoard(board, row, col, team, stateRef = state) {
       const moves = [];
-      const direction = getPawnForwardVector(team, stateRef, board[row]?.[col], row, col);
+      const direction = getPawnForwardVector(team, stateRef);
       const { dirRow, dirCol } = direction;
 
       const forwardRow = row + dirRow;
@@ -3469,11 +3471,11 @@
       }
 
       const legalMoves = moves.map(([r, c]) => toCoord(r, c));
-      console.log('Snow Guard move debug', {
-        teamId: direction.teamId,
-        pieceSquare: direction.pieceSquare,
+      console.log('SnowGuardDebug', {
+        teamId: team,
+        square: toCoord(row, col),
         assignedStartingCorner: direction.startingCorner,
-        calculatedDirection: direction.label,
+        direction: direction.label,
         legalMoves
       });
 
