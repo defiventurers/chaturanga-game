@@ -2754,6 +2754,7 @@
       return {
         board: createEmptyBoard(),
         players: createPlayerState(),
+        teamConfigs: {},
         currentPlayerIndex: 0,
         selected: null,
         legalMoves: [],
@@ -2850,6 +2851,9 @@
     }
 
     function isBotPlayer(team) {
+      if (appState.playMode === 'offline' && state.teamConfigs?.[team]) {
+        return state.teamConfigs[team].controlType === 'bot';
+      }
       return appState.matchConfig.controlMap[team] === 'bot';
     }
 
@@ -3037,6 +3041,33 @@
   const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
   const TEAM_TO_COLOR = DOMINION_TO_UI_COLOR;
   const TEAM_TO_GAME_TEAM = DOMINION_TO_INTERNAL_TEAM;
+  const SNOW_GUARD_DIRECTION_BY_CORNER = { lowerLeft: 'up', upperLeft: 'right', upperRight: 'down', lowerRight: 'left' };
+
+  function getSnowGuardDirection(startingCorner) {
+    const direction = SNOW_GUARD_DIRECTION_BY_CORNER[startingCorner];
+    if (!direction) throw new Error(`Invalid starting corner: ${startingCorner}`);
+    return direction;
+  }
+
+  function buildOfflineMatchSetup(selectedInternalTeams) {
+    const uniqueHumans = [];
+    (selectedInternalTeams || []).forEach(team => {
+      if (PLAYERS.includes(team) && !uniqueHumans.includes(team)) uniqueHumans.push(team);
+    });
+    const orderedTeams = [...uniqueHumans, ...PLAYERS.filter(team => !uniqueHumans.includes(team))];
+    const teamConfigs = {};
+    orderedTeams.forEach((team, index) => {
+      const startingCorner = STARTING_CORNER_SEQUENCE[index];
+      teamConfigs[team] = {
+        teamId: team,
+        name: TEAM_LABEL[team],
+        controlType: uniqueHumans.includes(team) ? 'human' : 'bot',
+        startingCorner,
+        snowGuardDirection: getSnowGuardDirection(startingCorner)
+      };
+    });
+    return { humanTeams: uniqueHumans, teamConfigs };
+  }
 
     function resetGame() {
       state.board = createEmptyBoard();
@@ -3060,13 +3091,6 @@
 
     function initializeBoard() {
       const selectedInternalTeams = JSON.parse(localStorage.getItem('selectedTeams') || '[]');
-      const selectedDominions = JSON.parse(localStorage.getItem('selectedDominions') || '[]');
-      const offlinePlayers = JSON.parse(localStorage.getItem('offlinePlayers') || '[]');
-      const savedSelectedTeamStartZones = JSON.parse(localStorage.getItem('selectedTeamStartZones') || '{}');
-      const savedTeamStartZonesByInternal = JSON.parse(localStorage.getItem('teamStartZonesByInternal') || '{}');
-      console.log('INIT selectedInternalTeams:', selectedInternalTeams);
-      console.log('INIT selectedDominions:', selectedDominions);
-      console.log('INIT offlinePlayers:', offlinePlayers);
       const isDominionSelectionMode = Array.isArray(selectedInternalTeams) && selectedInternalTeams.length > 0;
       const b = state.board;
       const placeTeam = (team, zoneName) => {
@@ -3077,15 +3101,15 @@
         zone.pawns.forEach(([r,c]) => b[r][c] = makePiece(team, 'pawn'));
       };
       if (appState.playMode === 'offline' && isDominionSelectionMode) {
-        const gameState = state;
-        const ALL_ENGINE_TEAMS = ['yellow', 'green', 'red', 'blue'];
-        const humanTeams = Array.isArray(selectedInternalTeams) && selectedInternalTeams.length > 0
-          ? selectedInternalTeams.slice()
-          : ['red'];
-        const activeTeams = ALL_ENGINE_TEAMS.slice();
+        const setup = buildOfflineMatchSetup(selectedInternalTeams);
+        state.teamConfigs = setup.teamConfigs;
+        appState.matchConfig.humanTeams = setup.humanTeams.slice();
+        appState.matchConfig.playerCount = setup.humanTeams.length;
+        appState.matchConfig.controlMap = getControlMapForHumanTeams(setup.humanTeams);
+
         const playersByTeam = {};
-        ALL_ENGINE_TEAMS.forEach((team) => {
-          const isHuman = humanTeams.includes(team);
+        PLAYERS.forEach((team) => {
+          const config = setup.teamConfigs[team];
           playersByTeam[team] = {
             id: team,
             color: team,
@@ -3093,34 +3117,30 @@
             alive: true,
             active: true,
             eliminated: false,
-            isBot: !isHuman,
-            type: isHuman ? 'human' : 'bot',
-            control: isHuman ? 'human' : 'bot',
-            royalAlive: true
+            isBot: config.controlType === 'bot',
+            type: config.controlType,
+            control: config.controlType,
+            controlType: config.controlType,
+            startingCorner: config.startingCorner,
+            snowGuardDirection: config.snowGuardDirection,
+            royalAlive: true,
+            name: config.name
           };
         });
 
-        gameState.playersByTeam = playersByTeam;
-        gameState.players = playersByTeam;
-        gameState.playerList = ALL_ENGINE_TEAMS.map((team) => playersByTeam[team]);
-        gameState.activeTeams = activeTeams;
-        gameState.turnOrder = INTERNAL_TURN_ORDER.filter((team) => activeTeams.includes(team));
-        gameState.currentTurn = gameState.turnOrder[0];
-        gameState.currentPlayerIndex = PLAYERS.findIndex((team) => team === gameState.currentTurn);
+        state.playersByTeam = playersByTeam;
+        state.players = playersByTeam;
+        state.playerList = PLAYERS.map((team) => playersByTeam[team]);
+        state.activeTeams = PLAYERS.slice();
+        state.turnOrder = INTERNAL_TURN_ORDER.slice();
+        state.currentTurn = state.turnOrder[0];
+        state.currentPlayerIndex = PLAYERS.findIndex((team) => team === state.currentTurn);
 
-        console.log('OFFLINE HUMAN TEAMS:', humanTeams);
-        console.log('OFFLINE PLAYERS BY TEAM:', playersByTeam);
-        console.log('OFFLINE TURN ORDER:', gameState.turnOrder);
-        console.log('OFFLINE CURRENT TURN:', gameState.currentTurn);
-
-        ALL_ENGINE_TEAMS.forEach(team => {
-          const color = INTERNAL_TEAM_TO_UI_COLOR[team];
-          const resolvedZone = savedTeamStartZonesByInternal[team] || savedSelectedTeamStartZones[color] || COLOR_TO_START_ZONE[team];
-          placeTeam(team, resolvedZone);
-        });
+        PLAYERS.forEach(team => placeTeam(team, setup.teamConfigs[team].startingCorner));
         return;
       }
       if (appState.playMode === 'offline') {
+        state.teamConfigs = {};
         PLAYERS.forEach(team => placeTeam(team, COLOR_TO_START_ZONE[team]));
         return;
       }
@@ -3307,10 +3327,7 @@
     }
 
     function getTeamStartZone(team) {
-      if (appState.playMode === 'offline') {
-        const savedTeamStartZonesByInternal = JSON.parse(localStorage.getItem('teamStartZonesByInternal') || '{}');
-        if (savedTeamStartZonesByInternal[team]) return savedTeamStartZonesByInternal[team];
-      }
+      if (state.teamConfigs?.[team]?.startingCorner) return state.teamConfigs[team].startingCorner;
       return COLOR_TO_START_ZONE[team];
     }
 
