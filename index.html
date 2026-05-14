@@ -1820,12 +1820,15 @@
     }
     .cover-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100vh; background: #061b3a; overflow: hidden; z-index: 99999; touch-action: manipulation; }
     .cover-screen img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; user-select: none; -webkit-user-drag: none; }
-    .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100vh; background-size: cover; background-position: center center; background-repeat: no-repeat; overflow: hidden; z-index: 9999; touch-action: manipulation; }
+    .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100vh; background: #061b3a; overflow: hidden; z-index: 99999; touch-action: manipulation; }
+    .menu-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; user-select: none; -webkit-user-drag: none; }
     .menu-screen-shell { position: fixed; inset: 0; }
     .hotspot { position: absolute; background: rgba(255, 0, 0, 0); border: 0; padding: 0; z-index: 3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .hotspot:focus { outline: none; }
     .hotspot.disabled { cursor: not-allowed; }
     .hotspot.selected::after { content:""; position:absolute; inset:0; border: 3px solid rgba(115,231,255,.9); border-radius: 14px; box-shadow: 0 0 0 3px rgba(115,231,255,.26); }
+    .play-now-hotspot { left: 14%; right: 14%; top: 72%; height: 10%; }
+    .how-to-play-hotspot { left: 23%; right: 23%; top: 84%; height: 7%; }
 
 </style>
 </head>
@@ -1836,9 +1839,20 @@
     </section>
 
     <section id="screenMenu" class="screen" aria-label="Main menu">
-      <div class="menu-screen-shell menu-screen" style="background-image:url('/assets/screens/main-menu.png');">
-        <button id="menuPlayBtn" class="hotspot" aria-label="Play Now" style="left:18%; right:18%; top:68%; height:10%;"></button>
-        <button id="menuHowBtn" class="hotspot" aria-label="How To Play" style="left:18%; right:18%; top:80%; height:8%;"></button>
+      <div class="menu-screen-shell menu-screen">
+        <img class="menu-art" src="/assets/screens/main-menu.png" alt="Arctic Dominion Main Menu" />
+        <button id="menuPlayBtn" class="hotspot play-now-hotspot" aria-label="Play Now"></button>
+        <button id="menuHowBtn" class="hotspot how-to-play-hotspot" aria-label="How To Play"></button>
+      </div>
+    </section>
+
+    <section id="screenHowToPlay" class="screen" aria-label="How to play">
+      <div class="screen-panel">
+        <div class="stack">
+          <h2>How To Play</h2>
+          <p>Rules screen coming soon.</p>
+          <button id="howToPlayBackBtn" class="btn tertiary" type="button">Back</button>
+        </div>
       </div>
     </section>
 
@@ -2340,6 +2354,7 @@
         cover: document.getElementById('screenCover'),
         mainMenu: document.getElementById('screenMenu'),
         modeSelect: document.getElementById('screenModeSelect'),
+        howToPlay: document.getElementById('screenHowToPlay'),
         playerCount: document.getElementById('screenPlayerCount'),
         teamSelect: document.getElementById('screenTeamSelect'),
         difficulty: document.getElementById('screenDifficulty'),
@@ -2350,6 +2365,7 @@
       splashContinueArea: document.getElementById('coverContinueArea'),
       menuPlayBtn: document.getElementById('menuPlayBtn'),
       menuHowBtn: document.getElementById('menuHowBtn'),
+      howToPlayBackBtn: document.getElementById('howToPlayBackBtn'),
       modeSelectShell: document.getElementById('modeSelectShell'),
       modeOfflineBtn: document.getElementById('modeOfflineBtn'),
       modeOnlineBtn: document.getElementById('modeOnlineBtn'),
@@ -2883,8 +2899,9 @@
 
     const ALLOWED_SCREEN_TRANSITIONS = {
       cover: ['mainMenu'],
-      mainMenu: ['modeSelect'],
+      mainMenu: ['modeSelect', 'howToPlay'],
       modeSelect: ['mainMenu', 'playerCount'],
+      howToPlay: ['mainMenu'],
       playerCount: ['modeSelect', 'teamSelect'],
       teamSelect: ['playerCount', 'game'],
       game: []
@@ -5421,7 +5438,8 @@
   ui.menuPlayBtn = replaceButtonWithoutListeners(ui.menuPlayBtn);
   ui.menuPlayBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; setScreen('modeSelect'); });
   ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
-  ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); alert('How To Play is coming soon.'); });
+  ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('howToPlay'); });
+  ui.howToPlayBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
   ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
   ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; ui.modeSelectShell.style.backgroundImage = \"url('/assets/screens/mode-offline-selected.png')\"; });
   ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); ui.modeSelectShell.style.backgroundImage = \"url('/assets/screens/mode-online-selected.png')\"; });
