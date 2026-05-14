@@ -2310,7 +2310,7 @@
       botTurnPending: false,
       tutorialEntry: 'flow',
       botStatusText: '',
-      boardPerspective: 'green',
+      boardPerspective: 'default',
       matchConfig: {
         playerCount: 1,
         botDifficulty: 'medium',
@@ -4130,9 +4130,9 @@
 
     function render() {
       if (appState.screen !== 'game') return;
-      const perspective = getPerspectiveTeam();
-      if (appState.boardPerspective !== perspective) {
-        appState.boardPerspective = perspective;
+      const orientation = getBoardViewOrientation();
+      if (appState.boardPerspective !== orientation) {
+        appState.boardPerspective = orientation;
         buildBoardGrid();
       }
       renderBoard();
