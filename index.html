@@ -1780,60 +1780,34 @@
       #moveLog .log-line:nth-child(n+2) { display: none; }
     }
   
-    .offline-team-select-screen {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100dvh;
-      overflow: hidden;
-      background: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    .offline-team-select-screen { width: min(980px, 100%); }
+    .team-selection-shell {
+      border-radius: 32px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(135deg, rgba(16,25,42,.94), rgba(11,41,79,.9));
+      box-shadow: var(--shadow-lg);
+      padding: 26px;
+      display: grid;
+      gap: 16px;
     }
-    .team-select-artboard {
-      position: relative;
-      height: 100dvh;
-      aspect-ratio: 9 / 16;
-      max-width: 100vw;
-      max-height: 100dvh;
-      overflow: hidden;
-    }
-    .team-selection-image {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: fill;
-      object-position: center;
-      pointer-events: none;
-      user-select: none;
-    }
-    .team-zone,
-    .continue-hit-zone {
-      position: absolute;
-      z-index: 10;
-      background: transparent;
-      border: 0;
-      padding: 0;
+    .selection-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .team-choice-btn {
+      border-radius: 18px;
+      border: 2px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding: 16px 14px;
+      font-weight: 800;
+      font-size: 1.6rem;
       cursor: pointer;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
     }
-    .continue-hit-zone:disabled {
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-    .hit-polly { left: 0%; top: 15%; width: 50%; height: 69%; }
-    .hit-abster { right: 0%; top: 15%; width: 50%; height: 69%; }
-    .hit-retsba { left: 0%; top: 45%; width: 50%; height: 50%; }
-    .hit-pengu { right: 0%; top: 45%; width: 50%; height: 50%; }
-    .continue-hit-zone { left: 30%; top: 8.5%; width: 40%; height: 7%; }
-    .offline-team-select-screen.debug .team-zone,
-    .offline-team-select-screen.debug .continue-hit-zone {
-      background: rgba(255, 255, 0, 0.18);
-      outline: 2px solid yellow;
-    }
+    .team-choice-btn small { display:block; font-size:.86rem; opacity:.9; margin-top:6px; }
+    .team-choice-btn[data-team="abster"] { color: var(--green-2); }
+    .team-choice-btn[data-team="retsba"] { color: var(--red-2); }
+    .team-choice-btn[data-team="pengu"] { color: var(--blue-2); }
+    .team-choice-btn[data-team="polly"] { color: var(--yellow-2); }
+    .team-choice-btn.selected { border-color: rgba(255,255,255,.45); box-shadow: 0 0 0 3px rgba(115,231,255,.22); transform: translateY(-1px); }
 
 </style>
 </head>
@@ -1875,16 +1849,22 @@
 
     <section id="screenPlayerCount" class="screen" aria-label="Offline team selection">
       <div class="offline-team-select-screen">
-        <div class="team-select-artboard">
-          <img id="teamSelectionImage" class="team-selection-image" src="/images/state_none.png" alt="Team selection board" />
-          <button id="hitPolly" class="team-zone hit-polly" aria-label="Toggle POLLY team"></button>
-          <button id="hitRetsba" class="team-zone hit-retsba" aria-label="Toggle RETSBA team"></button>
-          <button id="hitAbster" class="team-zone hit-abster" aria-label="Toggle ABSTER team"></button>
-          <button id="hitPengu" class="team-zone hit-pengu" aria-label="Toggle PENGU team"></button>
-          <button id="playerCountNextBtn" class="continue-hit-zone" aria-label="Continue" disabled></button>
+        <div class="team-selection-shell">
+          <div class="eyebrow">Setup</div>
+          <div class="setup-step">Players → Colors</div>
+          <h1 style="font-size:2.1rem; line-height:1.08;">Choose Team/s</h1>
+          <div class="selection-grid">
+            <button id="hitAbster" class="team-choice-btn" data-team="abster" aria-label="Toggle ABSTER team">ABSTER<small>Green</small></button>
+            <button id="hitPolly" class="team-choice-btn" data-team="polly" aria-label="Toggle POLLY team">POLLY<small>Pink</small></button>
+            <button id="hitRetsba" class="team-choice-btn" data-team="retsba" aria-label="Toggle RETSBA team">RETSBA<small>Red</small></button>
+            <button id="hitPengu" class="team-choice-btn" data-team="pengu" aria-label="Toggle PENGU team">PENGU<small>Blue</small></button>
+          </div>
           <div id="playerCountChoices" class="hidden" aria-hidden="true"></div>
           <div id="offlineTeamChoices" class="hidden" aria-hidden="true"></div>
-          <button id="playerCountBackBtn" class="hidden" aria-hidden="true" tabindex="-1">Back</button>
+          <div class="screen-actions">
+            <button id="playerCountBackBtn" class="ghost">Back</button>
+            <button id="playerCountNextBtn" class="primary" disabled>Continue</button>
+          </div>
         </div>
       </div>
     </section>
@@ -3404,9 +3384,9 @@
       let dirCol = 0;
 
       if (team === 'green') dirRow = 1;
-      else if (team === 'red') dirCol = -1;
-      else if (team === 'blue') dirRow = -1;
       else if (team === 'yellow') dirCol = 1;
+      else if (team === 'blue') dirCol = -1;
+      else if (team === 'red') dirRow = -1;
 
       const forwardRow = row + dirRow;
       const forwardCol = col + dirCol;
@@ -3414,7 +3394,7 @@
         moves.push([forwardRow, forwardCol]);
       }
 
-      const captures = (team === 'green' || team === 'blue')
+      const captures = dirRow !== 0
         ? [[row + dirRow, col - 1], [row + dirRow, col + 1]]
         : [[row - 1, col + dirCol], [row + 1, col + dirCol]];
 
@@ -3525,7 +3505,7 @@
     }
 
     function getPromotionPiece(team, row, col) {
-      if (team === 'red' && col === 0) {
+      if (team === 'red' && row === 0) {
         if (row === 0 || row === 7) return 'ship';
         if (row === 1 || row === 6) return 'horse';
         if (row === 2 || row === 5) return 'elephant';
@@ -3535,7 +3515,7 @@
         if (col === 1 || col === 6) return 'horse';
         if (col === 2 || col === 5) return 'elephant';
         if (col === 3 || col === 4) return 'king';
-      } else if (team === 'blue' && row === 0) {
+      } else if (team === 'blue' && col === 0) {
         if (col === 0 || col === 7) return 'ship';
         if (col === 1 || col === 6) return 'horse';
         if (col === 2 || col === 5) return 'elephant';
@@ -3839,8 +3819,8 @@
 
     function getPawnProgressScore(team, row, col) {
       if (team === 'green') return row;
-      if (team === 'blue') return 7 - row;
-      if (team === 'red') return 7 - col;
+      if (team === 'blue') return 7 - col;
+      if (team === 'red') return 7 - row;
       if (team === 'yellow') return col;
       return 0;
     }
@@ -4684,35 +4664,6 @@
     });
   }
 
-  const TEAM_STATE_IMAGES = {
-    '': '/images/state_none.png',
-    polly: '/images/state_polly.png',
-    retsba: '/images/state_retsba.png',
-    abster: '/images/state_abster.png',
-    pengu: '/images/state_pengu.png',
-    polly_retsba: '/images/state_polly_retsba.png',
-    polly_abster: '/images/state_polly_abster.png',
-    polly_pengu: '/images/state_polly_pengu.png',
-    retsba_pengu: '/images/state_retsba_pengu.png',
-    abster_pengu: '/images/state_abster_pengu.png',
-    abster_retsba: '/images/state_abster_retsba.png',
-    polly_abster_retsba: '/images/state_polly_abster_retsba.png',
-    polly_abster_pengu: '/images/state_polly_abster_pengu.png',
-    polly_retsba_pengu: '/images/state_polly_retsba_pengu.png',
-    abster_retsba_pengu: '/images/state_abster_retsba_pengu.png',
-    polly_abster_retsba_pengu: '/images/state_all.png'
-  };
-
-  [
-    '/images/state_none.png',
-    '/images/state_all.png'
-  ].forEach((src) => {
-    const img = new Image();
-    img.onload = () => console.log('Loaded image:', src);
-    img.onerror = () => console.error('Failed image:', src);
-    img.src = src;
-  });
-
   const TEAM_START_ZONES = DOMINION_START_ZONES;
 
   const selectedTeams = new Set();
@@ -4899,10 +4850,12 @@
     return false;
   }
   function renderDominionSelection() {
-    const key = getStateKey();
-    if (ui.teamSelectionImage) {
-      ui.teamSelectionImage.src = TEAM_STATE_IMAGES[key] || '/images/state_none.png';
-    }
+    [
+      [ui.hitPolly, 'polly'],
+      [ui.hitRetsba, 'retsba'],
+      [ui.hitAbster, 'abster'],
+      [ui.hitPengu, 'pengu']
+    ].forEach(([btn, team]) => btn?.classList.toggle('selected', selectedTeams.has(team)));
     ui.playerCountNextBtn.disabled = !canContinueForMode(selectedTeams, appState.playMode);
     ui.playerCountNextBtn.classList.toggle('enabled', selectedTeams.size > 0);
   }
