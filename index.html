@@ -3131,9 +3131,6 @@
     function getPerspectiveTeam() {
       if (appState.playMode === 'online' && appState.online.localTeam) return appState.online.localTeam;
       if (appState.playMode === 'offline') {
-        if (appState.matchConfig.playerCount === 1) return appState.matchConfig.humanTeams?.[0] || 'green';
-        const current = getCurrentTeam();
-        if (!isBotPlayer(current)) return current;
         return appState.matchConfig.humanTeams?.[0] || 'green';
       }
       return 'green';
@@ -3306,6 +3303,24 @@
       return row >= 0 && row < ROWS && col >= 0 && col < COLS;
     }
 
+    function getTeamStartZone(team) {
+      if (appState.playMode === 'offline') {
+        const savedSelectedTeamStartZones = JSON.parse(localStorage.getItem('selectedTeamStartZones') || '{}');
+        const uiColor = INTERNAL_TEAM_TO_UI_COLOR[team];
+        if (uiColor && savedSelectedTeamStartZones[uiColor]) return savedSelectedTeamStartZones[uiColor];
+      }
+      return COLOR_TO_START_ZONE[team];
+    }
+
+    function getPawnForwardVector(team) {
+      const startZone = getTeamStartZone(team);
+      if (startZone === 'lowerLeft') return { dirRow: -1, dirCol: 0 };
+      if (startZone === 'lowerRight') return { dirRow: 0, dirCol: -1 };
+      if (startZone === 'upperRight') return { dirRow: 1, dirCol: 0 };
+      if (startZone === 'upperLeft') return { dirRow: 0, dirCol: 1 };
+      return { dirRow: 0, dirCol: 0 };
+    }
+
     function getPossibleTargetsOnBoard(board, row, col, type, team) {
       switch (type) {
         case 'king': return getKingMovesOnBoard(board, row, col, team);
@@ -3380,13 +3395,7 @@
 
     function getPawnMovesOnBoard(board, row, col, team) {
       const moves = [];
-      let dirRow = 0;
-      let dirCol = 0;
-
-      if (team === 'green') dirRow = 1;
-      else if (team === 'yellow') dirCol = 1;
-      else if (team === 'blue') dirCol = -1;
-      else if (team === 'red') dirRow = -1;
+      const { dirRow, dirCol } = getPawnForwardVector(team);
 
       const forwardRow = row + dirRow;
       const forwardCol = col + dirCol;
@@ -4770,9 +4779,10 @@
     }
     const selectedUiColors = selectedDominions.map((dominion) => DOMINION_TO_UI_COLOR[dominion]);
     const selectedInternalTeams = selectedDominions.map((dominion) => DOMINION_TO_INTERNAL_TEAM[dominion]);
-    const selectedTeamStartZones = selectedDominions.reduce((acc, dominion) => {
+    const orderedStartZones = ['lowerLeft', 'lowerRight', 'upperRight', 'upperLeft'];
+    const selectedTeamStartZones = selectedDominions.reduce((acc, dominion, index) => {
       const color = DOMINION_TO_UI_COLOR[dominion];
-      acc[color] = COLOR_START_ZONES[color];
+      acc[color] = orderedStartZones[index] || COLOR_START_ZONES[color];
       return acc;
     }, {});
     const offlinePlayers = selectedDominions.map((dominion, index) => {
@@ -4786,7 +4796,7 @@
         team: internalTeam,
         type: 'human',
         isBot: false,
-        startZone: COLOR_TO_START_ZONE[internalTeam]
+        startZone: selectedTeamStartZones[uiColor] || COLOR_TO_START_ZONE[internalTeam]
       };
     });
 
