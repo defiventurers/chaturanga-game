@@ -1810,9 +1810,17 @@
     .team-choice-btn.selected { border-color: rgba(255,255,255,.45); box-shadow: 0 0 0 3px rgba(115,231,255,.22); transform: translateY(-1px); }
 
 
-    .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100vh; background-size: cover; background-position: center; background-repeat: no-repeat; overflow: hidden; z-index: 9999; }
+    html, body, #root {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background: #001833;
+    }
+    .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100vh; background-size: cover; background-position: center center; background-repeat: no-repeat; overflow: hidden; z-index: 9999; touch-action: manipulation; }
     .menu-screen-shell { position: fixed; inset: 0; }
-    .hotspot { position: absolute; background: transparent; border: none; padding: 0; cursor: pointer; }
+    .hotspot { position: absolute; background: rgba(255, 0, 0, 0); border: 0; padding: 0; z-index: 3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .hotspot:focus { outline: none; }
     .hotspot.disabled { cursor: not-allowed; }
     .hotspot.selected::after { content:""; position:absolute; inset:0; border: 3px solid rgba(115,231,255,.9); border-radius: 14px; box-shadow: 0 0 0 3px rgba(115,231,255,.26); }
@@ -2297,7 +2305,7 @@
     };
 
     const appState = {
-      screen: 'splash',
+      screen: 'cover',
       splashTimer: null,
       loadingTimer: null,
       botTurnPending: false,
@@ -2327,8 +2335,8 @@
     const ui = {
       appView: document.getElementById('appView'),
       screens: {
-        splash: document.getElementById('screenCover'),
-        menu: document.getElementById('screenMenu'),
+        cover: document.getElementById('screenCover'),
+        mainMenu: document.getElementById('screenMenu'),
         modeSelect: document.getElementById('screenModeSelect'),
         playerCount: document.getElementById('screenPlayerCount'),
         teamSelect: document.getElementById('screenTeamSelect'),
@@ -2871,18 +2879,29 @@
       sound.playButtonSound();
     }
 
+    const ALLOWED_SCREEN_TRANSITIONS = {
+      cover: ['mainMenu'],
+      mainMenu: ['modeSelect'],
+      modeSelect: ['mainMenu', 'playerCount'],
+      playerCount: ['modeSelect', 'teamSelect'],
+      teamSelect: ['playerCount', 'game'],
+      game: []
+    };
+
     function setScreen(nextScreen) {
-      if (nextScreen === 'difficulty' || nextScreen === 'tutorial') {
-        nextScreen = 'teamSelect';
+      const currentScreen = appState.screen;
+      if (currentScreen === nextScreen) return;
+      if (nextScreen === 'teamSelect' && ![1, 2, 3, 4].includes(selectedPlayerCount)) {
+        nextScreen = 'playerCount';
       }
+      const allowed = ALLOWED_SCREEN_TRANSITIONS[currentScreen] || [];
+      if (!allowed.includes(nextScreen)) return;
       appState.screen = nextScreen;
       Object.entries(ui.screens).forEach(([key, element]) => {
         element.classList.toggle('active', key === nextScreen);
       });
       renderAppScreen();
-      if (nextScreen === 'game') {
-        render();
-      }
+      if (nextScreen === 'game') render();
     }
 
     function renderAppScreen() {
@@ -3002,7 +3021,7 @@
     function scheduleSplashAdvance() {
       clearTimeout(appState.splashTimer);
       appState.splashTimer = setTimeout(() => {
-        if (appState.screen === 'splash') setScreen('menu');
+        if (appState.screen === 'cover') setScreen('mainMenu');
       }, 1400);
     }
 
@@ -3026,7 +3045,7 @@
       clearTimeout(appState.loadingTimer);
       appState.botTurnPending = false;
       appState.botStatusText = '';
-      setScreen('menu');
+      setScreen('mainMenu');
     }
 
   const DOMINION_ORDER = ['polly', 'abster', 'retsba', 'pengu'];
@@ -4340,13 +4359,13 @@
 
     ui.splashContinueArea.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('menu');
+      setScreen('mainMenu');
     });
     ui.splashContinueArea.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         primeAudioAndPlayButton();
-        setScreen('menu');
+        setScreen('mainMenu');
       }
     });
 
@@ -4363,7 +4382,7 @@
 
     ui.playerCountBackBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('menu');
+      setScreen('modeSelect');
     });
 
     ui.playerCountNextBtn.addEventListener('click', () => {
@@ -4735,6 +4754,15 @@
 
   const selectedTeams = new Set();
   let selectedPlayerCount = null;
+
+  function goToTeamSelect(count) {
+    if (![1, 2, 3, 4].includes(count)) return;
+    selectedPlayerCount = count;
+    selectedTeams.clear();
+    renderDominionSelection();
+    setScreen('teamSelect');
+  }
+
   function normalizeTeams(teams) {
     return TEAM_ORDER.filter(team => teams.has(team));
   }
@@ -5392,14 +5420,14 @@
   ui.menuPlayBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; setScreen('modeSelect'); });
   ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
   ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); alert('How To Play is coming soon.'); });
-  ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('menu'); });
+  ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
   ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; ui.modeSelectShell.style.backgroundImage = \"url('/assets/screens/mode-offline-selected.png')\"; });
   ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); ui.modeSelectShell.style.backgroundImage = \"url('/assets/screens/mode-online-selected.png')\"; });
   ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode !== 'offline') return; setScreen('playerCount'); });
-  ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = 1; selectedTeams.clear(); renderDominionSelection(); setScreen('teamSelect'); });
-  ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = 2; selectedTeams.clear(); renderDominionSelection(); setScreen('teamSelect'); });
-  ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = 3; selectedTeams.clear(); renderDominionSelection(); setScreen('teamSelect'); });
-  ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = 4; selectedTeams.clear(); TEAM_ORDER.forEach(t=>selectedTeams.add(t)); renderDominionSelection(); setScreen('teamSelect'); });
+  ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(1); });
+  ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(2); });
+  ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(3); });
+  ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(4); });
   ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
   ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.createRoom(); });
   ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
@@ -5418,7 +5446,7 @@
     selectedTeams.add(team);
   }
   function handleTeamClick(team) {
-    const inOfflineSelectionScreen = appState.screen === 'playerCount';
+    const inOfflineSelectionScreen = appState.screen === 'teamSelect';
     if (appState.playMode === 'offline' || inOfflineSelectionScreen) toggleOfflineTeam(team);
     else selectOnlineTeam(team);
     syncOfflineHumanTeams();
