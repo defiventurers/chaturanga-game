@@ -3178,20 +3178,7 @@
       });
     }
 
-    // Board rotation is view-only. Canonical board coordinates and rules stay unchanged.
     function getBoardViewOrientation() {
-      if (appState.playMode === 'online') return 'default';
-      if (appState.playMode === 'offline') {
-        const humans = appState.matchConfig.humanTeams || [];
-        if (humans.length !== 1) return 'default';
-        switch (humans[0]) {
-          case 'red': return 'default';      // RETSBA at lower-left
-          case 'green': return 'rotate-ccw'; // ABSTER from upper-left to lower-left
-          case 'yellow': return 'rotate-180';// POLLY from upper-right to lower-left
-          case 'blue': return 'rotate-cw';   // PENGU from lower-right to lower-left
-          default: return 'default';
-        }
-      }
       return 'default';
     }
 
@@ -3366,11 +3353,11 @@
     }
 
     function getPawnForwardVector(team) {
-      if (team === 'green') return { dirRow: 1, dirCol: 0, label: 'up' };
-      if (team === 'yellow') return { dirRow: 0, dirCol: 1, label: 'right' };
-      if (team === 'blue') return { dirRow: 0, dirCol: -1, label: 'left' };
-      if (team === 'red') return { dirRow: -1, dirCol: 0, label: 'down' };
-      return { dirRow: 0, dirCol: 0, label: 'none' };
+      if (team === 'red') return { dirRow: -1, dirCol: 0, label: 'up' };      // RETSBA
+      if (team === 'green') return { dirRow: 0, dirCol: 1, label: 'right' };  // ABSTER
+      if (team === 'yellow') return { dirRow: 1, dirCol: 0, label: 'down' };  // POLLY
+      if (team === 'blue') return { dirRow: 0, dirCol: -1, label: 'left' };   // PENGU
+      throw new Error('Invalid teamId for Snow Guard direction: ' + team);
     }
 
     function getPossibleTargetsOnBoard(board, row, col, type, team, stateRef = state) {
