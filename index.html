@@ -1809,63 +1809,55 @@
     .team-choice-btn[data-team="polly"] { color: var(--yellow-2); }
     .team-choice-btn.selected { border-color: rgba(255,255,255,.45); box-shadow: 0 0 0 3px rgba(115,231,255,.22); transform: translateY(-1px); }
 
+
+    .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100vh; background-size: cover; background-position: center; background-repeat: no-repeat; }
+    .menu-screen-shell { position: fixed; inset: 0; }
+    .hotspot { position: absolute; background: transparent; border: none; cursor: pointer; }
+    .hotspot.disabled { cursor: not-allowed; }
+    .hotspot.selected::after { content:""; position:absolute; inset:0; border: 3px solid rgba(115,231,255,.9); border-radius: 14px; box-shadow: 0 0 0 3px rgba(115,231,255,.26); }
+
 </style>
 </head>
 <body>
   <div id="appView" class="app-view">
-    <section id="screenSplash" class="screen active" aria-label="Splash screen">
-      <div class="splash-screen" id="splashContinueArea" role="button" tabindex="0" aria-label="Tap or click to continue"></div>
+    <section id="screenCover" class="screen active" aria-label="Cover screen">
+      <div id="coverContinueArea" class="menu-screen" style="background-image:url('/assets/screens/cover.png');" role="button" tabindex="0" aria-label="Tap or click to continue"></div>
     </section>
 
     <section id="screenMenu" class="screen" aria-label="Main menu">
-      <div class="screen-panel">
-        <div class="menu-grid">
-          <div class="menu-card">
-            <div class="eyebrow">Main Menu</div>
-            <h1 style="font-size:2.3rem; line-height:1.05;">Arctic Dominion</h1>
-            <p class="subtitle" style="max-width:560px;">Pick your setup and start the frozen showdown.</p>
-            <div class="menu-actions" style="margin-top:14px;">
-              <button id="menuPlayBtn" class="primary">PLAY NOW</button>
-              <button id="menuHowBtn" class="secondary">How to Play</button>
-            </div>
-            <div class="team-cards">
-              <div class="team-card"><img src="/assets/arctic/pieces/red-frost-king.png" alt=""><div>Red<small>Retsba</small></div></div>
-              <div class="team-card"><img src="/assets/arctic/pieces/blue-frost-king.png" alt=""><div>Blue<small>Pengu</small></div></div>
-              <div class="team-card"><img src="/assets/arctic/pieces/green-frost-king.png" alt=""><div>Green<small>Abster</small></div></div>
-              <div class="team-card"><img src="/assets/arctic/pieces/pink-frost-king.png" alt=""><div>Pink<small>Polly</small></div></div>
-            </div>
-          </div>
-          <div class="menu-card">
-            <div class="eyebrow">Current Setup</div>
-            <div class="summary-list">
-              <div class="summary-item"><span>Players</span><strong id="menuSummaryPlayers">1 Player</strong></div>
-              <div class="summary-item"><span>Difficulty</span><strong id="menuSummaryDifficulty">Medium</strong></div>
-              <div class="summary-item"><span>Control Map</span><strong id="menuSummaryControl">Green human</strong></div>
-            </div>
-          </div>
-        </div>
+      <div class="menu-screen-shell menu-screen" style="background-image:url('/assets/screens/main-menu.png');">
+        <button id="menuPlayBtn" class="hotspot" aria-label="Play Now" style="left:18%; right:18%; top:68%; height:10%;"></button>
+        <button id="menuHowBtn" class="hotspot" aria-label="How To Play" style="left:18%; right:18%; top:80%; height:8%;"></button>
       </div>
     </section>
 
-    <section id="screenPlayerCount" class="screen" aria-label="Offline team selection">
-      <div class="offline-team-select-screen">
-        <div class="team-selection-shell">
-          <div class="eyebrow">Setup</div>
-          <div class="setup-step">Players → Colors</div>
-          <h1 style="font-size:2.1rem; line-height:1.08;">Choose Team/s</h1>
-          <div class="selection-grid">
-            <button id="hitAbster" class="team-choice-btn" data-team="abster" aria-label="Toggle ABSTER team">ABSTER<small>Green</small></button>
-            <button id="hitPolly" class="team-choice-btn" data-team="polly" aria-label="Toggle POLLY team">POLLY<small>Pink</small></button>
-            <button id="hitRetsba" class="team-choice-btn" data-team="retsba" aria-label="Toggle RETSBA team">RETSBA<small>Red</small></button>
-            <button id="hitPengu" class="team-choice-btn" data-team="pengu" aria-label="Toggle PENGU team">PENGU<small>Blue</small></button>
-          </div>
-          <div id="playerCountChoices" class="hidden" aria-hidden="true"></div>
-          <div id="offlineTeamChoices" class="hidden" aria-hidden="true"></div>
-          <div class="screen-actions">
-            <button id="playerCountBackBtn" class="ghost">Back</button>
-            <button id="playerCountNextBtn" class="primary" disabled>Continue</button>
-          </div>
-        </div>
+    <section id="screenModeSelect" class="screen" aria-label="Mode select">
+      <div id="modeSelectShell" class="menu-screen-shell menu-screen" style="background-image:url('/assets/screens/mode-offline-selected.png');">
+        <button id="modeOfflineBtn" class="hotspot selected" aria-label="Offline Battle" style="left:8%; width:40%; top:58%; height:18%;"></button>
+        <button id="modeOnlineBtn" class="hotspot disabled" aria-label="Online Room Coming Soon" style="right:8%; width:40%; top:58%; height:18%;"></button>
+        <button id="modeBackBtn" class="hotspot" aria-label="Back" style="left:5%; width:18%; top:6%; height:8%;"></button>
+        <button id="modeContinueBtn" class="hotspot" aria-label="Continue" style="left:20%; right:20%; top:86%; height:9%;"></button>
+      </div>
+    </section>
+
+    <section id="screenPlayerCount" class="screen" aria-label="Player count selection">
+      <div class="menu-screen-shell menu-screen" style="background-image:url('/assets/screens/player-count.png');">
+        <button id="playerCountOneBtn" class="hotspot" aria-label="1 Player" style="left:8%; width:40%; top:38%; height:18%;"></button>
+        <button id="playerCountTwoBtn" class="hotspot" aria-label="2 Player" style="right:8%; width:40%; top:38%; height:18%;"></button>
+        <button id="playerCountThreeBtn" class="hotspot" aria-label="3 Player" style="left:8%; width:40%; top:60%; height:18%;"></button>
+        <button id="playerCountFourBtn" class="hotspot" aria-label="4 Player" style="right:8%; width:40%; top:60%; height:18%;"></button>
+        <button id="playerCountBackBtn" class="hotspot" aria-label="Back" style="left:5%; width:18%; top:6%; height:8%;"></button>
+      </div>
+    </section>
+
+    <section id="screenTeamSelect" class="screen" aria-label="Team select">
+      <div class="menu-screen-shell menu-screen" style="background-image:url('/assets/screens/team-select.png');">
+        <button id="hitRetsba" class="hotspot" aria-label="Toggle RETSBA" style="left:8%; width:40%; top:36%; height:16%;"></button>
+        <button id="hitAbster" class="hotspot" aria-label="Toggle ABSTER" style="right:8%; width:40%; top:36%; height:16%;"></button>
+        <button id="hitPolly" class="hotspot" aria-label="Toggle POLLY" style="left:8%; width:40%; top:55%; height:16%;"></button>
+        <button id="hitPengu" class="hotspot" aria-label="Toggle PENGU" style="right:8%; width:40%; top:55%; height:16%;"></button>
+        <button id="teamSelectBackBtn" class="hotspot" aria-label="Back" style="left:5%; width:18%; top:6%; height:8%;"></button>
+        <button id="playerCountNextBtn" class="hotspot" aria-label="Continue" style="left:20%; right:20%; top:86%; height:9%;"></button>
       </div>
     </section>
 
@@ -2334,17 +2326,29 @@
     const ui = {
       appView: document.getElementById('appView'),
       screens: {
-        splash: document.getElementById('screenSplash'),
+        splash: document.getElementById('screenCover'),
         menu: document.getElementById('screenMenu'),
+        modeSelect: document.getElementById('screenModeSelect'),
         playerCount: document.getElementById('screenPlayerCount'),
+        teamSelect: document.getElementById('screenTeamSelect'),
         difficulty: document.getElementById('screenDifficulty'),
         tutorial: document.getElementById('screenTutorial'),
         loading: document.getElementById('screenLoading'),
         game: document.getElementById('screenGame')
       },
-      splashContinueArea: document.getElementById('splashContinueArea'),
+      splashContinueArea: document.getElementById('coverContinueArea'),
       menuPlayBtn: document.getElementById('menuPlayBtn'),
       menuHowBtn: document.getElementById('menuHowBtn'),
+      modeSelectShell: document.getElementById('modeSelectShell'),
+      modeOfflineBtn: document.getElementById('modeOfflineBtn'),
+      modeOnlineBtn: document.getElementById('modeOnlineBtn'),
+      modeBackBtn: document.getElementById('modeBackBtn'),
+      modeContinueBtn: document.getElementById('modeContinueBtn'),
+      playerCountOneBtn: document.getElementById('playerCountOneBtn'),
+      playerCountTwoBtn: document.getElementById('playerCountTwoBtn'),
+      playerCountThreeBtn: document.getElementById('playerCountThreeBtn'),
+      playerCountFourBtn: document.getElementById('playerCountFourBtn'),
+      teamSelectBackBtn: document.getElementById('teamSelectBackBtn'),
       menuSummaryPlayers: document.getElementById('menuSummaryPlayers'),
       menuSummaryDifficulty: document.getElementById('menuSummaryDifficulty'),
       menuSummaryControl: document.getElementById('menuSummaryControl'),
@@ -2878,16 +2882,16 @@
     }
 
     function renderAppScreen() {
-      ui.menuSummaryPlayers.textContent = `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`;
-      ui.menuSummaryDifficulty.textContent = capitalize(appState.matchConfig.botDifficulty);
-      ui.menuSummaryControl.textContent = getControlSummaryText(appState.matchConfig.controlMap);
+      if (ui.menuSummaryPlayers) ui.menuSummaryPlayers.textContent = `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`;
+      if (ui.menuSummaryDifficulty) ui.menuSummaryDifficulty.textContent = capitalize(appState.matchConfig.botDifficulty);
+      if (ui.menuSummaryControl) ui.menuSummaryControl.textContent = getControlSummaryText(appState.matchConfig.controlMap);
 
-      const playerCountButtons = ui.playerCountChoices.querySelectorAll('.choice-card');
+      const playerCountButtons = ui.playerCountChoices ? ui.playerCountChoices.querySelectorAll('.choice-card') : [];
       playerCountButtons.forEach(card => {
         card.classList.toggle('selected', Number(card.dataset.value) === appState.matchConfig.playerCount);
       });
 
-      const difficultyButtons = ui.difficultyChoices.querySelectorAll('.choice-card');
+      const difficultyButtons = ui.difficultyChoices ? ui.difficultyChoices.querySelectorAll('.choice-card') : [];
       difficultyButtons.forEach(card => {
         card.classList.toggle('selected', card.dataset.value === appState.matchConfig.botDifficulty);
       });
@@ -4726,6 +4730,7 @@
   const TEAM_START_ZONES = DOMINION_START_ZONES;
 
   const selectedTeams = new Set();
+  let selectedPlayerCount = null;
   function normalizeTeams(teams) {
     return TEAM_ORDER.filter(team => teams.has(team));
   }
@@ -4822,27 +4827,21 @@
   function continueFromDominionSelection() {
     console.log('Continue clicked');
     const selectedDominions = Array.from(selectedTeams).filter((team) => DOMINION_ORDER.includes(team));
-    if (selectedDominions.length === 0) {
+    if (selectedDominions.length !== selectedPlayerCount) {
       console.warn('No dominions selected.');
       return;
     }
     const selectedUiColors = selectedDominions.map((dominion) => DOMINION_TO_UI_COLOR[dominion]);
     const selectedInternalTeams = selectedDominions.map((dominion) => DOMINION_TO_INTERNAL_TEAM[dominion]);
-    const orderedStartZones = STARTING_CORNER_SEQUENCE.slice();
-    const selectedTeamStartZones = selectedDominions.reduce((acc, dominion, index) => {
+    const selectedTeamStartZones = selectedDominions.reduce((acc, dominion) => {
       const color = DOMINION_TO_UI_COLOR[dominion];
-      acc[color] = orderedStartZones[index] || DOMINION_TO_START_ZONE[dominion];
+      acc[color] = DOMINION_TO_START_ZONE[dominion];
       return acc;
     }, {});
-    const usedZones = new Set(Object.values(selectedTeamStartZones));
-    DOMINION_ORDER
-      .filter((dominion) => !selectedDominions.includes(dominion))
-      .forEach((dominion) => {
-        const color = DOMINION_TO_UI_COLOR[dominion];
-        const zone = orderedStartZones.find((candidate) => !usedZones.has(candidate)) || DOMINION_TO_START_ZONE[dominion];
-        selectedTeamStartZones[color] = zone;
-        usedZones.add(zone);
-      });
+    DOMINION_ORDER.filter((dominion) => !selectedDominions.includes(dominion)).forEach((dominion) => {
+      const color = DOMINION_TO_UI_COLOR[dominion];
+      selectedTeamStartZones[color] = DOMINION_TO_START_ZONE[dominion];
+    });
     const teamStartZonesByInternal = {};
     Object.entries(selectedTeamStartZones).forEach(([color, zone]) => {
       const internalTeam = COLOR_TO_INTERNAL_TEAM[color];
@@ -4914,7 +4913,7 @@
   }
 
   function canContinueForMode(teams, mode) {
-    if (mode === 'offline') return teams.size >= 1;
+    if (mode === 'offline') return teams.size >= 1 && teams.size === selectedPlayerCount;
     if (mode === 'online') return teams.size === 1;
     return false;
   }
@@ -4925,8 +4924,10 @@
       [ui.hitAbster, 'abster'],
       [ui.hitPengu, 'pengu']
     ].forEach(([btn, team]) => btn?.classList.toggle('selected', selectedTeams.has(team)));
-    ui.playerCountNextBtn.disabled = !canContinueForMode(selectedTeams, appState.playMode);
-    ui.playerCountNextBtn.classList.toggle('enabled', selectedTeams.size > 0);
+    if (ui.playerCountNextBtn) ui.playerCountNextBtn.classList.toggle('disabled', !canContinueForMode(selectedTeams, appState.playMode));
+    [ui.playerCountOneBtn, ui.playerCountTwoBtn, ui.playerCountThreeBtn, ui.playerCountFourBtn].forEach((btn, idx) => {
+      btn?.classList.toggle('selected', selectedPlayerCount === idx + 1);
+    });
   }
 
   const originalBuildSetupChoices = buildSetupChoices;
@@ -5384,9 +5385,17 @@
   beginMatchFlowFromTutorial = function () { if (appState.playMode === 'offline') return beginMatchFlowFromTutorialOriginal(); };
 
   ui.menuPlayBtn = replaceButtonWithoutListeners(ui.menuPlayBtn);
-  ui.menuPlayBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
-  ui.playModeBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('menu'); });
-  ui.playModeNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen(appState.playMode === 'offline' ? 'playerCount' : 'onlineSetup'); });
+  ui.menuPlayBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; setScreen('modeSelect'); });
+  ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
+  ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); alert('How To Play is coming soon.'); });
+  ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('menu'); });
+  ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; ui.modeSelectShell.style.backgroundImage = \"url('/assets/screens/mode-offline-selected.png')\"; });
+  ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); ui.modeSelectShell.style.backgroundImage = \"url('/assets/screens/mode-online-selected.png')\"; });
+  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode !== 'offline') return; setScreen('playerCount'); });
+  ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = 1; selectedTeams.clear(); renderDominionSelection(); setScreen('teamSelect'); });
+  ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = 2; selectedTeams.clear(); renderDominionSelection(); setScreen('teamSelect'); });
+  ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = 3; selectedTeams.clear(); renderDominionSelection(); setScreen('teamSelect'); });
+  ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = 4; selectedTeams.clear(); TEAM_ORDER.forEach(t=>selectedTeams.add(t)); renderDominionSelection(); setScreen('teamSelect'); });
   ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
   ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.createRoom(); });
   ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
@@ -5398,7 +5407,7 @@
 
   function toggleOfflineTeam(team) {
     if (selectedTeams.has(team)) selectedTeams.delete(team);
-    else selectedTeams.add(team);
+    else if (selectedTeams.size < selectedPlayerCount) selectedTeams.add(team);
   }
   function selectOnlineTeam(team) {
     TEAM_ORDER.forEach(entry => { if (entry !== team) selectedTeams.delete(entry); });
@@ -5417,6 +5426,7 @@
   ui.hitRetsba?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('retsba'); });
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
+  ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
   ui.playerCountNextBtn = replaceButtonWithoutListeners(ui.playerCountNextBtn);
   ui.playerCountNextBtn.addEventListener('click', () => {
     primeAudioAndPlayButton();
