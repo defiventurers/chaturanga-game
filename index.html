@@ -2310,7 +2310,7 @@
       botTurnPending: false,
       tutorialEntry: 'flow',
       botStatusText: '',
-      boardPerspective: 'green',
+      boardPerspective: 'default',
       matchConfig: {
         playerCount: 1,
         botDifficulty: 'medium',
@@ -3028,7 +3028,13 @@
   const COLOR_TO_INTERNAL_TEAM = { pink: 'yellow', yellow: 'yellow', red: 'red', green: 'green', blue: 'blue' };
   const INTERNAL_TEAM_TO_UI_COLOR = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
   const DOMINION_TO_START_ZONE = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
-  const STARTING_CORNER_SEQUENCE = ['lowerLeft', 'upperLeft', 'upperRight', 'lowerRight'];
+  const FIXED_TEAM_SETUP = {
+    green: { startingCorner: 'upperLeft', snowGuardDirection: 'right' },   // ABSTER
+    yellow: { startingCorner: 'upperRight', snowGuardDirection: 'down' },  // POLLY
+    red: { startingCorner: 'lowerLeft', snowGuardDirection: 'up' },        // RETSBA
+    blue: { startingCorner: 'lowerRight', snowGuardDirection: 'left' }     // PENGU
+  };
+  const STARTING_CORNER_SEQUENCE = PLAYERS.map(team => FIXED_TEAM_SETUP[team].startingCorner);
   const DOMINION_START_ZONES = DOMINION_TO_START_ZONE;
   const START_ZONES = {
     upperLeft: { king: [0, 3], backline: [[0, 2, 'elephant'], [0, 1, 'horse'], [0, 0, 'ship']], pawns: [[1,0],[1,1],[1,2],[1,3]] },
@@ -3039,23 +3045,10 @@
   const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
   const TEAM_TO_COLOR = DOMINION_TO_UI_COLOR;
   const TEAM_TO_GAME_TEAM = DOMINION_TO_INTERNAL_TEAM;
-  function getSnowGuardDirectionFromCorner(startingCorner) {
-    switch (startingCorner) {
-      case 'lowerLeft':
-      case 'bottom-left':
-        return { dirRow: 1, dirCol: 0, label: 'up' };
-      case 'upperLeft':
-      case 'top-left':
-        return { dirRow: 0, dirCol: 1, label: 'right' };
-      case 'upperRight':
-      case 'top-right':
-        return { dirRow: -1, dirCol: 0, label: 'down' };
-      case 'lowerRight':
-      case 'bottom-right':
-        return { dirRow: 0, dirCol: -1, label: 'left' };
-      default:
-        throw new Error(`Invalid starting corner for Snow Guard: ${startingCorner}`);
-    }
+  function getSnowGuardDirectionForTeam(team) {
+    const setup = FIXED_TEAM_SETUP[team];
+    if (!setup) throw new Error(`Invalid team for Snow Guard direction: ${team}`);
+    return setup.snowGuardDirection;
   }
 
   function buildOfflineMatchSetup(selectedInternalTeams) {
@@ -3063,16 +3056,15 @@
     (selectedInternalTeams || []).forEach(team => {
       if (PLAYERS.includes(team) && !uniqueHumans.includes(team)) uniqueHumans.push(team);
     });
-    const orderedTeams = [...uniqueHumans, ...PLAYERS.filter(team => !uniqueHumans.includes(team))];
     const teamConfigs = {};
-    orderedTeams.forEach((team, index) => {
-      const startingCorner = STARTING_CORNER_SEQUENCE[index];
+    PLAYERS.forEach((team) => {
+      const fixedSetup = FIXED_TEAM_SETUP[team];
       teamConfigs[team] = {
         teamId: team,
         name: TEAM_LABEL[team],
         controlType: uniqueHumans.includes(team) ? 'human' : 'bot',
-        startingCorner,
-        snowGuardDirection: getSnowGuardDirectionFromCorner(startingCorner).label
+        startingCorner: fixedSetup.startingCorner,
+        snowGuardDirection: getSnowGuardDirectionForTeam(team)
       };
     });
     return { humanTeams: uniqueHumans, teamConfigs };
@@ -3187,35 +3179,43 @@
     }
 
     // Board rotation is view-only. Canonical board coordinates and rules stay unchanged.
-    function getPerspectiveTeam() {
-      if (appState.playMode === 'online' && appState.online.localTeam) return appState.online.localTeam;
+    function getBoardViewOrientation() {
+      if (appState.playMode === 'online') return 'default';
       if (appState.playMode === 'offline') {
-        return appState.matchConfig.humanTeams?.[0] || 'green';
+        const humans = appState.matchConfig.humanTeams || [];
+        if (humans.length !== 1) return 'default';
+        switch (humans[0]) {
+          case 'red': return 'default';      // RETSBA at lower-left
+          case 'green': return 'rotate-ccw'; // ABSTER from upper-left to lower-left
+          case 'yellow': return 'rotate-180';// POLLY from upper-right to lower-left
+          case 'blue': return 'rotate-cw';   // PENGU from lower-right to lower-left
+          default: return 'default';
+        }
       }
-      return 'green';
+      return 'default';
     }
 
-    function canonicalFromView(viewRow, viewCol, perspectiveTeam = getPerspectiveTeam()) {
-      if (perspectiveTeam === 'blue') return { row: 7 - viewRow, col: 7 - viewCol };
-      if (perspectiveTeam === 'red') return { row: 7 - viewCol, col: viewRow };
-      if (perspectiveTeam === 'yellow') return { row: viewCol, col: 7 - viewRow };
+    function canonicalFromView(viewRow, viewCol, orientation = getBoardViewOrientation()) {
+      if (orientation === 'rotate-180') return { row: 7 - viewRow, col: 7 - viewCol };
+      if (orientation === 'rotate-cw') return { row: viewCol, col: 7 - viewRow };
+      if (orientation === 'rotate-ccw') return { row: 7 - viewCol, col: viewRow };
       return { row: viewRow, col: viewCol };
     }
 
     function buildBoardGrid() {
-      const perspectiveTeam = getPerspectiveTeam();
+      const orientation = getBoardViewOrientation();
       ui.boardGrid.innerHTML = '';
       for (let viewRow = ROWS - 1; viewRow >= 0; viewRow--) {
         const coord = document.createElement('div');
         coord.className = 'coord';
-        const canonicalLeft = canonicalFromView(viewRow, 0, perspectiveTeam);
+        const canonicalLeft = canonicalFromView(viewRow, 0, orientation);
         coord.textContent = canonicalLeft.row + 1;
         ui.boardGrid.appendChild(coord);
 
         for (let viewCol = 0; viewCol < COLS; viewCol++) {
           const cell = document.createElement('button');
           cell.type = 'button';
-          const canonical = canonicalFromView(viewRow, viewCol, perspectiveTeam);
+          const canonical = canonicalFromView(viewRow, viewCol, orientation);
           cell.className = `cell ${(canonical.row + canonical.col) % 2 === 0 ? 'light' : 'dark'}`;
           cell.dataset.row = canonical.row;
           cell.dataset.col = canonical.col;
@@ -3233,7 +3233,7 @@
       for (let viewCol = 0; viewCol < COLS; viewCol++) {
         const coord = document.createElement('div');
         coord.className = 'coord';
-        const canonicalBottom = canonicalFromView(0, viewCol, perspectiveTeam);
+        const canonicalBottom = canonicalFromView(0, viewCol, orientation);
         coord.textContent = String.fromCharCode(97 + canonicalBottom.col);
         ui.boardGrid.appendChild(coord);
       }
@@ -3362,8 +3362,7 @@
 
     function getTeamStartZone(team) {
       if (state.teamConfigs?.[team]?.startingCorner) return state.teamConfigs[team].startingCorner;
-      const teamIndex = PLAYERS.indexOf(team);
-      return teamIndex >= 0 ? STARTING_CORNER_SEQUENCE[teamIndex] : null;
+      return FIXED_TEAM_SETUP[team]?.startingCorner || null;
     }
 
     function getPawnForwardVector(team) {
@@ -4131,9 +4130,9 @@
 
     function render() {
       if (appState.screen !== 'game') return;
-      const perspective = getPerspectiveTeam();
-      if (appState.boardPerspective !== perspective) {
-        appState.boardPerspective = perspective;
+      const orientation = getBoardViewOrientation();
+      if (appState.boardPerspective !== orientation) {
+        appState.boardPerspective = orientation;
         buildBoardGrid();
       }
       renderBoard();
