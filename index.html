@@ -1810,9 +1810,10 @@
     .team-choice-btn.selected { border-color: rgba(255,255,255,.45); box-shadow: 0 0 0 3px rgba(115,231,255,.22); transform: translateY(-1px); }
 
 
-    .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100vh; background-size: cover; background-position: center; background-repeat: no-repeat; }
+    .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100vh; background-size: cover; background-position: center; background-repeat: no-repeat; overflow: hidden; z-index: 9999; }
     .menu-screen-shell { position: fixed; inset: 0; }
-    .hotspot { position: absolute; background: transparent; border: none; cursor: pointer; }
+    .hotspot { position: absolute; background: transparent; border: none; padding: 0; cursor: pointer; }
+    .hotspot:focus { outline: none; }
     .hotspot.disabled { cursor: not-allowed; }
     .hotspot.selected::after { content:""; position:absolute; inset:0; border: 3px solid rgba(115,231,255,.9); border-radius: 14px; box-shadow: 0 0 0 3px rgba(115,231,255,.26); }
 
@@ -2871,6 +2872,9 @@
     }
 
     function setScreen(nextScreen) {
+      if (nextScreen === 'difficulty' || nextScreen === 'tutorial') {
+        nextScreen = 'teamSelect';
+      }
       appState.screen = nextScreen;
       Object.entries(ui.screens).forEach(([key, element]) => {
         element.classList.toggle('active', key === nextScreen);
