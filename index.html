@@ -2144,6 +2144,14 @@
   </div>
 
   <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((error) => {
+          console.warn('Service worker registration failed:', error);
+        });
+      });
+    }
+
     const ROWS = 8;
     const COLS = 8;
     const PLAYERS = ['green', 'red', 'blue', 'yellow'];
@@ -2209,23 +2217,32 @@
         ''
       ).toLowerCase().trim();
 
-      if (rawType === 'pawn' || rawType.includes('pawn')) {
+      const typeAliasMap = {
+        p: 'pawn',
+        s: 'ship',
+        e: 'elephant',
+        h: 'horse',
+        k: 'king'
+      };
+      const normalizedType = typeAliasMap[rawType] || rawType;
+
+      if (normalizedType === 'pawn' || normalizedType.includes('pawn') || normalizedType.includes('guard')) {
         return 'snow-guard';
       }
 
-      if (rawType === 'ship' || rawType.includes('ship')) {
+      if (normalizedType === 'ship' || normalizedType.includes('ship') || normalizedType.includes('icebreaker')) {
         return 'icebreaker';
       }
 
-      if (rawType === 'horse' || rawType.includes('horse')) {
+      if (normalizedType === 'horse' || normalizedType.includes('horse') || normalizedType.includes('unicorn') || normalizedType.includes('knight')) {
         return 'aurora-unicorn';
       }
 
-      if (rawType === 'elephant' || rawType.includes('elephant')) {
+      if (normalizedType === 'elephant' || normalizedType.includes('elephant') || normalizedType.includes('mammoth') || normalizedType.includes('rook')) {
         return 'war-mammoth';
       }
 
-      if (rawType === 'king' || rawType.includes('king')) {
+      if (normalizedType === 'king' || normalizedType.includes('king')) {
         return 'frost-king';
       }
 
