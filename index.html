@@ -3314,9 +3314,7 @@
       state.dice.lockedDieIndex = null;
       sound.playSelectSound();
 
-      const sameValueDice = availableDice.length === 2 && state.dice.values[availableDice[0]] === state.dice.values[availableDice[1]];
-      if (availableDice.length === 1 || sameValueDice) {
-        // UX optimization: when both dice are functionally identical, auto-select the first unused die.
+      if (availableDice.length === 1) {
         chooseDieForSelection(availableDice[0]);
       } else {
         render();
@@ -3368,13 +3366,12 @@
       return teamIndex >= 0 ? STARTING_CORNER_SEQUENCE[teamIndex] : null;
     }
 
-    function getPawnForwardVector(team, stateRef = state) {
-      const teamConfig = stateRef.teamConfigs?.[team];
-      const startingCorner = teamConfig?.startingCorner || getTeamStartZone(team);
-      return {
-        ...getSnowGuardDirectionFromCorner(startingCorner),
-        startingCorner
-      };
+    function getPawnForwardVector(team) {
+      if (team === 'green') return { dirRow: 1, dirCol: 0, label: 'up' };
+      if (team === 'yellow') return { dirRow: 0, dirCol: 1, label: 'right' };
+      if (team === 'blue') return { dirRow: 0, dirCol: -1, label: 'left' };
+      if (team === 'red') return { dirRow: -1, dirCol: 0, label: 'down' };
+      return { dirRow: 0, dirCol: 0, label: 'none' };
     }
 
     function getPossibleTargetsOnBoard(board, row, col, type, team, stateRef = state) {
@@ -3474,7 +3471,6 @@
       console.log('SnowGuardDebug', {
         teamId: team,
         square: toCoord(row, col),
-        assignedStartingCorner: direction.startingCorner,
         direction: direction.label,
         legalMoves
       });
