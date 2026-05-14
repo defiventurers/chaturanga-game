@@ -3025,6 +3025,7 @@
   const INTERNAL_TEAM_TO_UI_COLOR = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
   const DOMINION_TO_START_ZONE = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
   const COLOR_TO_START_ZONE = { pink: 'upperLeft', yellow: 'upperLeft', green: 'upperRight', red: 'lowerLeft', blue: 'lowerRight' };
+  const STARTING_CORNER_SEQUENCE = ['lowerLeft', 'upperLeft', 'upperRight', 'lowerRight'];
   const DOMINION_START_ZONES = DOMINION_TO_START_ZONE;
   const COLOR_START_ZONES = COLOR_TO_START_ZONE;
   const START_ZONES = {
@@ -3307,9 +3308,8 @@
 
     function getTeamStartZone(team) {
       if (appState.playMode === 'offline') {
-        const savedSelectedTeamStartZones = JSON.parse(localStorage.getItem('selectedTeamStartZones') || '{}');
-        const uiColor = INTERNAL_TEAM_TO_UI_COLOR[team];
-        if (uiColor && savedSelectedTeamStartZones[uiColor]) return savedSelectedTeamStartZones[uiColor];
+        const savedTeamStartZonesByInternal = JSON.parse(localStorage.getItem('teamStartZonesByInternal') || '{}');
+        if (savedTeamStartZonesByInternal[team]) return savedTeamStartZonesByInternal[team];
       }
       return COLOR_TO_START_ZONE[team];
     }
@@ -4156,7 +4156,9 @@
         line = appState.botStatusText || `${TEAM_LABEL[team]} bot is taking its turn.`;
         meta.push('Bot turn');
       } else if (!state.dice.rolled) {
-        line = `Roll the dice to activate pieces for ${TEAM_LABEL[team]}.`;
+        line = isBotPlayer(team)
+          ? `${TEAM_LABEL[team]} is bot-controlled and will roll automatically.`
+          : `Roll the dice to activate pieces for ${TEAM_LABEL[team]}.`;
         meta.push(controller);
         meta.push('Awaiting roll');
       } else {
@@ -4781,7 +4783,7 @@
     }
     const selectedUiColors = selectedDominions.map((dominion) => DOMINION_TO_UI_COLOR[dominion]);
     const selectedInternalTeams = selectedDominions.map((dominion) => DOMINION_TO_INTERNAL_TEAM[dominion]);
-    const orderedStartZones = ['lowerLeft', 'lowerRight', 'upperRight', 'upperLeft'];
+    const orderedStartZones = STARTING_CORNER_SEQUENCE.slice();
     const selectedTeamStartZones = selectedDominions.reduce((acc, dominion, index) => {
       const color = DOMINION_TO_UI_COLOR[dominion];
       acc[color] = orderedStartZones[index] || COLOR_START_ZONES[color];
