@@ -3062,6 +3062,7 @@
       const selectedDominions = JSON.parse(localStorage.getItem('selectedDominions') || '[]');
       const offlinePlayers = JSON.parse(localStorage.getItem('offlinePlayers') || '[]');
       const savedSelectedTeamStartZones = JSON.parse(localStorage.getItem('selectedTeamStartZones') || '{}');
+      const savedTeamStartZonesByInternal = JSON.parse(localStorage.getItem('teamStartZonesByInternal') || '{}');
       console.log('INIT selectedInternalTeams:', selectedInternalTeams);
       console.log('INIT selectedDominions:', selectedDominions);
       console.log('INIT offlinePlayers:', offlinePlayers);
@@ -3083,7 +3084,7 @@
         const activeTeams = ALL_ENGINE_TEAMS.slice();
         const playersByTeam = {};
         ALL_ENGINE_TEAMS.forEach((team) => {
-          const isHuman = true;
+          const isHuman = humanTeams.includes(team);
           playersByTeam[team] = {
             id: team,
             color: team,
@@ -3113,7 +3114,8 @@
 
         ALL_ENGINE_TEAMS.forEach(team => {
           const color = INTERNAL_TEAM_TO_UI_COLOR[team];
-          placeTeam(team, savedSelectedTeamStartZones[color] || COLOR_TO_START_ZONE[team]);
+          const resolvedZone = savedTeamStartZonesByInternal[team] || savedSelectedTeamStartZones[color] || COLOR_TO_START_ZONE[team];
+          placeTeam(team, resolvedZone);
         });
         return;
       }
@@ -4712,9 +4714,9 @@
     if (!Array.isArray(selectedInternalTeams) || selectedInternalTeams.length === 0) throw new Error('No selected internal teams passed into offline match.');
     const activeTurnOrder = INTERNAL_TURN_ORDER.slice();
     console.log('Active turn order:', activeTurnOrder);
-    appState.matchConfig.playerCount = PLAYERS.length;
-    appState.matchConfig.humanTeams = PLAYERS.slice();
-    appState.matchConfig.controlMap = getControlMapForHumanTeams(PLAYERS);
+    appState.matchConfig.playerCount = selectedInternalTeams.length;
+    appState.matchConfig.humanTeams = selectedInternalTeams.slice();
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(selectedInternalTeams);
 
     state.turnOrder = activeTurnOrder;
     state.activeTeams = PLAYERS.slice();
@@ -4772,7 +4774,7 @@
 
   function continueFromDominionSelection() {
     console.log('Continue clicked');
-    const selectedDominions = DOMINION_ORDER.filter((team) => selectedTeams.has(team));
+    const selectedDominions = Array.from(selectedTeams).filter((team) => DOMINION_ORDER.includes(team));
     if (selectedDominions.length === 0) {
       console.warn('No dominions selected.');
       return;
@@ -4785,6 +4787,20 @@
       acc[color] = orderedStartZones[index] || COLOR_START_ZONES[color];
       return acc;
     }, {});
+    const usedZones = new Set(Object.values(selectedTeamStartZones));
+    DOMINION_ORDER
+      .filter((dominion) => !selectedDominions.includes(dominion))
+      .forEach((dominion) => {
+        const color = DOMINION_TO_UI_COLOR[dominion];
+        const zone = orderedStartZones.find((candidate) => !usedZones.has(candidate)) || COLOR_START_ZONES[color];
+        selectedTeamStartZones[color] = zone;
+        usedZones.add(zone);
+      });
+    const teamStartZonesByInternal = {};
+    Object.entries(selectedTeamStartZones).forEach(([color, zone]) => {
+      const internalTeam = COLOR_TO_INTERNAL_TEAM[color];
+      if (internalTeam) teamStartZonesByInternal[internalTeam] = zone;
+    });
     const offlinePlayers = selectedDominions.map((dominion, index) => {
       const internalTeam = DOMINION_TO_INTERNAL_TEAM[dominion];
       const uiColor = DOMINION_TO_UI_COLOR[dominion];
@@ -4805,6 +4821,7 @@
     localStorage.setItem('selectedTeams', JSON.stringify(selectedInternalTeams));
     localStorage.setItem('offlineSelectedTeams', JSON.stringify(selectedInternalTeams));
     localStorage.setItem('selectedTeamStartZones', JSON.stringify(selectedTeamStartZones));
+    localStorage.setItem('teamStartZonesByInternal', JSON.stringify(teamStartZonesByInternal));
     localStorage.setItem('offlinePlayers', JSON.stringify(offlinePlayers));
     localStorage.setItem('offlineMode', 'true');
     localStorage.setItem('playerCount', String(selectedInternalTeams.length));
