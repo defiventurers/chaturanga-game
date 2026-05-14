@@ -1816,8 +1816,10 @@
       margin: 0;
       padding: 0;
       overflow-x: hidden;
-      background: #001833;
+      background: #061b3a;
     }
+    .cover-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100vh; background: #061b3a; overflow: hidden; z-index: 99999; touch-action: manipulation; }
+    .cover-screen img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; user-select: none; -webkit-user-drag: none; }
     .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100vh; background-size: cover; background-position: center center; background-repeat: no-repeat; overflow: hidden; z-index: 9999; touch-action: manipulation; }
     .menu-screen-shell { position: fixed; inset: 0; }
     .hotspot { position: absolute; background: rgba(255, 0, 0, 0); border: 0; padding: 0; z-index: 3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -1830,7 +1832,7 @@
 <body>
   <div id="appView" class="app-view">
     <section id="screenCover" class="screen active" aria-label="Cover screen">
-      <div id="coverContinueArea" class="menu-screen" style="background-image:url('/assets/screens/cover.png');" role="button" tabindex="0" aria-label="Tap or click to continue"></div>
+      <div id="coverContinueArea" class="cover-screen" role="button" tabindex="0" aria-label="Tap or click to continue"><img src="/assets/screens/cover.png" alt="Arctic Dominion Cover" /></div>
     </section>
 
     <section id="screenMenu" class="screen" aria-label="Main menu">
