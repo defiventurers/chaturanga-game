@@ -3228,11 +3228,11 @@
   const DOMINION_TO_INTERNAL_TEAM = { polly: 'yellow', retsba: 'red', abster: 'green', pengu: 'blue' };
   const COLOR_TO_INTERNAL_TEAM = { pink: 'yellow', yellow: 'yellow', red: 'red', green: 'green', blue: 'blue' };
   const INTERNAL_TEAM_TO_UI_COLOR = { yellow: 'pink', red: 'red', green: 'green', blue: 'blue' };
-  const DOMINION_TO_START_ZONE = { polly: 'upperLeft', abster: 'upperRight', retsba: 'lowerLeft', pengu: 'lowerRight' };
+  const DOMINION_TO_START_ZONE = { retsba: 'upperLeft', abster: 'upperRight', polly: 'lowerLeft', pengu: 'lowerRight' };
   const FIXED_TEAM_SETUP = {
-    green: { startingCorner: 'upperLeft', snowGuardDirection: 'right' },   // ABSTER
-    yellow: { startingCorner: 'upperRight', snowGuardDirection: 'down' },  // POLLY
-    red: { startingCorner: 'lowerLeft', snowGuardDirection: 'up' },        // RETSBA
+    red: { startingCorner: 'upperLeft', snowGuardDirection: 'up' },        // RETSBA
+    green: { startingCorner: 'upperRight', snowGuardDirection: 'right' },  // ABSTER
+    yellow: { startingCorner: 'lowerLeft', snowGuardDirection: 'down' },   // POLLY
     blue: { startingCorner: 'lowerRight', snowGuardDirection: 'left' }     // PENGU
   };
   const STARTING_CORNER_SEQUENCE = PLAYERS.map(team => FIXED_TEAM_SETUP[team].startingCorner);
