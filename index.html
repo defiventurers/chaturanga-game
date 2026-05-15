@@ -1811,38 +1811,76 @@
 
 
     html, body, #root {
-      width: 100%;
-      min-height: 100%;
       margin: 0;
       padding: 0;
-      overflow-x: hidden;
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      overflow: hidden;
       background: #061b3a;
     }
-    .cover-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100vh; background: #061b3a; overflow: hidden; z-index: 99999; touch-action: manipulation; }
-    .cover-screen img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; user-select: none; -webkit-user-drag: none; }
-    .menu-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100vh; background: #061b3a; overflow: hidden; z-index: 99999; touch-action: manipulation; }
-    .menu-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; user-select: none; -webkit-user-drag: none; }
+    .menu-screen {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      min-height: 100vh;
+      background: #061b3a;
+      overflow: hidden;
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    .menu-stage {
+      position: relative;
+      height: 100dvh;
+      max-height: 100dvh;
+      width: auto;
+      aspect-ratio: 9 / 16;
+      max-width: 100vw;
+      overflow: hidden;
+    }
+    .menu-art {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center center;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
     .menu-screen-shell { position: fixed; inset: 0; }
-    .hotspot { position: absolute; background: rgba(255, 0, 0, 0); border: 0; padding: 0; z-index: 3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .hotspot { position: absolute; background: rgba(255, 0, 0, 0); border: 0; padding: 0; z-index: 5; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .hotspot:focus { outline: none; }
     .hotspot.disabled { cursor: not-allowed; }
     .hotspot.selected::after { content:""; position:absolute; inset:0; border: 3px solid rgba(115,231,255,.9); border-radius: 14px; box-shadow: 0 0 0 3px rgba(115,231,255,.26); }
-    .play-now-hotspot { left: 14%; right: 14%; top: 72%; height: 10%; }
-    .how-to-play-hotspot { left: 23%; right: 23%; top: 84%; height: 7%; }
+    .play-now-hotspot { left: 14%; top: 72%; width: 72%; height: 10%; }
+    .how-to-play-hotspot { left: 23%; top: 84%; width: 54%; height: 7%; }
 
 </style>
 </head>
 <body>
   <div id="appView" class="app-view">
     <section id="screenCover" class="screen active" aria-label="Cover screen">
-      <div id="coverContinueArea" class="cover-screen" role="button" tabindex="0" aria-label="Tap or click to continue"><img src="/assets/screens/cover.png" alt="Arctic Dominion Cover" /></div>
+      <div id="coverContinueArea" class="menu-screen" role="button" tabindex="0" aria-label="Tap or click to continue">
+        <div class="menu-stage">
+          <img class="menu-art" src="/assets/screens/cover.png" alt="Arctic Dominion Cover" />
+        </div>
+      </div>
     </section>
 
     <section id="screenMenu" class="screen" aria-label="Main menu">
       <div class="menu-screen-shell menu-screen">
-        <img class="menu-art" src="/assets/screens/main-menu.png" alt="Arctic Dominion Main Menu" />
-        <button id="menuPlayBtn" class="hotspot play-now-hotspot" aria-label="Play Now"></button>
-        <button id="menuHowBtn" class="hotspot how-to-play-hotspot" aria-label="How To Play"></button>
+        <div class="menu-stage">
+          <img class="menu-art" src="/assets/screens/main-menu.png" alt="Arctic Dominion Main Menu" />
+          <button id="menuPlayBtn" class="hotspot play-now-hotspot" aria-label="Play Now"></button>
+          <button id="menuHowBtn" class="hotspot how-to-play-hotspot" aria-label="How To Play"></button>
+        </div>
       </div>
     </section>
 
