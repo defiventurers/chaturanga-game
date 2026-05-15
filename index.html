@@ -1902,20 +1902,27 @@
       pointer-events: none;
       display: none;
     }
-    .double-tap-hint {
+    .player-count-continue-button {
       position: absolute;
-      left: 8%;
-      right: 8%;
-      bottom: 2%;
-      z-index: 20;
-      text-align: center;
+      left: 24%;
+      top: 14%;
+      width: 52%;
+      height: 5.5%;
+      z-index: 80;
+      border: 2px solid rgba(180, 240, 255, 0.95);
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(0, 170, 255, 0.95), rgba(0, 75, 180, 0.95));
       color: white;
-      font-weight: 800;
-      font-size: clamp(13px, 3.8vw, 18px);
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
-      pointer-events: none;
+      font-weight: 900;
+      font-size: clamp(14px, 4vw, 22px);
+      letter-spacing: 1px;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 0 16px rgba(0, 210, 255, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
       display: none;
     }
+    .player-count-continue-button:active { transform: scale(0.97); }
 
 </style>
 </head>
@@ -1974,12 +1981,12 @@
         <div class="menu-stage">
           <img class="menu-art" src="/assets/screens/player-count.png" alt="Choose Player Count" />
           <div id="playerCountOutline" class="selected-player-outline" aria-hidden="true"></div>
-          <div id="playerCountHint" class="double-tap-hint" aria-live="polite"></div>
           <button id="playerCountOneBtn" class="hotspot player-one-hotspot" aria-label="1 Player"></button>
           <button id="playerCountTwoBtn" class="hotspot player-two-hotspot" aria-label="2 Player"></button>
           <button id="playerCountThreeBtn" class="hotspot player-three-hotspot" aria-label="3 Player"></button>
           <button id="playerCountFourBtn" class="hotspot player-four-hotspot" aria-label="4 Player"></button>
           <button id="playerCountBackBtn" class="hotspot player-count-back-hotspot" aria-label="Back"></button>
+          <button id="playerCountContinueBtn" class="player-count-continue-button" aria-label="Continue to Team Select">CONTINUE</button>
         </div>
       </div>
     </section>
@@ -2506,7 +2513,7 @@
       difficultyChoices: document.getElementById('difficultyChoices'),
       playerCountBackBtn: document.getElementById('playerCountBackBtn'),
       playerCountOutline: document.getElementById('playerCountOutline'),
-      playerCountHint: document.getElementById('playerCountHint'),
+      playerCountContinueBtn: document.getElementById('playerCountContinueBtn'),
       playerCountNextBtn: document.getElementById('playerCountNextBtn'),
       difficultyBackBtn: document.getElementById('difficultyBackBtn'),
       difficultyNextBtn: document.getElementById('difficultyNextBtn'),
@@ -5126,33 +5133,11 @@
         ui.playerCountOutline.style.display = 'none';
       }
     }
-    if (ui.playerCountHint) {
-      if (selectedPlayerCount) {
-        ui.playerCountHint.textContent = `Tap ${selectedPlayerCount} Player again to continue`;
-        ui.playerCountHint.style.display = 'block';
-      } else {
-        ui.playerCountHint.style.display = 'none';
-      }
-    }
+    if (ui.playerCountContinueBtn) ui.playerCountContinueBtn.style.display = selectedPlayerCount ? 'block' : 'none';
   }
 
   function handlePlayerCountTap(count) {
     if (![1, 2, 3, 4].includes(count)) return;
-    console.log('Player count tapped', {
-      count,
-      selectedPlayerCount,
-      same: selectedPlayerCount === count
-    });
-
-    if (selectedPlayerCount === count) {
-      selectedTeams.clear();
-      syncOfflineHumanTeams();
-      console.log('Moving to teamSelect');
-      setScreen('teamSelect');
-      renderDominionSelection();
-      return;
-    }
-
     selectedPlayerCount = Number(count);
     renderDominionSelection();
   }
@@ -5672,6 +5657,13 @@
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
   ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
+  ui.playerCountContinueBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    if (!selectedPlayerCount) return;
+    selectedTeams.clear();
+    setScreen('teamSelect');
+    renderDominionSelection();
+  });
   ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
   ui.playerCountNextBtn = replaceButtonWithoutListeners(ui.playerCountNextBtn);
   ui.playerCountNextBtn.addEventListener('click', () => {
