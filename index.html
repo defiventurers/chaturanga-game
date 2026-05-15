@@ -1867,6 +1867,34 @@
     .mode-continue-hotspot { left: 13%; top: 76%; width: 74%; height: 9%; }
     .mode-back-hotspot { left: 23%; top: 88%; width: 54%; height: 7%; }
     .mode-top-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
+    .player-one-hotspot { left: 8%; top: 22%; width: 84%; height: 16%; }
+    .player-two-hotspot { left: 8%; top: 40%; width: 84%; height: 16%; }
+    .player-three-hotspot { left: 8%; top: 58%; width: 84%; height: 16%; }
+    .player-four-hotspot { left: 8%; top: 76%; width: 84%; height: 16%; }
+    .player-count-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
+    .selected-player-outline {
+      position: absolute;
+      z-index: 6;
+      border: 3px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 0 18px rgba(0, 220, 255, 0.9);
+      border-radius: 24px;
+      pointer-events: none;
+      display: none;
+    }
+    .double-tap-hint {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: 2.5%;
+      z-index: 8;
+      text-align: center;
+      color: white;
+      font-weight: 800;
+      font-size: clamp(14px, 4vw, 20px);
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+      display: none;
+    }
 
 </style>
 </head>
@@ -1917,12 +1945,17 @@
     </section>
 
     <section id="screenPlayerCount" class="screen" aria-label="Player count selection">
-      <div class="menu-screen-shell menu-screen" style="background-image:url('/assets/screens/player-count.png');">
-        <button id="playerCountOneBtn" class="hotspot" aria-label="1 Player" style="left:8%; width:40%; top:38%; height:18%;"></button>
-        <button id="playerCountTwoBtn" class="hotspot" aria-label="2 Player" style="right:8%; width:40%; top:38%; height:18%;"></button>
-        <button id="playerCountThreeBtn" class="hotspot" aria-label="3 Player" style="left:8%; width:40%; top:60%; height:18%;"></button>
-        <button id="playerCountFourBtn" class="hotspot" aria-label="4 Player" style="right:8%; width:40%; top:60%; height:18%;"></button>
-        <button id="playerCountBackBtn" class="hotspot" aria-label="Back" style="left:5%; width:18%; top:6%; height:8%;"></button>
+      <div class="menu-screen-shell menu-screen">
+        <div class="menu-stage">
+          <img class="menu-art" src="/assets/screens/player-count.png" alt="Choose Player Count" />
+          <div id="playerCountOutline" class="selected-player-outline" aria-hidden="true"></div>
+          <div id="playerCountHint" class="double-tap-hint" aria-live="polite"></div>
+          <button id="playerCountOneBtn" class="hotspot player-one-hotspot" aria-label="1 Player"></button>
+          <button id="playerCountTwoBtn" class="hotspot player-two-hotspot" aria-label="2 Player"></button>
+          <button id="playerCountThreeBtn" class="hotspot player-three-hotspot" aria-label="3 Player"></button>
+          <button id="playerCountFourBtn" class="hotspot player-four-hotspot" aria-label="4 Player"></button>
+          <button id="playerCountBackBtn" class="hotspot player-count-back-hotspot" aria-label="Back"></button>
+        </div>
       </div>
     </section>
 
@@ -2442,6 +2475,8 @@
       hitPengu: document.getElementById('hitPengu'),
       difficultyChoices: document.getElementById('difficultyChoices'),
       playerCountBackBtn: document.getElementById('playerCountBackBtn'),
+      playerCountOutline: document.getElementById('playerCountOutline'),
+      playerCountHint: document.getElementById('playerCountHint'),
       playerCountNextBtn: document.getElementById('playerCountNextBtn'),
       difficultyBackBtn: document.getElementById('difficultyBackBtn'),
       difficultyNextBtn: document.getElementById('difficultyNextBtn'),
@@ -4826,7 +4861,15 @@
   const TEAM_START_ZONES = DOMINION_START_ZONES;
 
   const selectedTeams = new Set();
+  let selectedMode = 'offline';
   let selectedPlayerCount = null;
+
+  function renderModeSelectArt() {
+    if (!ui.modeSelectArt) return;
+    ui.modeSelectArt.src = selectedMode === 'online'
+      ? '/assets/screens/mode-online-selected.png'
+      : '/assets/screens/mode-offline-selected.png';
+  }
 
   function goToTeamSelect(count) {
     if (![1, 2, 3, 4].includes(count)) return;
@@ -5033,6 +5076,44 @@
     [ui.playerCountOneBtn, ui.playerCountTwoBtn, ui.playerCountThreeBtn, ui.playerCountFourBtn].forEach((btn, idx) => {
       btn?.classList.toggle('selected', selectedPlayerCount === idx + 1);
     });
+    if (ui.playerCountOutline) {
+      const selectedMap = {
+        1: { left: '8%', top: '22%', width: '84%', height: '16%' },
+        2: { left: '8%', top: '40%', width: '84%', height: '16%' },
+        3: { left: '8%', top: '58%', width: '84%', height: '16%' },
+        4: { left: '8%', top: '76%', width: '84%', height: '16%' }
+      };
+      const hotspotBox = selectedMap[selectedPlayerCount];
+      if (hotspotBox) {
+        ui.playerCountOutline.style.left = hotspotBox.left;
+        ui.playerCountOutline.style.top = hotspotBox.top;
+        ui.playerCountOutline.style.width = hotspotBox.width;
+        ui.playerCountOutline.style.height = hotspotBox.height;
+        ui.playerCountOutline.style.display = 'block';
+      } else {
+        ui.playerCountOutline.style.display = 'none';
+      }
+    }
+    if (ui.playerCountHint) {
+      if (selectedPlayerCount) {
+        ui.playerCountHint.textContent = `Tap ${selectedPlayerCount} Player again to continue`;
+        ui.playerCountHint.style.display = 'block';
+      } else {
+        ui.playerCountHint.style.display = 'none';
+      }
+    }
+  }
+
+  function handlePlayerCountTap(count) {
+    if (![1, 2, 3, 4].includes(count)) return;
+    if (selectedPlayerCount === count) {
+      selectedTeams.clear();
+      setScreen('teamSelect');
+      renderDominionSelection();
+      return;
+    }
+    selectedPlayerCount = count;
+    renderDominionSelection();
   }
 
   const originalBuildSetupChoices = buildSetupChoices;
@@ -5490,7 +5571,15 @@
   beginMatchFlowFromTutorial = function () { if (appState.playMode === 'offline') return beginMatchFlowFromTutorialOriginal(); };
 
   ui.menuPlayBtn = replaceButtonWithoutListeners(ui.menuPlayBtn);
-  ui.menuPlayBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; if (ui.modeSelectArt) ui.modeSelectArt.src = '/assets/screens/mode-offline-selected.png'; setScreen('modeSelect'); });
+  ui.menuPlayBtn.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    appState.playMode = 'offline';
+    selectedMode = 'offline';
+    selectedPlayerCount = null;
+    renderModeSelectArt();
+    setScreen('modeSelect');
+    renderDominionSelection();
+  });
   ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
   ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('howToPlay'); });
   ui.howToPlayBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
@@ -5504,13 +5593,13 @@
     clearTimeout(modeToastTimer);
     modeToastTimer = setTimeout(() => { ui.modeToast?.classList.remove('show'); }, 1600);
   }
-  ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; if (ui.modeSelectArt) ui.modeSelectArt.src = '/assets/screens/mode-offline-selected.png'; });
-  ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); showModeToast('Online Room coming soon'); });
-  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode === 'offline') { setScreen('playerCount'); return; } showModeToast('Online Room coming soon'); });
-  ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(1); });
-  ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(2); });
-  ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(3); });
-  ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(4); });
+  ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; selectedMode = 'offline'; renderModeSelectArt(); });
+  ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'online'; selectedMode = 'online'; renderModeSelectArt(); });
+  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; setScreen('playerCount'); renderDominionSelection(); });
+  ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
+  ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
+  ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
+  ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(4); });
   ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
   ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.createRoom(); });
   ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
@@ -5541,6 +5630,7 @@
   ui.hitRetsba?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('retsba'); });
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
+  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
   ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
   ui.playerCountNextBtn = replaceButtonWithoutListeners(ui.playerCountNextBtn);
   ui.playerCountNextBtn.addEventListener('click', () => {
