@@ -4320,7 +4320,8 @@
     function render() {
       if (appState.screen !== 'game') return;
       const orientation = getBoardViewOrientation();
-      if (appState.boardPerspective !== orientation) {
+      const needsGridBuild = appState.boardPerspective !== orientation || !ui.boardGrid?.querySelector('.cell');
+      if (needsGridBuild) {
         appState.boardPerspective = orientation;
         buildBoardGrid();
       }
