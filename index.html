@@ -1829,7 +1829,7 @@
       overflow: hidden;
       z-index: 99999;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       touch-action: manipulation;
     }
@@ -1841,6 +1841,7 @@
       aspect-ratio: 9 / 16;
       max-width: 100vw;
       overflow: hidden;
+      margin: 0 auto;
     }
     .menu-art {
       position: absolute;
@@ -1848,7 +1849,7 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
-      object-position: center center;
+      object-position: top center;
       display: block;
       user-select: none;
       -webkit-user-drag: none;
@@ -1872,9 +1873,15 @@
     .player-three-hotspot { left: 8%; top: 58%; width: 84%; height: 16%; }
     .player-four-hotspot { left: 8%; top: 76%; width: 84%; height: 16%; }
     .player-count-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
+    .team-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
+    .team-retsba-hotspot { left: 7%; top: 72%; width: 39%; height: 7%; }
+    .team-abster-hotspot { left: 54%; top: 72%; width: 39%; height: 7%; }
+    .team-polly-hotspot { left: 7%; top: 81%; width: 39%; height: 7%; }
+    .team-pengu-hotspot { left: 54%; top: 81%; width: 39%; height: 7%; }
+    .team-continue-hotspot { left: 28%; top: 11%; width: 44%; height: 8%; }
     .selected-player-outline {
       position: absolute;
-      z-index: 6;
+      z-index: 8;
       border: 3px solid rgba(255, 255, 255, 0.95);
       box-shadow: 0 0 18px rgba(0, 220, 255, 0.9);
       border-radius: 24px;
@@ -1883,15 +1890,15 @@
     }
     .double-tap-hint {
       position: absolute;
-      left: 10%;
-      right: 10%;
-      bottom: 2.5%;
-      z-index: 8;
+      left: 8%;
+      right: 8%;
+      bottom: 2%;
+      z-index: 20;
       text-align: center;
       color: white;
       font-weight: 800;
-      font-size: clamp(14px, 4vw, 20px);
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+      font-size: clamp(13px, 3.8vw, 18px);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
       pointer-events: none;
       display: none;
     }
@@ -1960,13 +1967,16 @@
     </section>
 
     <section id="screenTeamSelect" class="screen" aria-label="Team select">
-      <div class="menu-screen-shell menu-screen" style="background-image:url('/assets/screens/team-select.png');">
-        <button id="hitRetsba" class="hotspot" aria-label="Toggle RETSBA" style="left:8%; width:40%; top:36%; height:16%;"></button>
-        <button id="hitAbster" class="hotspot" aria-label="Toggle ABSTER" style="right:8%; width:40%; top:36%; height:16%;"></button>
-        <button id="hitPolly" class="hotspot" aria-label="Toggle POLLY" style="left:8%; width:40%; top:55%; height:16%;"></button>
-        <button id="hitPengu" class="hotspot" aria-label="Toggle PENGU" style="right:8%; width:40%; top:55%; height:16%;"></button>
-        <button id="teamSelectBackBtn" class="hotspot" aria-label="Back" style="left:5%; width:18%; top:6%; height:8%;"></button>
-        <button id="playerCountNextBtn" class="hotspot" aria-label="Continue" style="left:20%; right:20%; top:86%; height:9%;"></button>
+      <div class="menu-screen-shell menu-screen">
+        <div class="menu-stage">
+          <img class="menu-art" src="/assets/screens/team-select.png" alt="Choose Teams" />
+          <button id="hitRetsba" class="hotspot team-retsba-hotspot" aria-label="Toggle RETSBA"></button>
+          <button id="hitAbster" class="hotspot team-abster-hotspot" aria-label="Toggle ABSTER"></button>
+          <button id="hitPolly" class="hotspot team-polly-hotspot" aria-label="Toggle POLLY"></button>
+          <button id="hitPengu" class="hotspot team-pengu-hotspot" aria-label="Toggle PENGU"></button>
+          <button id="teamSelectBackBtn" class="hotspot team-back-hotspot" aria-label="Back"></button>
+          <button id="playerCountNextBtn" class="hotspot team-continue-hotspot" aria-label="Continue"></button>
+        </div>
       </div>
     </section>
 
