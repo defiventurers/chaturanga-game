@@ -1888,10 +1888,10 @@
     .player-four-hotspot { left: 8%; top: 76%; width: 84%; height: 16%; }
     .player-count-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
     .team-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
-    .team-retsba-hotspot { left: 7%; top: 72%; width: 39%; height: 7%; }
-    .team-abster-hotspot { left: 54%; top: 72%; width: 39%; height: 7%; }
-    .team-polly-hotspot { left: 7%; top: 81%; width: 39%; height: 7%; }
-    .team-pengu-hotspot { left: 54%; top: 81%; width: 39%; height: 7%; }
+    .team-retsba-hotspot { left: 5%; top: 70%; width: 42%; height: 8%; }
+    .team-abster-hotspot { left: 53%; top: 70%; width: 42%; height: 8%; }
+    .team-polly-hotspot { left: 5%; top: 81%; width: 42%; height: 8%; }
+    .team-pengu-hotspot { left: 53%; top: 81%; width: 42%; height: 8%; }
     .team-continue-hotspot { left: 28%; top: 11%; width: 44%; height: 8%; }
     .selected-player-outline {
       position: absolute;
@@ -1908,7 +1908,7 @@
       top: 14%;
       width: 52%;
       height: 5.5%;
-      z-index: 80;
+      z-index: 100;
       border: 2px solid rgba(180, 240, 255, 0.95);
       border-radius: 999px;
       background: linear-gradient(180deg, rgba(0, 170, 255, 0.95), rgba(0, 75, 180, 0.95));
@@ -1923,6 +1923,28 @@
       display: none;
     }
     .player-count-continue-button:active { transform: scale(0.97); }
+    .team-selected-outline {
+      position: absolute;
+      z-index: 8;
+      border: 3px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 0 18px rgba(0, 220, 255, 0.95);
+      border-radius: 18px;
+      pointer-events: none;
+      display: none;
+    }
+    .team-select-hint {
+      position: absolute;
+      left: 50%;
+      top: 20%;
+      transform: translateX(-50%);
+      z-index: 8;
+      pointer-events: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: clamp(12px, 2.6vw, 18px);
+      text-shadow: 0 2px 6px rgba(0,0,0,.85);
+    }
+
 
 </style>
 </head>
@@ -2000,8 +2022,13 @@
           <button id="hitAbster" class="hotspot team-abster-hotspot" aria-label="Toggle ABSTER"></button>
           <button id="hitPolly" class="hotspot team-polly-hotspot" aria-label="Toggle POLLY"></button>
           <button id="hitPengu" class="hotspot team-pengu-hotspot" aria-label="Toggle PENGU"></button>
-          <button id="teamSelectBackBtn" class="hotspot team-back-hotspot" aria-label="Back"></button>
-          <button id="playerCountNextBtn" class="hotspot team-continue-hotspot" aria-label="Continue"></button>
+          <div id="teamOutlineRetsba" class="team-selected-outline" aria-hidden="true"></div>
+          <div id="teamOutlineAbster" class="team-selected-outline" aria-hidden="true"></div>
+          <div id="teamOutlinePolly" class="team-selected-outline" aria-hidden="true"></div>
+          <div id="teamOutlinePengu" class="team-selected-outline" aria-hidden="true"></div>
+          <div id="teamSelectHint" class="team-select-hint" aria-hidden="true"></div>
+          <button id="teamSelectBackBtn" class="hotspot team-back-hotspot" aria-label="Back to Player Count"></button>
+          <button id="playerCountNextBtn" class="hotspot team-continue-hotspot" aria-label="Start Game"></button>
         </div>
       </div>
     </section>
@@ -2515,6 +2542,11 @@
       playerCountOutline: document.getElementById('playerCountOutline'),
       playerCountContinueBtn: document.getElementById('playerCountContinueBtn'),
       playerCountNextBtn: document.getElementById('playerCountNextBtn'),
+      teamOutlineRetsba: document.getElementById('teamOutlineRetsba'),
+      teamOutlineAbster: document.getElementById('teamOutlineAbster'),
+      teamOutlinePolly: document.getElementById('teamOutlinePolly'),
+      teamOutlinePengu: document.getElementById('teamOutlinePengu'),
+      teamSelectHint: document.getElementById('teamSelectHint'),
       difficultyBackBtn: document.getElementById('difficultyBackBtn'),
       difficultyNextBtn: document.getElementById('difficultyNextBtn'),
       tutorialBackBtn: document.getElementById('tutorialBackBtn'),
@@ -4902,6 +4934,7 @@
   const selectedTeams = new Set();
   let selectedMode = 'offline';
   let selectedPlayerCount = null;
+  let selectedHumanTeams = [];
 
   function renderModeSelectArt() {
     if (!ui.modeSelectArt) return;
@@ -5135,13 +5168,45 @@
       }
     }
     if (ui.playerCountContinueBtn) ui.playerCountContinueBtn.style.display = selectedPlayerCount ? 'block' : 'none';
+
+    const teamBoxes = {
+      retsba: { el: ui.teamOutlineRetsba, left: '5%', top: '70%', width: '42%', height: '8%' },
+      abster: { el: ui.teamOutlineAbster, left: '53%', top: '70%', width: '42%', height: '8%' },
+      polly: { el: ui.teamOutlinePolly, left: '5%', top: '81%', width: '42%', height: '8%' },
+      pengu: { el: ui.teamOutlinePengu, left: '53%', top: '81%', width: '42%', height: '8%' }
+    };
+    Object.entries(teamBoxes).forEach(([team, box]) => {
+      if (!box.el) return;
+      box.el.style.left = box.left;
+      box.el.style.top = box.top;
+      box.el.style.width = box.width;
+      box.el.style.height = box.height;
+      box.el.style.display = selectedTeams.has(team) ? 'block' : 'none';
+    });
+    if (ui.teamSelectHint) {
+      ui.teamSelectHint.textContent = selectedPlayerCount
+        ? `Select ${selectedPlayerCount} dominion(s): ${selectedHumanTeams.length}/${selectedPlayerCount}`
+        : 'Select a player count first';
+    }
   }
 
   function handlePlayerCountTap(count) {
     if (![1, 2, 3, 4].includes(count)) return;
     selectedPlayerCount = Number(count);
+    console.log('Selected player count', selectedPlayerCount);
     renderDominionSelection();
   }
+  function toggleTeam(teamId) {
+    selectedHumanTeams = (function(prev) {
+      if (prev.includes(teamId)) return prev.filter(id => id !== teamId);
+      if (prev.length >= selectedPlayerCount) return prev;
+      return [...prev, teamId];
+    })(selectedHumanTeams);
+    selectedTeams.clear();
+    selectedHumanTeams.forEach(team => selectedTeams.add(team));
+    console.log('Team toggled', teamId, selectedHumanTeams);
+  }
+
 
   const originalBuildSetupChoices = buildSetupChoices;
   buildSetupChoices = function () {
@@ -5646,7 +5711,10 @@
   }
   function handleTeamClick(team) {
     const inOfflineSelectionScreen = appState.screen === 'teamSelect';
-    if (appState.playMode === 'offline' || inOfflineSelectionScreen) toggleOfflineTeam(team);
+    if (appState.playMode === 'offline' || inOfflineSelectionScreen) {
+      if (inOfflineSelectionScreen) toggleTeam(team);
+      else toggleOfflineTeam(team);
+    }
     else selectOnlineTeam(team);
     syncOfflineHumanTeams();
     renderDominionSelection();
@@ -5666,12 +5734,14 @@
       selectedPlayerCount,
       currentScreen: appState.screen
     });
-    if (!selectedPlayerCount) {
-      console.warn('No selectedPlayerCount; staying on Player Count');
+    
+    if (![1, 2, 3, 4].includes(selectedPlayerCount)) {
+      console.warn('No valid selectedPlayerCount. Staying on Player Count.');
       return;
     }
+    selectedHumanTeams = [];
     selectedTeams.clear();
-    console.log('Moving to teamSelect');
+    console.log('Moving to teamSelect with player count', selectedPlayerCount);
     setScreen('teamSelect');
     renderDominionSelection();
   });
@@ -5679,7 +5749,12 @@
   ui.playerCountNextBtn = replaceButtonWithoutListeners(ui.playerCountNextBtn);
   ui.playerCountNextBtn.addEventListener('click', () => {
     primeAudioAndPlayButton();
-    if (!canContinueForMode(selectedTeams, appState.playMode)) return;
+    if (appState.screen === 'teamSelect') {
+      if (selectedHumanTeams.length !== selectedPlayerCount) {
+        console.warn('Select exactly', selectedPlayerCount, 'teams');
+        return;
+      }
+    } else if (!canContinueForMode(selectedTeams, appState.playMode)) return;
     continueFromDominionSelection();
   });
   ui.difficultyNextBtn = replaceButtonWithoutListeners(ui.difficultyNextBtn);
