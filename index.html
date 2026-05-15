@@ -1986,7 +1986,7 @@
           <button id="playerCountThreeBtn" class="hotspot player-three-hotspot" aria-label="3 Player"></button>
           <button id="playerCountFourBtn" class="hotspot player-four-hotspot" aria-label="4 Player"></button>
           <button id="playerCountBackBtn" class="hotspot player-count-back-hotspot" aria-label="Back"></button>
-          <button id="playerCountContinueBtn" class="player-count-continue-button" aria-label="Continue to Team Select">CONTINUE</button>
+          <button id="playerCountContinueBtn" class="player-count-continue-button" aria-label="Continue to Team Select" type="button">CONTINUE</button>
         </div>
       </div>
     </section>
@@ -3050,7 +3050,8 @@
       if (nextScreen === 'game') render();
     }
 
-    function renderAppScreen() {
+  function renderAppScreen() {
+      console.log('Current menu screen:', appState.screen);
       if (ui.menuSummaryPlayers) ui.menuSummaryPlayers.textContent = `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`;
       if (ui.menuSummaryDifficulty) ui.menuSummaryDifficulty.textContent = capitalize(appState.matchConfig.botDifficulty);
       if (ui.menuSummaryControl) ui.menuSummaryControl.textContent = getControlSummaryText(appState.matchConfig.controlMap);
@@ -5657,10 +5658,20 @@
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
   ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
-  ui.playerCountContinueBtn?.addEventListener('click', () => {
+  ui.playerCountContinueBtn?.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     primeAudioAndPlayButton();
-    if (!selectedPlayerCount) return;
+    console.log('Player Count Continue tapped', {
+      selectedPlayerCount,
+      currentScreen: appState.screen
+    });
+    if (!selectedPlayerCount) {
+      console.warn('No selectedPlayerCount; staying on Player Count');
+      return;
+    }
     selectedTeams.clear();
+    console.log('Moving to teamSelect');
     setScreen('teamSelect');
     renderDominionSelection();
   });
