@@ -3069,11 +3069,28 @@
     function setScreen(nextScreen) {
       const currentScreen = appState.screen;
       if (currentScreen === nextScreen) return;
+      console.log('SCREEN TRANSITION REQUEST', {
+        currentScreen,
+        nextScreen,
+        allowed: ALLOWED_SCREEN_TRANSITIONS[currentScreen]
+      });
       if (nextScreen === 'teamSelect' && ![1, 2, 3, 4].includes(selectedPlayerCount)) {
         nextScreen = 'playerCount';
       }
       const allowed = ALLOWED_SCREEN_TRANSITIONS[currentScreen] || [];
-      if (!allowed.includes(nextScreen)) return;
+      if (!allowed.includes(nextScreen)) {
+        console.warn('SCREEN TRANSITION BLOCKED', {
+          currentScreen,
+          nextScreen,
+          allowed: ALLOWED_SCREEN_TRANSITIONS[currentScreen]
+        });
+        console.warn('Blocked invalid screen transition', {
+          currentScreen,
+          nextScreen,
+          allowed
+        });
+        return;
+      }
       appState.screen = nextScreen;
       console.log('CURRENT SCREEN:', appState.screen);
       Object.entries(ui.screens).forEach(([key, element]) => {
@@ -5742,7 +5759,6 @@
       return;
     }
     selectedHumanTeams = [];
-    selectedTeams.clear();
     console.log('SETTING SCREEN TO teamSelect');
     setScreen('teamSelect');
     renderDominionSelection();
