@@ -1855,12 +1855,17 @@
       pointer-events: none;
     }
     .menu-screen-shell { position: fixed; inset: 0; }
-    .hotspot { position: absolute; background: rgba(255, 0, 0, 0); border: 0; padding: 0; z-index: 5; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .hotspot { position: absolute; z-index: 10; background: transparent; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .hotspot:focus { outline: none; }
     .hotspot.disabled { cursor: not-allowed; }
     .hotspot.selected::after { content:""; position:absolute; inset:0; border: 3px solid rgba(115,231,255,.9); border-radius: 14px; box-shadow: 0 0 0 3px rgba(115,231,255,.26); }
-    .play-now-hotspot { left: 14%; top: 72%; width: 72%; height: 10%; }
-    .how-to-play-hotspot { left: 23%; top: 84%; width: 54%; height: 7%; }
+    .play-now-hotspot { left: 13%; top: 72%; width: 74%; height: 10%; }
+    .how-to-play-hotspot { left: 22%; top: 84%; width: 56%; height: 7%; }
+    .mode-offline-hotspot { left: 10%; top: 31%; width: 80%; height: 19%; }
+    .mode-online-hotspot { left: 10%; top: 53%; width: 80%; height: 18%; }
+    .mode-continue-hotspot { left: 13%; top: 76%; width: 74%; height: 9%; }
+    .mode-back-hotspot { left: 23%; top: 88%; width: 54%; height: 7%; }
+    .mode-top-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
 
 </style>
 </head>
@@ -1885,21 +1890,27 @@
     </section>
 
     <section id="screenHowToPlay" class="screen" aria-label="How to play">
-      <div class="screen-panel">
-        <div class="stack">
-          <h2>How To Play</h2>
-          <p>Rules screen coming soon.</p>
-          <button id="howToPlayBackBtn" class="btn tertiary" type="button">Back</button>
+      <div class="menu-screen">
+        <div class="screen-panel" style="width:min(680px,92vw);">
+          <div class="stack">
+            <h2>How To Play</h2>
+            <p>Rules screen coming soon.</p>
+            <button id="howToPlayBackBtn" class="btn tertiary" type="button">Back</button>
+          </div>
         </div>
       </div>
     </section>
 
     <section id="screenModeSelect" class="screen" aria-label="Mode select">
-      <div id="modeSelectShell" class="menu-screen-shell menu-screen" style="background-image:url('/assets/screens/mode-offline-selected.png');">
-        <button id="modeOfflineBtn" class="hotspot selected" aria-label="Offline Battle" style="left:8%; width:40%; top:58%; height:18%;"></button>
-        <button id="modeOnlineBtn" class="hotspot disabled" aria-label="Online Room Coming Soon" style="right:8%; width:40%; top:58%; height:18%;"></button>
-        <button id="modeBackBtn" class="hotspot" aria-label="Back" style="left:5%; width:18%; top:6%; height:8%;"></button>
-        <button id="modeContinueBtn" class="hotspot" aria-label="Continue" style="left:20%; right:20%; top:86%; height:9%;"></button>
+      <div class="menu-screen-shell menu-screen">
+        <div class="menu-stage">
+          <img id="modeSelectArt" class="menu-art" src="/assets/screens/mode-offline-selected.png" alt="Choose Play Mode" />
+          <button id="modeOfflineBtn" class="hotspot mode-offline-hotspot selected" aria-label="Offline Battle"></button>
+          <button id="modeOnlineBtn" class="hotspot mode-online-hotspot disabled" aria-label="Online Room Coming Soon"></button>
+          <button id="modeContinueBtn" class="hotspot mode-continue-hotspot" aria-label="Continue"></button>
+          <button id="modeBackBtn" class="hotspot mode-back-hotspot" aria-label="Back"></button>
+          <button id="modeTopBackBtn" class="hotspot mode-top-back-hotspot" aria-label="Back"></button>
+        </div>
       </div>
     </section>
 
@@ -2404,10 +2415,11 @@
       menuPlayBtn: document.getElementById('menuPlayBtn'),
       menuHowBtn: document.getElementById('menuHowBtn'),
       howToPlayBackBtn: document.getElementById('howToPlayBackBtn'),
-      modeSelectShell: document.getElementById('modeSelectShell'),
+      modeSelectArt: document.getElementById('modeSelectArt'),
       modeOfflineBtn: document.getElementById('modeOfflineBtn'),
       modeOnlineBtn: document.getElementById('modeOnlineBtn'),
       modeBackBtn: document.getElementById('modeBackBtn'),
+      modeTopBackBtn: document.getElementById('modeTopBackBtn'),
       modeContinueBtn: document.getElementById('modeContinueBtn'),
       playerCountOneBtn: document.getElementById('playerCountOneBtn'),
       playerCountTwoBtn: document.getElementById('playerCountTwoBtn'),
@@ -5479,8 +5491,20 @@
   ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('howToPlay'); });
   ui.howToPlayBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
   ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
-  ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); appState.playMode = 'offline'; ui.modeSelectShell.style.backgroundImage = \"url('/assets/screens/mode-offline-selected.png')\"; });
-  ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); ui.modeSelectShell.style.backgroundImage = \"url('/assets/screens/mode-online-selected.png')\"; });
+  ui.modeTopBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
+  ui.modeOfflineBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    appState.playMode = 'offline';
+    ui.modeSelectArt.src = '/assets/screens/mode-offline-selected.png';
+    ui.modeOfflineBtn.classList.add('selected');
+    ui.modeOnlineBtn.classList.remove('selected');
+  });
+  ui.modeOnlineBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    ui.modeSelectArt.src = '/assets/screens/mode-online-selected.png';
+    ui.modeOnlineBtn.classList.add('selected');
+    ui.modeOfflineBtn.classList.remove('selected');
+  });
   ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode !== 'offline') return; setScreen('playerCount'); });
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); goToTeamSelect(2); });
