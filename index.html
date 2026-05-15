@@ -1919,6 +1919,7 @@
       text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
       box-shadow: 0 0 16px rgba(0, 210, 255, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.35);
       cursor: pointer;
+      pointer-events: auto;
       -webkit-tap-highlight-color: transparent;
       display: none;
     }
@@ -3074,7 +3075,7 @@
       const allowed = ALLOWED_SCREEN_TRANSITIONS[currentScreen] || [];
       if (!allowed.includes(nextScreen)) return;
       appState.screen = nextScreen;
-      console.log('Current screen', appState.screen);
+      console.log('CURRENT SCREEN:', appState.screen);
       Object.entries(ui.screens).forEach(([key, element]) => {
         element.classList.toggle('active', key === nextScreen);
       });
@@ -5730,18 +5731,19 @@
     event.preventDefault();
     event.stopPropagation();
     primeAudioAndPlayButton();
-    console.log('Player Count Continue tapped', {
+    console.log('PLAYER COUNT CONTINUE CLICKED', {
+      screen: appState.screen,
       selectedPlayerCount,
-      currentScreen: appState.screen
+      selectedPlayerCountType: typeof selectedPlayerCount
     });
     
     if (![1, 2, 3, 4].includes(selectedPlayerCount)) {
-      console.warn('No valid selectedPlayerCount. Staying on Player Count.');
+      console.warn('Invalid selectedPlayerCount:', selectedPlayerCount);
       return;
     }
     selectedHumanTeams = [];
     selectedTeams.clear();
-    console.log('Moving to teamSelect with player count', selectedPlayerCount);
+    console.log('SETTING SCREEN TO teamSelect');
     setScreen('teamSelect');
     renderDominionSelection();
   });
