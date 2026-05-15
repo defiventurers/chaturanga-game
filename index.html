@@ -4997,7 +4997,8 @@
   }
   function syncOfflineHumanTeams() {
     appState.matchConfig.humanTeams = Array.from(selectedTeams).map(team => TEAM_TO_GAME_TEAM[team]);
-    appState.matchConfig.playerCount = appState.matchConfig.humanTeams.length;
+    // Keep appState.matchConfig.playerCount as the selected required count from the player-count screen.
+    // Do not overwrite it with currently picked teams on the team-select screen.
     appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
   }
 
@@ -5769,7 +5770,7 @@
     event.preventDefault();
     event.stopPropagation();
     primeAudioAndPlayButton();
-    const effectivePlayerCount = getEffectivePlayerCount();
+    const effectivePlayerCount = getEffectivePlayerCount() ?? (isValidPlayerCount(selectedPlayerCount) ? Number(selectedPlayerCount) : null);
     console.log('PLAYER COUNT CONTINUE CLICKED', {
       screen: appState.screen,
       canonicalPlayerCount: appState.matchConfig.playerCount,
@@ -5785,6 +5786,8 @@
       });
       return;
     }
+    appState.matchConfig.playerCount = effectivePlayerCount;
+    selectedPlayerCount = effectivePlayerCount;
     selectedHumanTeams = [];
     console.log('SETTING SCREEN TO teamSelect');
     setScreen('teamSelect');
