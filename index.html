@@ -1882,10 +1882,11 @@
     .mode-continue-hotspot { left: 13%; top: 76%; width: 74%; height: 9%; }
     .mode-back-hotspot { left: 23%; top: 88%; width: 54%; height: 7%; }
     .mode-top-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
-    .player-one-hotspot { left: 8%; top: 22%; width: 84%; height: 16%; }
-    .player-two-hotspot { left: 8%; top: 40%; width: 84%; height: 16%; }
-    .player-three-hotspot { left: 8%; top: 58%; width: 84%; height: 16%; }
-    .player-four-hotspot { left: 8%; top: 76%; width: 84%; height: 16%; }
+    .player-count-continue-hotspot { left: 27%; top: 20%; width: 46%; height: 6.5%; }
+    .player-one-hotspot { left: 8%; top: 29%; width: 84%; height: 15%; }
+    .player-two-hotspot { left: 8%; top: 46%; width: 84%; height: 15%; }
+    .player-three-hotspot { left: 8%; top: 63%; width: 84%; height: 15%; }
+    .player-four-hotspot { left: 8%; top: 80%; width: 84%; height: 15%; }
     .player-count-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
     .team-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
     .team-retsba-hotspot { left: 5%; top: 70%; width: 42%; height: 8%; }
@@ -1902,28 +1903,7 @@
       pointer-events: none;
       display: none;
     }
-    .player-count-continue-button {
-      position: absolute;
-      left: 24%;
-      top: 14%;
-      width: 52%;
-      height: 5.5%;
-      z-index: 100;
-      border: 2px solid rgba(180, 240, 255, 0.95);
-      border-radius: 999px;
-      background: linear-gradient(180deg, rgba(0, 170, 255, 0.95), rgba(0, 75, 180, 0.95));
-      color: white;
-      font-weight: 900;
-      font-size: clamp(14px, 4vw, 22px);
-      letter-spacing: 1px;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
-      box-shadow: 0 0 16px rgba(0, 210, 255, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.35);
-      cursor: pointer;
-      pointer-events: auto;
-      -webkit-tap-highlight-color: transparent;
-      display: none;
-    }
-    .player-count-continue-button:active { transform: scale(0.97); }
+    
     .team-selected-outline {
       position: absolute;
       z-index: 8;
@@ -2009,7 +1989,7 @@
           <button id="playerCountThreeBtn" class="hotspot player-three-hotspot" aria-label="3 Player"></button>
           <button id="playerCountFourBtn" class="hotspot player-four-hotspot" aria-label="4 Player"></button>
           <button id="playerCountBackBtn" class="hotspot player-count-back-hotspot" aria-label="Back"></button>
-          <button id="playerCountContinueBtn" class="player-count-continue-button" aria-label="Continue to Team Select" type="button">CONTINUE</button>
+          <button id="playerCountContinueBtn" class="hotspot player-count-continue-hotspot" aria-label="Continue" type="button"></button>
         </div>
       </div>
     </section>
@@ -5189,10 +5169,10 @@
     });
     if (ui.playerCountOutline) {
       const selectedMap = {
-        1: { left: '8%', top: '22%', width: '84%', height: '16%' },
-        2: { left: '8%', top: '40%', width: '84%', height: '16%' },
-        3: { left: '8%', top: '58%', width: '84%', height: '16%' },
-        4: { left: '8%', top: '76%', width: '84%', height: '16%' }
+        1: { left: '8%', top: '29%', width: '84%', height: '15%' },
+        2: { left: '8%', top: '46%', width: '84%', height: '15%' },
+        3: { left: '8%', top: '63%', width: '84%', height: '15%' },
+        4: { left: '8%', top: '80%', width: '84%', height: '15%' }
       };
       const hotspotBox = selectedMap[getEffectivePlayerCount()];
       if (hotspotBox) {
@@ -5205,7 +5185,6 @@
         ui.playerCountOutline.style.display = 'none';
       }
     }
-    if (ui.playerCountContinueBtn) ui.playerCountContinueBtn.style.display = getEffectivePlayerCount() ? 'block' : 'none';
 
     const teamBoxes = {
       retsba: { el: ui.teamOutlineRetsba, left: '5%', top: '70%', width: '42%', height: '8%' },
