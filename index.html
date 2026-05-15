@@ -1889,11 +1889,11 @@
     .player-four-hotspot { left: 8%; top: 80%; width: 84%; height: 15%; }
     .player-count-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
     .team-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
-    .team-retsba-hotspot { left: 5%; top: 70%; width: 42%; height: 8%; }
-    .team-abster-hotspot { left: 53%; top: 70%; width: 42%; height: 8%; }
-    .team-polly-hotspot { left: 5%; top: 81%; width: 42%; height: 8%; }
-    .team-pengu-hotspot { left: 53%; top: 81%; width: 42%; height: 8%; }
-    .team-continue-hotspot { left: 28%; top: 11%; width: 44%; height: 8%; }
+    .team-retsba-hotspot { left: 5%; top: 81.5%; width: 42%; height: 6.5%; }
+    .team-abster-hotspot { left: 53%; top: 81.5%; width: 42%; height: 6.5%; }
+    .team-polly-hotspot { left: 5%; top: 89.5%; width: 42%; height: 6.5%; }
+    .team-pengu-hotspot { left: 53%; top: 89.5%; width: 42%; height: 6.5%; }
+    .team-continue-hotspot { left: 31%; top: 13%; width: 38%; height: 6.2%; }
     .selected-player-outline {
       position: absolute;
       z-index: 8;
@@ -3298,6 +3298,7 @@
     }
 
     function initializeBoard() {
+      console.log('INITIALIZING BOARD');
       const b = state.board;
       const placeTeam = (team, zoneName) => {
         const zone = START_ZONES[zoneName];
@@ -4334,6 +4335,11 @@
     }
 
     function renderBoard() {
+      console.log('RENDER BOARD', {
+        boardExists: !!state.board,
+        tileCount: ui.boardGrid?.querySelectorAll('.cell')?.length ?? 0,
+        pieceCount: state.board?.flat?.().filter(Boolean).length ?? 0
+      });
       const currentTeam = getCurrentTeam();
       const cells = ui.boardGrid.querySelectorAll('.cell');
       cells.forEach(cell => {
@@ -5184,10 +5190,10 @@
     }
 
     const teamBoxes = {
-      retsba: { el: ui.teamOutlineRetsba, left: '5%', top: '70%', width: '42%', height: '8%' },
-      abster: { el: ui.teamOutlineAbster, left: '53%', top: '70%', width: '42%', height: '8%' },
-      polly: { el: ui.teamOutlinePolly, left: '5%', top: '81%', width: '42%', height: '8%' },
-      pengu: { el: ui.teamOutlinePengu, left: '53%', top: '81%', width: '42%', height: '8%' }
+      retsba: { el: ui.teamOutlineRetsba, left: '5%', top: '81.5%', width: '42%', height: '6.5%' },
+      abster: { el: ui.teamOutlineAbster, left: '53%', top: '81.5%', width: '42%', height: '6.5%' },
+      polly: { el: ui.teamOutlinePolly, left: '5%', top: '89.5%', width: '42%', height: '6.5%' },
+      pengu: { el: ui.teamOutlinePengu, left: '53%', top: '89.5%', width: '42%', height: '6.5%' }
     };
     Object.entries(teamBoxes).forEach(([team, box]) => {
       if (!box.el) return;
@@ -5781,13 +5787,25 @@
     event?.preventDefault?.();
     event?.stopPropagation?.();
     primeAudioAndPlayButton();
-    console.log('TEAM SELECT CONTINUE', selectedHumanTeams, getEffectivePlayerCount());
+    console.log('TEAM SELECT CONTINUE', {
+      selectedPlayerCount: getEffectivePlayerCount(),
+      selectedHumanTeams
+    });
     if (selectedHumanTeams.length !== getEffectivePlayerCount()) {
       console.warn('Select exactly', getEffectivePlayerCount(), 'teams');
       return;
     }
+    console.log('STARTING GAME WITH', {
+      selectedMode,
+      selectedHumanTeams
+    });
+    const allTeams = ['retsba', 'abster', 'polly', 'pengu'];
+    const matchTeams = allTeams.map(teamId => ({
+      teamId,
+      controlType: selectedHumanTeams.includes(teamId) ? 'human' : 'bot'
+    }));
+    console.log('MATCH TEAMS', matchTeams);
     continueFromDominionSelection();
-    setScreen('game');
   }
 
   ui.teamContinueBtn = replaceButtonWithoutListeners(ui.teamContinueBtn);
