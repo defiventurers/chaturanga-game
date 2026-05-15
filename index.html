@@ -1833,13 +1833,26 @@
       justify-content: center;
       touch-action: manipulation;
     }
+    .menu-bg-fill {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      filter: blur(18px) brightness(0.65) saturate(1.2);
+      transform: scale(1.08);
+      z-index: 0;
+      pointer-events: none;
+      user-select: none;
+    }
     .menu-stage {
       position: relative;
-      height: 100dvh;
-      max-height: 100dvh;
-      width: auto;
-      aspect-ratio: 9 / 16;
+      z-index: 2;
+      width: min(100vw, calc(100dvh * 2 / 3));
+      aspect-ratio: 2 / 3;
       max-width: 100vw;
+      max-height: 100dvh;
       overflow: hidden;
       margin: 0 auto;
     }
@@ -1848,7 +1861,7 @@
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: fill;
       object-position: top center;
       display: block;
       user-select: none;
@@ -1909,6 +1922,7 @@
   <div id="appView" class="app-view">
     <section id="screenCover" class="screen active" aria-label="Cover screen">
       <div id="coverContinueArea" class="menu-screen" role="button" tabindex="0" aria-label="Tap or click to continue">
+        <img class="menu-bg-fill" src="/assets/screens/cover.png" alt="" aria-hidden="true" />
         <div class="menu-stage">
           <img class="menu-art" src="/assets/screens/cover.png" alt="Arctic Dominion Cover" />
         </div>
@@ -1917,6 +1931,7 @@
 
     <section id="screenMenu" class="screen" aria-label="Main menu">
       <div class="menu-screen-shell menu-screen">
+        <img class="menu-bg-fill" src="/assets/screens/main-menu.png" alt="" aria-hidden="true" />
         <div class="menu-stage">
           <img class="menu-art" src="/assets/screens/main-menu.png" alt="Arctic Dominion Main Menu" />
           <button id="menuPlayBtn" class="hotspot play-now-hotspot" aria-label="Play Now"></button>
@@ -1939,6 +1954,7 @@
 
     <section id="screenModeSelect" class="screen" aria-label="Mode select">
       <div id="modeSelectShell" class="menu-screen-shell menu-screen">
+        <img id="modeSelectBg" class="menu-bg-fill" src="/assets/screens/mode-offline-selected.png" alt="" aria-hidden="true" />
         <div class="menu-stage">
           <img id="modeSelectArt" class="menu-art" src="/assets/screens/mode-offline-selected.png" alt="Choose Play Mode" />
           <button id="modeOfflineBtn" class="hotspot mode-offline-hotspot" aria-label="Offline Battle"></button>
@@ -1953,6 +1969,7 @@
 
     <section id="screenPlayerCount" class="screen" aria-label="Player count selection">
       <div class="menu-screen-shell menu-screen">
+        <img class="menu-bg-fill" src="/assets/screens/player-count.png" alt="" aria-hidden="true" />
         <div class="menu-stage">
           <img class="menu-art" src="/assets/screens/player-count.png" alt="Choose Player Count" />
           <div id="playerCountOutline" class="selected-player-outline" aria-hidden="true"></div>
@@ -1968,6 +1985,7 @@
 
     <section id="screenTeamSelect" class="screen" aria-label="Team select">
       <div class="menu-screen-shell menu-screen">
+        <img class="menu-bg-fill" src="/assets/screens/team-select.png" alt="" aria-hidden="true" />
         <div class="menu-stage">
           <img class="menu-art" src="/assets/screens/team-select.png" alt="Choose Teams" />
           <button id="hitRetsba" class="hotspot team-retsba-hotspot" aria-label="Toggle RETSBA"></button>
@@ -2462,6 +2480,7 @@
       howToPlayBackBtn: document.getElementById('howToPlayBackBtn'),
       modeSelectShell: document.getElementById('modeSelectShell'),
       modeSelectArt: document.getElementById('modeSelectArt'),
+      modeSelectBg: document.getElementById('modeSelectBg'),
       modeToast: document.getElementById('modeToast'),
       modeOfflineBtn: document.getElementById('modeOfflineBtn'),
       modeOnlineBtn: document.getElementById('modeOnlineBtn'),
@@ -4879,6 +4898,7 @@
     ui.modeSelectArt.src = selectedMode === 'online'
       ? '/assets/screens/mode-online-selected.png'
       : '/assets/screens/mode-offline-selected.png';
+    if (ui.modeSelectBg) ui.modeSelectBg.src = ui.modeSelectArt.src;
   }
 
   function goToTeamSelect(count) {
