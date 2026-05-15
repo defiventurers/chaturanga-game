@@ -3035,6 +3035,7 @@
       const allowed = ALLOWED_SCREEN_TRANSITIONS[currentScreen] || [];
       if (!allowed.includes(nextScreen)) return;
       appState.screen = nextScreen;
+      console.log('Current screen', appState.screen);
       Object.entries(ui.screens).forEach(([key, element]) => {
         element.classList.toggle('active', key === nextScreen);
       });
@@ -5137,15 +5138,22 @@
 
   function handlePlayerCountTap(count) {
     if (![1, 2, 3, 4].includes(count)) return;
-    console.log('Player count tapped', count, 'current', selectedPlayerCount);
+    console.log('Player count tapped', {
+      count,
+      selectedPlayerCount,
+      same: selectedPlayerCount === count
+    });
+
     if (selectedPlayerCount === count) {
-      console.log('Confirmed count, going to teamSelect');
       selectedTeams.clear();
+      syncOfflineHumanTeams();
+      console.log('Moving to teamSelect');
       setScreen('teamSelect');
       renderDominionSelection();
       return;
     }
-    selectedPlayerCount = count;
+
+    selectedPlayerCount = Number(count);
     renderDominionSelection();
   }
 
