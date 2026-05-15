@@ -5115,14 +5115,17 @@
   }
 
   function handlePlayerCountTap(count) {
-    if (![1, 2, 3, 4].includes(count)) return;
-    if (selectedPlayerCount === count) {
+    const numericCount = Number(count);
+    if (![1, 2, 3, 4].includes(numericCount)) return;
+    console.log('Player count tapped', numericCount, 'current', selectedPlayerCount);
+    if (selectedPlayerCount === numericCount) {
+      console.log('Confirmed player count', numericCount, 'going to teamSelect');
       selectedTeams.clear();
       setScreen('teamSelect');
       renderDominionSelection();
       return;
     }
-    selectedPlayerCount = count;
+    selectedPlayerCount = numericCount;
     renderDominionSelection();
   }
 
@@ -5593,8 +5596,8 @@
   ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
   ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('howToPlay'); });
   ui.howToPlayBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
-  ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: back tapped'); setScreen('mainMenu'); });
-  ui.modeTopBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: back tapped'); setScreen('mainMenu'); });
+  ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode back tapped'); setScreen('mainMenu'); });
+  ui.modeTopBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode back tapped'); setScreen('mainMenu'); });
   let modeToastTimer = null;
   function showModeToast(message) {
     if (!ui.modeToast) return;
@@ -5605,7 +5608,7 @@
   }
   ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: offline tapped'); appState.playMode = 'offline'; selectedMode = 'offline'; renderModeSelectArt(); });
   ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: online tapped'); appState.playMode = 'online'; selectedMode = 'online'; renderModeSelectArt(); });
-  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: continue tapped', selectedMode); selectedPlayerCount = null; setScreen('playerCount'); renderDominionSelection(); });
+  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode continue tapped'); selectedPlayerCount = null; setScreen('playerCount'); renderDominionSelection(); });
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
