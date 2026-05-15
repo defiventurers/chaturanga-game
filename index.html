@@ -3074,7 +3074,7 @@
         nextScreen,
         allowed: ALLOWED_SCREEN_TRANSITIONS[currentScreen]
       });
-      if (nextScreen === 'teamSelect' && ![1, 2, 3, 4].includes(selectedPlayerCount)) {
+      if (nextScreen === 'teamSelect' && !isValidPlayerCount(getEffectivePlayerCount())) {
         nextScreen = 'playerCount';
       }
       const allowed = ALLOWED_SCREEN_TRANSITIONS[currentScreen] || [];
@@ -4954,6 +4954,28 @@
   let selectedPlayerCount = null;
   let selectedHumanTeams = [];
 
+  function isValidPlayerCount(value) {
+    return [1, 2, 3, 4].includes(Number(value));
+  }
+
+  function getEffectivePlayerCount() {
+    return isValidPlayerCount(appState.matchConfig.playerCount)
+      ? Number(appState.matchConfig.playerCount)
+      : null;
+  }
+
+  function setPlayerCount(count) {
+    const normalized = Number(count);
+    if (!isValidPlayerCount(normalized)) return false;
+    appState.matchConfig.playerCount = normalized;
+    selectedPlayerCount = normalized; // legacy mirror for compatibility while migrating.
+    selectedHumanTeams = selectedHumanTeams.slice(0, normalized);
+    selectedTeams.clear();
+    selectedHumanTeams.forEach(team => selectedTeams.add(team));
+    renderDominionSelection();
+    return true;
+  }
+
   function renderModeSelectArt() {
     if (!ui.modeSelectArt) return;
     ui.modeSelectArt.src = selectedMode === 'online'
@@ -4963,10 +4985,7 @@
   }
 
   function goToTeamSelect(count) {
-    if (![1, 2, 3, 4].includes(count)) return;
-    selectedPlayerCount = count;
-    selectedTeams.clear();
-    renderDominionSelection();
+    if (!setPlayerCount(count)) return;
     setScreen('teamSelect');
   }
 
@@ -4978,7 +4997,8 @@
   }
   function syncOfflineHumanTeams() {
     appState.matchConfig.humanTeams = Array.from(selectedTeams).map(team => TEAM_TO_GAME_TEAM[team]);
-    appState.matchConfig.playerCount = appState.matchConfig.humanTeams.length;
+    // Keep appState.matchConfig.playerCount as the selected required count from the player-count screen.
+    // Do not overwrite it with currently picked teams on the team-select screen.
     appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.matchConfig.humanTeams);
   }
 
@@ -5066,7 +5086,7 @@
   function continueFromDominionSelection() {
     console.log('Continue clicked');
     const selectedDominions = Array.from(selectedTeams).filter((team) => DOMINION_ORDER.includes(team));
-    if (selectedDominions.length !== selectedPlayerCount) {
+    if (selectedDominions.length !== getEffectivePlayerCount()) {
       console.warn('No dominions selected.');
       return;
     }
@@ -5152,7 +5172,7 @@
   }
 
   function canContinueForMode(teams, mode) {
-    if (mode === 'offline') return teams.size >= 1 && teams.size === selectedPlayerCount;
+    if (mode === 'offline') return teams.size >= 1 && teams.size === getEffectivePlayerCount();
     if (mode === 'online') return teams.size === 1;
     return false;
   }
@@ -5165,7 +5185,7 @@
     ].forEach(([btn, team]) => btn?.classList.toggle('selected', selectedTeams.has(team)));
     if (ui.playerCountNextBtn) ui.playerCountNextBtn.classList.toggle('disabled', !canContinueForMode(selectedTeams, appState.playMode));
     [ui.playerCountOneBtn, ui.playerCountTwoBtn, ui.playerCountThreeBtn, ui.playerCountFourBtn].forEach((btn, idx) => {
-      btn?.classList.toggle('selected', selectedPlayerCount === idx + 1);
+      btn?.classList.toggle('selected', getEffectivePlayerCount() === idx + 1);
     });
     if (ui.playerCountOutline) {
       const selectedMap = {
@@ -5174,7 +5194,7 @@
         3: { left: '8%', top: '58%', width: '84%', height: '16%' },
         4: { left: '8%', top: '76%', width: '84%', height: '16%' }
       };
-      const hotspotBox = selectedMap[selectedPlayerCount];
+      const hotspotBox = selectedMap[getEffectivePlayerCount()];
       if (hotspotBox) {
         ui.playerCountOutline.style.left = hotspotBox.left;
         ui.playerCountOutline.style.top = hotspotBox.top;
@@ -5185,7 +5205,7 @@
         ui.playerCountOutline.style.display = 'none';
       }
     }
-    if (ui.playerCountContinueBtn) ui.playerCountContinueBtn.style.display = selectedPlayerCount ? 'block' : 'none';
+    if (ui.playerCountContinueBtn) ui.playerCountContinueBtn.style.display = getEffectivePlayerCount() ? 'block' : 'none';
 
     const teamBoxes = {
       retsba: { el: ui.teamOutlineRetsba, left: '5%', top: '70%', width: '42%', height: '8%' },
@@ -5202,22 +5222,23 @@
       box.el.style.display = selectedTeams.has(team) ? 'block' : 'none';
     });
     if (ui.teamSelectHint) {
-      ui.teamSelectHint.textContent = selectedPlayerCount
-        ? `Select ${selectedPlayerCount} dominion(s): ${selectedHumanTeams.length}/${selectedPlayerCount}`
+      ui.teamSelectHint.textContent = getEffectivePlayerCount()
+        ? `Select ${getEffectivePlayerCount()} dominion(s): ${selectedHumanTeams.length}/${getEffectivePlayerCount()}`
         : 'Select a player count first';
     }
   }
 
   function handlePlayerCountTap(count) {
-    if (![1, 2, 3, 4].includes(count)) return;
-    selectedPlayerCount = Number(count);
-    console.log('Selected player count', selectedPlayerCount);
-    renderDominionSelection();
+    if (!setPlayerCount(count)) return;
+    console.log('Selected player count', {
+      canonicalPlayerCount: appState.matchConfig.playerCount,
+      legacySelectedPlayerCount: selectedPlayerCount
+    });
   }
   function toggleTeam(teamId) {
     selectedHumanTeams = (function(prev) {
       if (prev.includes(teamId)) return prev.filter(id => id !== teamId);
-      if (prev.length >= selectedPlayerCount) return prev;
+      if (prev.length >= getEffectivePlayerCount()) return prev;
       return [...prev, teamId];
     })(selectedHumanTeams);
     selectedTeams.clear();
@@ -5686,6 +5707,7 @@
     appState.playMode = 'offline';
     selectedMode = 'offline';
     selectedPlayerCount = null;
+    appState.matchConfig.playerCount = null;
     renderModeSelectArt();
     setScreen('modeSelect');
     renderDominionSelection();
@@ -5705,7 +5727,7 @@
   }
   ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: offline tapped'); appState.playMode = 'offline'; selectedMode = 'offline'; renderModeSelectArt(); });
   ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: online tapped'); appState.playMode = 'online'; selectedMode = 'online'; renderModeSelectArt(); });
-  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode continue tapped'); selectedPlayerCount = null; setScreen('playerCount'); renderDominionSelection(); });
+  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode continue tapped'); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('playerCount'); renderDominionSelection(); });
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
@@ -5721,7 +5743,7 @@
 
   function toggleOfflineTeam(team) {
     if (selectedTeams.has(team)) selectedTeams.delete(team);
-    else if (selectedTeams.size < selectedPlayerCount) selectedTeams.add(team);
+    else if (selectedTeams.size < getEffectivePlayerCount()) selectedTeams.add(team);
   }
   function selectOnlineTeam(team) {
     TEAM_ORDER.forEach(entry => { if (entry !== team) selectedTeams.delete(entry); });
@@ -5743,21 +5765,29 @@
   ui.hitRetsba?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('retsba'); });
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
-  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
+  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
   ui.playerCountContinueBtn?.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
     primeAudioAndPlayButton();
+    const effectivePlayerCount = getEffectivePlayerCount() ?? (isValidPlayerCount(selectedPlayerCount) ? Number(selectedPlayerCount) : null);
     console.log('PLAYER COUNT CONTINUE CLICKED', {
       screen: appState.screen,
-      selectedPlayerCount,
-      selectedPlayerCountType: typeof selectedPlayerCount
+      canonicalPlayerCount: appState.matchConfig.playerCount,
+      legacySelectedPlayerCount: selectedPlayerCount,
+      effectivePlayerCount
     });
-    
-    if (![1, 2, 3, 4].includes(selectedPlayerCount)) {
-      console.warn('Invalid selectedPlayerCount:', selectedPlayerCount);
+
+    if (!isValidPlayerCount(effectivePlayerCount)) {
+      console.warn('Invalid player count for team select:', {
+        canonicalPlayerCount: appState.matchConfig.playerCount,
+        legacySelectedPlayerCount: selectedPlayerCount,
+        effectivePlayerCount
+      });
       return;
     }
+    appState.matchConfig.playerCount = effectivePlayerCount;
+    selectedPlayerCount = effectivePlayerCount;
     selectedHumanTeams = [];
     console.log('SETTING SCREEN TO teamSelect');
     setScreen('teamSelect');
@@ -5768,8 +5798,8 @@
   ui.playerCountNextBtn.addEventListener('click', () => {
     primeAudioAndPlayButton();
     if (appState.screen === 'teamSelect') {
-      if (selectedHumanTeams.length !== selectedPlayerCount) {
-        console.warn('Select exactly', selectedPlayerCount, 'teams');
+      if (selectedHumanTeams.length !== getEffectivePlayerCount()) {
+        console.warn('Select exactly', getEffectivePlayerCount(), 'teams');
         return;
       }
     } else if (!canContinueForMode(selectedTeams, appState.playMode)) return;
