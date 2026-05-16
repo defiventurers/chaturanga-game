@@ -3237,11 +3237,47 @@
   };
   const STARTING_CORNER_SEQUENCE = PLAYERS.map(team => FIXED_TEAM_SETUP[team].startingCorner);
   const DOMINION_START_ZONES = DOMINION_TO_START_ZONE;
-  const START_ZONES = {
-    upperLeft: { king: [0, 0], backline: [[0, 1, 'elephant'], [1, 0, 'horse'], [1, 1, 'ship']], pawns: [[2,0],[2,1],[3,0],[3,1]] },
-    upperRight: { king: [0, 7], backline: [[0, 6, 'elephant'], [1, 7, 'horse'], [1, 6, 'ship']], pawns: [[2,7],[2,6],[3,7],[3,6]] },
-    lowerLeft: { king: [7, 0], backline: [[7, 1, 'elephant'], [6, 0, 'horse'], [6, 1, 'ship']], pawns: [[5,0],[5,1],[4,0],[4,1]] },
-    lowerRight: { king: [7, 7], backline: [[7, 6, 'elephant'], [6, 7, 'horse'], [6, 6, 'ship']], pawns: [[5,7],[5,6],[4,7],[4,6]] }
+  const STARTING_POSITIONS = {
+    yellow: [
+      { type: 'ship', square: 'A1' },
+      { type: 'horse', square: 'B1' },
+      { type: 'elephant', square: 'C1' },
+      { type: 'king', square: 'D1' },
+      { type: 'pawn', square: 'A2' },
+      { type: 'pawn', square: 'B2' },
+      { type: 'pawn', square: 'C2' },
+      { type: 'pawn', square: 'D2' }
+    ],
+    red: [
+      { type: 'king', square: 'A8' },
+      { type: 'elephant', square: 'A7' },
+      { type: 'horse', square: 'A6' },
+      { type: 'ship', square: 'A5' },
+      { type: 'pawn', square: 'B8' },
+      { type: 'pawn', square: 'B7' },
+      { type: 'pawn', square: 'B6' },
+      { type: 'pawn', square: 'B5' }
+    ],
+    green: [
+      { type: 'king', square: 'E8' },
+      { type: 'elephant', square: 'F8' },
+      { type: 'horse', square: 'G8' },
+      { type: 'ship', square: 'H8' },
+      { type: 'pawn', square: 'E7' },
+      { type: 'pawn', square: 'F7' },
+      { type: 'pawn', square: 'G7' },
+      { type: 'pawn', square: 'H7' }
+    ],
+    blue: [
+      { type: 'king', square: 'H4' },
+      { type: 'elephant', square: 'H3' },
+      { type: 'horse', square: 'H2' },
+      { type: 'ship', square: 'H1' },
+      { type: 'pawn', square: 'G4' },
+      { type: 'pawn', square: 'G3' },
+      { type: 'pawn', square: 'G2' },
+      { type: 'pawn', square: 'G1' }
+    ]
   };
   const INTERNAL_TURN_ORDER = ['yellow', 'green', 'red', 'blue'];
   const TEAM_TO_COLOR = DOMINION_TO_UI_COLOR;
@@ -3300,12 +3336,17 @@
     function initializeBoard() {
       console.log('INITIALIZING BOARD');
       const b = state.board;
-      const placeTeam = (team, zoneName) => {
-        const zone = START_ZONES[zoneName];
-        if (!zone) return;
-        const [kr, kc] = zone.king; b[kr][kc] = makePiece(team, 'king', true);
-        zone.backline.forEach(([r,c,type]) => b[r][c] = makePiece(team, type));
-        zone.pawns.forEach(([r,c]) => b[r][c] = makePiece(team, 'pawn'));
+      const squareToIndex = (square) => {
+        const file = square[0].toUpperCase().charCodeAt(0) - 65;
+        const rank = Number(square.slice(1));
+        return { row: 8 - rank, col: file };
+      };
+      const placeTeam = (team) => {
+        const placements = STARTING_POSITIONS[team] || [];
+        placements.forEach(({ type, square }) => {
+          const { row, col } = squareToIndex(square);
+          b[row][col] = makePiece(team, type, type === 'king');
+        });
       };
       if (appState.playMode === 'offline') {
         const selectedHumanTeams = getOfflineHumanTeamsForNewMatch();
@@ -3352,7 +3393,7 @@
         state.currentTurn = state.turnOrder[0];
         state.currentPlayerIndex = PLAYERS.findIndex((team) => team === state.currentTurn);
 
-        PLAYERS.forEach(team => placeTeam(team, setup.teamConfigs[team].startingCorner));
+        PLAYERS.forEach(team => placeTeam(team));
         const pieces = [];
         for (let row = 0; row < ROWS; row++) {
           for (let col = 0; col < COLS; col++) {
@@ -3376,7 +3417,7 @@
       }
       TEAM_ORDER.forEach(teamKey => {
         const team = TEAM_TO_GAME_TEAM[teamKey];
-        placeTeam(team, DOMINION_TO_START_ZONE[teamKey]);
+        placeTeam(team);
       });
     }
 
@@ -5037,7 +5078,7 @@
       window.setTimeout(() => {
         try {
           console.log('Starting offline match init');
-          console.log("START_ZONES:", typeof START_ZONES !== "undefined" ? START_ZONES : "MISSING");
+          console.log("STARTING_POSITIONS:", STARTING_POSITIONS);
           console.log("Selected teams:", localStorage.getItem("selectedTeams"));
           console.log("Selected dominions:", localStorage.getItem("selectedDominions"));
           initializeOfflineMatchFromSelectedTeams({
