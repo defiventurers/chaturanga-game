@@ -676,6 +676,20 @@
     }
 
     .panel > * { position: relative; z-index: 1; }
+    #screenGame .app-shell { border: 1px solid rgba(180,237,255,.25); background: linear-gradient(180deg, rgba(167,230,255,.12), rgba(27,52,86,.18)); }
+    #screenGame .panel::before { display: none; }
+    #screenGame .panel, #screenGame .section-card, #screenGame .status-card {
+      border-color: rgba(187,236,255,.22);
+      background: linear-gradient(180deg, rgba(195,238,255,.1), rgba(17,40,70,.2));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 10px 24px rgba(6,26,49,.24);
+    }
+    #screenGame .panel-header .subtitle { display: none; }
+    #screenGame .die-card { min-height: 176px; border-radius: 22px; padding: 16px; border-color: rgba(194,236,255,.4); }
+    #screenGame .die-value { width: 88px; height: 88px; font-size: 2.35rem; border-color: rgba(223,247,255,.55); }
+    #screenGame .controls { grid-template-columns: 1fr; gap: 8px; }
+    #screenGame .controls button { min-height: 46px; border-radius: 12px; font-size: .9rem; letter-spacing: .02em; }
+    #screenGame .section-label { margin-bottom: 8px; font-size: .67rem; letter-spacing: .14em; color: rgba(226,245,255,.82); }
+    #screenGame .pill { padding: 9px 10px; border-radius: 12px; }
 
     .panel-header {
       display: flex;
@@ -1760,12 +1774,12 @@
       .cell { width: auto; height: auto; min-width: 0; min-height: 0; aspect-ratio: 1 / 1; }
       .piece { width: calc(100% - 8px); height: calc(100% - 8px); max-width: 56px; max-height: 56px; }
       .die-row { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .die-card { min-height: 76px; padding: 8px; border-radius: 12px; }
+      .die-card { min-height: 112px; padding: 10px; border-radius: 14px; }
       .die-head { font-size: 0.72rem; }
       .die-state { font-size: 0.62rem; padding: 3px 6px; }
       .die-value-wrap { gap: 8px; }
-      .die-value { width: 38px; height: 38px; font-size: 1.1rem; }
-      .die-piece { font-size: 0.74rem; line-height: 1.2; }
+      .die-value { width: 56px; height: 56px; font-size: 1.55rem; }
+      .die-piece { font-size: 0.8rem; line-height: 1.2; }
       .controls {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -2163,21 +2177,6 @@
                 </div>
               </section>
 
-              <details class="section-card mobile-collapsible" open>
-                <summary class="section-label" id="playersHeading"><span>Players</span><span>Alive / Control</span></summary>
-                <div id="playerPills" class="pill-row"></div>
-              </details>
-
-              <details class="section-card selection-box mobile-collapsible" open>
-                <summary class="section-label" id="selectionHeading"><span>Selection</span><span>Piece + Die</span></summary>
-                <div id="selectionInfo" class="selection-info">No piece selected.</div>
-                <div id="dieChoiceBar" class="choice-bar"></div>
-              </details>
-
-              <details class="section-card mobile-collapsible" open>
-                <summary class="section-label" id="logHeading"><span>Move Log</span><span>Latest First</span></summary>
-                <div id="moveLog" class="log" role="log" aria-live="polite"></div>
-              </details>
             </div>
           </aside>
 
@@ -2203,52 +2202,30 @@
             </section>
           </main>
 
-          <aside class="panel" aria-label="Rules and piece guide">
+          <aside class="panel" aria-label="Players and match details">
             <div class="panel-header">
               <div>
-                <div class="eyebrow">Reference</div>
-                <h2>Rules Snapshot</h2>
-                <p class="subtitle">Core movement, dice outcomes, turn flow, promotion, elimination, and victory remain unchanged.</p>
+                <div class="eyebrow">Overview</div>
+                <h2>Match Details</h2>
               </div>
             </div>
 
             <div class="hud-grid">
               <details class="section-card mobile-collapsible" open>
-                <summary class="section-label"><span>Dice Mapping</span><span>Exact Variant</span></summary>
-                <ul class="legend-list">
-                  <li>1 or 5: Pawn or King</li>
-                  <li>2: Elephant</li>
-                  <li>3: Horse</li>
-                  <li>4 or 6: Ship</li>
-                </ul>
+                <summary class="section-label" id="playersHeading"><span>Players</span><span>Alive / Control</span></summary>
+                <div id="playerPills" class="pill-row"></div>
+              </details>
+
+              <details class="section-card selection-box mobile-collapsible" open>
+                <summary class="section-label" id="selectionHeading"><span>Selection</span><span>Piece + Die</span></summary>
+                <div id="selectionInfo" class="selection-info">No piece selected.</div>
+                <div id="dieChoiceBar" class="choice-bar"></div>
               </details>
 
               <details class="section-card mobile-collapsible" open>
-                <summary class="section-label"><span>Variant Notes</span><span>v2 Behavior</span></summary>
-                <ul class="rules-list">
-                  <li>Only legal moves count. No fake playable turns.</li>
-                  <li>If a piece matches both dice, you choose which die to consume.</li>
-                  <li>Promotion follows the destination-square mapping for this variant.</li>
-                  <li>Promotion may create extra kings, but only the starting king is royal.</li>
-                  <li>A team is eliminated only when it has no kings left on the board.</li>
-                  <li>Eliminated players are skipped automatically.</li>
-                  <li>If the unused die has no legal move left, the turn auto-ends.</li>
-                  <li>Remaining pieces of an eliminated player are removed immediately.</li>
-                </ul>
+                <summary class="section-label" id="logHeading"><span>Move Log</span><span>Latest First</span></summary>
+                <div id="moveLog" class="log" role="log" aria-live="polite"></div>
               </details>
-
-              <details class="section-card mobile-collapsible" open>
-                <summary class="section-label"><span>Piece Guide</span><span>Identity</span></summary>
-                <div class="piece-guide">
-                  <div class="piece-guide-row"><div class="guide-badge">K</div><div class="guide-copy"><strong>King</strong><span>Moves 1 square in any direction.</span></div></div>
-                  <div class="piece-guide-row"><div class="guide-badge">E</div><div class="guide-copy"><strong>Elephant</strong><span>Rook-style sliding movement.</span></div></div>
-                  <div class="piece-guide-row"><div class="guide-badge">H</div><div class="guide-copy"><strong>Horse</strong><span>Knight jump movement.</span></div></div>
-                  <div class="piece-guide-row"><div class="guide-badge">S</div><div class="guide-copy"><strong>Ship</strong><span>Two-square diagonal leap.</span></div></div>
-                  <div class="piece-guide-row"><div class="guide-badge">P</div><div class="guide-copy"><strong>Pawn</strong><span>1 forward, diagonal capture.</span></div></div>
-                </div>
-              </details>
-
-              <p class="mini">Arctic Dominion keeps the same arcade-style ruleset: no check/checkmate, and elimination occurs only when a team has no kings left.</p>
             </div>
           </aside>
         </div>
