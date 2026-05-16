@@ -3341,11 +3341,25 @@
         const rank = Number(square.slice(1));
 
         const colIndex = file.charCodeAt(0) - "A".charCodeAt(0);
-        const rowIndex = 8 - rank;
+        const rowIndex = rank - 1;
 
         return { row: rowIndex, col: colIndex };
       };
       const placedPiecesDebug = [];
+      console.table(
+        Object.entries(STARTING_POSITIONS).flatMap(([team, entries]) =>
+          entries.map(entry => {
+            const coord = squareToCoord(entry.square);
+            return {
+              team,
+              type: entry.type,
+              square: entry.square,
+              expectedRow: coord.row,
+              expectedCol: coord.col
+            };
+          })
+        )
+      );
       const placeTeam = (team) => {
         const placements = STARTING_POSITIONS[team] || [];
         placements.forEach(({ type, square }) => {
@@ -3406,18 +3420,27 @@
             const piece = b[row][col];
             if (!piece) continue;
             pieces.push({
-              teamId: piece.team,
+              team: piece.team,
               type: piece.type,
               square: toCoord(row, col),
-              startingCorner: setup.teamConfigs[piece.team]?.startingCorner || null
+              row,
+              col
             });
           }
         }
         console.table(pieces.map(p => ({
-          teamId: p.teamId,
-          pieceType: p.type,
+          team: p.team,
+          type: p.type,
           square: p.square,
-          startingCorner: p.startingCorner
+          row: p.row,
+          col: p.col
+        })));
+        console.table(placedPiecesDebug.map(p => ({
+          team: p.team,
+          type: p.type,
+          square: p.square,
+          row: p.row,
+          col: p.col
         })));
         console.table(placedPiecesDebug.map(p => ({
           team: p.team,
