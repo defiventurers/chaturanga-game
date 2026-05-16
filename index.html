@@ -2569,6 +2569,50 @@
       modalCancelBtn: document.getElementById('modalCancelBtn')
     };
 
+    function setText(selectorOrId, value) {
+      const el =
+        selectorOrId.startsWith('#') || selectorOrId.startsWith('.')
+          ? document.querySelector(selectorOrId)
+          : document.getElementById(selectorOrId);
+      if (!el) {
+        console.log('Missing text target:', selectorOrId, 'value:', value);
+        console.warn('Missing text target:', selectorOrId, 'value:', value);
+        return;
+      }
+      el.textContent = value;
+    }
+    function setHTML(selectorOrId, value) {
+      const el =
+        selectorOrId.startsWith('#') || selectorOrId.startsWith('.')
+          ? document.querySelector(selectorOrId)
+          : document.getElementById(selectorOrId);
+      if (!el) {
+        console.log('Missing HTML target:', selectorOrId, 'value:', value);
+        console.warn('Missing HTML target:', selectorOrId, 'value:', value);
+        return;
+      }
+      el.innerHTML = value;
+    }
+    function setNodeText(el, targetName, value) {
+      if (!el) {
+        console.log('Missing text target:', targetName, 'value:', value);
+        console.warn('Missing text target:', targetName, 'value:', value);
+        return;
+      }
+      el.textContent = value;
+    }
+    function setNodeHTML(el, targetName, value) {
+      if (!el) {
+        console.log('Missing HTML target:', targetName, 'value:', value);
+        console.warn('Missing HTML target:', targetName, 'value:', value);
+        return;
+      }
+      el.innerHTML = value;
+    }
+    function isDominionSelectionScreenActive() {
+      return appState?.screen === 'teamSelect' || !!document.querySelector('.dominion-screen:not([hidden])');
+    }
+
     const sound = createSoundEngine();
     const state = createInitialState();
     function buildTutorialScenario(team, piece, presetName) {
@@ -2622,13 +2666,13 @@
     }
     function renderPieceExplorer() {
       if (!ui.tutorialBoard) return;
-      ui.tutorialTeamSelector.innerHTML = '';
+      setNodeHTML(ui.tutorialTeamSelector, 'ui.tutorialTeamSelector', '');
       ['red','blue','green','yellow'].forEach(team => { const b=document.createElement('button'); b.className=`tutorial-choice-card team-${team} ${tutorialState.selectedTutorialTeam===team?'selected':''}`; const icon=getPieceAsset(team,'king'); b.innerHTML=`<img src='${icon}' alt='${TEAM_LABEL[team]} king'><div class='meta'><strong>${TEAM_LABEL[team]}</strong><span>team</span></div>`; b.onclick=()=>{tutorialState.selectedTutorialTeam=team; resetTutorialScenario();}; ui.tutorialTeamSelector.appendChild(b); });
-      ui.tutorialPieceSelector.innerHTML = '';
+      setNodeHTML(ui.tutorialPieceSelector, 'ui.tutorialPieceSelector', '');
       const pieceRole={pawn:'basic unit',ship:'boat unit',elephant:'heavy unit',horse:'swift unit',king:'royal unit'}; ['pawn','ship','elephant','horse','king'].forEach(type => { const b=document.createElement('button'); b.className=`tutorial-choice-card ${tutorialState.selectedTutorialPiece===type?'selected':''}`; const icon=getPieceAsset(tutorialState.selectedTutorialTeam,type); b.innerHTML=`<img src='${icon}' alt='${PIECE_NAME[type]}'><div class='meta'><strong>${PIECE_NAME[type]}</strong><span>${pieceRole[type]}</span></div>`; b.onclick=()=>{tutorialState.selectedTutorialPiece=type; tutorialState.selectedTutorialExample=0; resetTutorialScenario();}; ui.tutorialPieceSelector.appendChild(b); });
-      ui.tutorialPresetSelector.innerHTML = '';
+      setNodeHTML(ui.tutorialPresetSelector, 'ui.tutorialPresetSelector', '');
       TUTORIAL_PRESETS.forEach((name, idx)=>{ const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedTutorialExample===idx?'selected':''}`; b.textContent=name; b.onclick=()=>{tutorialState.selectedTutorialExample=idx; resetTutorialScenario();}; ui.tutorialPresetSelector.appendChild(b); });
-      ui.tutorialBoard.innerHTML = '';
+      setNodeHTML(ui.tutorialBoard, 'ui.tutorialBoard', '');
       for (let row=7; row>=0; row--) for (let col=0; col<8; col++) {
         const cell=document.createElement('button'); cell.className=`tutorial-cell ${(row+col)%2===0?'light':'dark'}`; cell.onclick=()=>handleTutorialCellClick(row,col);
         if (tutorialState.selectedCell && tutorialState.selectedCell.row===row && tutorialState.selectedCell.col===col) cell.classList.add('selected');
@@ -2643,12 +2687,12 @@
       }
       renderTutorialArrows();
       const preset = TUTORIAL_PRESETS[tutorialState.selectedTutorialExample];
-      ui.tutorialDescription.innerHTML = `<strong>${PIECE_NAME[tutorialState.selectedTutorialPiece]} · ${TEAM_LABEL[tutorialState.selectedTutorialTeam]}</strong><div>Example: ${preset}</div><div>Moves: uses live move rules.</div><div>Captures: highlighted enemy targets only.</div><div>Tip: ${tutorialState.selectedTutorialPiece==='king'?'Protect your kings to stay alive.':'Tap highlighted squares and test each example.'}</div>`;
-      ui.tutorialTogglePatternBtn.textContent = tutorialState.showTutorialMovePattern ? 'Hide Move Pattern' : 'Show Move Pattern';
-      ui.tutorialToggleCapturesBtn.textContent = tutorialState.showTutorialCaptures ? 'Hide Captures' : 'Show Captures';
+      setNodeHTML(ui.tutorialDescription, 'ui.tutorialDescription', `<strong>${PIECE_NAME[tutorialState.selectedTutorialPiece]} · ${TEAM_LABEL[tutorialState.selectedTutorialTeam]}</strong><div>Example: ${preset}</div><div>Moves: uses live move rules.</div><div>Captures: highlighted enemy targets only.</div><div>Tip: ${tutorialState.selectedTutorialPiece==='king'?'Protect your kings to stay alive.':'Tap highlighted squares and test each example.'}</div>`);
+      setNodeText(ui.tutorialTogglePatternBtn, 'ui.tutorialTogglePatternBtn', tutorialState.showTutorialMovePattern ? 'Hide Move Pattern' : 'Show Move Pattern');
+      setNodeText(ui.tutorialToggleCapturesBtn, 'ui.tutorialToggleCapturesBtn', tutorialState.showTutorialCaptures ? 'Hide Captures' : 'Show Captures');
     }
     function renderTutorialArrows() {
-      ui.tutorialArrows.innerHTML = '';
+      setNodeHTML(ui.tutorialArrows, 'ui.tutorialArrows', '');
       if (!tutorialState.showTutorialMovePattern) return;
       const defs = { pawn:['M50 60 L50 32'], elephant:['M50 50 L82 50','M50 50 L18 50','M50 50 L50 18','M50 50 L50 82'], horse:['M50 50 L64 30','M50 50 L36 30','M50 50 L64 70','M50 50 L36 70'], ship:['M50 50 L70 30','M50 50 L30 30','M50 50 L70 70','M50 50 L30 70'], king:['M50 50 L70 50','M50 50 L30 50','M50 50 L50 30','M50 50 L50 70','M50 50 L68 32','M50 50 L32 32','M50 50 L68 68','M50 50 L32 68'] };
       defs[tutorialState.selectedTutorialPiece].forEach(d=>{ const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',d); p.setAttribute('class','tutorial-arrow'); ui.tutorialArrows.appendChild(p); });
@@ -2694,11 +2738,11 @@
       }
 
       function updateUiStatus(message) {
-        ui.audioStatus.textContent = message;
-        ui.audioToggleBtn.textContent = enabled ? 'Sound On' : 'Sound Off';
+        setNodeText(ui.audioStatus, 'ui.audioStatus', message);
+        setNodeText(ui.audioToggleBtn, 'ui.audioToggleBtn', enabled ? 'Sound On' : 'Sound Off');
         ui.audioToggleBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
         ui.volumeSlider.disabled = !unlocked || !supported;
-        ui.volumeValue.textContent = `${Math.round(volume * 100)}%`;
+        setNodeText(ui.volumeValue, 'ui.volumeValue', `${Math.round(volume * 100)}%`);
       }
 
       async function unlock() {
@@ -3073,9 +3117,9 @@
 
   function renderAppScreen() {
       console.log('Current menu screen:', appState.screen);
-      if (ui.menuSummaryPlayers) ui.menuSummaryPlayers.textContent = `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`;
-      if (ui.menuSummaryDifficulty) ui.menuSummaryDifficulty.textContent = capitalize(appState.matchConfig.botDifficulty);
-      if (ui.menuSummaryControl) ui.menuSummaryControl.textContent = getControlSummaryText(appState.matchConfig.controlMap);
+      if (ui.menuSummaryPlayers) setNodeText(ui.menuSummaryPlayers, 'ui.menuSummaryPlayers', `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`);
+      if (ui.menuSummaryDifficulty) setNodeText(ui.menuSummaryDifficulty, 'ui.menuSummaryDifficulty', capitalize(appState.matchConfig.botDifficulty));
+      if (ui.menuSummaryControl) setNodeText(ui.menuSummaryControl, 'ui.menuSummaryControl', getControlSummaryText(appState.matchConfig.controlMap));
 
       const playerCountButtons = ui.playerCountChoices ? ui.playerCountChoices.querySelectorAll('.choice-card') : [];
       playerCountButtons.forEach(card => {
@@ -3087,14 +3131,14 @@
         card.classList.toggle('selected', card.dataset.value === appState.matchConfig.botDifficulty);
       });
 
-      ui.tutorialBackBtn.textContent = appState.tutorialEntry === 'menu' ? 'Back to Menu' : 'Back';
+      setNodeText(ui.tutorialBackBtn, 'ui.tutorialBackBtn', appState.tutorialEntry === 'menu' ? 'Back to Menu' : 'Back');
       const isDominionOfflineMode = localStorage.getItem('offlineMode') === 'true';
       if (isDominionOfflineMode && appState.playMode === 'offline') {
-        ui.loadingText.textContent = `Preparing a ${appState.matchConfig.playerCount}-team offline match.`;
+        setNodeText(ui.loadingText, 'ui.loadingText', `Preparing a ${appState.matchConfig.playerCount}-team offline match.`);
       } else {
-        ui.loadingText.textContent = `Preparing a ${appState.matchConfig.playerCount}-player match with ${capitalize(appState.matchConfig.botDifficulty)} bots where needed.`;
+        setNodeText(ui.loadingText, 'ui.loadingText', `Preparing a ${appState.matchConfig.playerCount}-player match with ${capitalize(appState.matchConfig.botDifficulty)} bots where needed.`);
       }
-      ui.gameTopSummary.textContent = getGameSummaryText();
+      setNodeText(ui.gameTopSummary, 'ui.gameTopSummary', getGameSummaryText());
       renderGameConfigPills();
     }
 
@@ -3109,7 +3153,7 @@
     }
 
     function renderGameConfigPills() {
-      ui.gameConfigPills.innerHTML = '';
+      setNodeHTML(ui.gameConfigPills, 'ui.gameConfigPills', '');
       const pills = [];
       if (isDominionSelectionModeActive()) {
         const selectedTeams = getSelectedInternalTeamsFromStorage();
@@ -3139,7 +3183,7 @@
         { value: 4, title: '4 Player', meta: 'All human', description: 'No bots. Full four-human local match.' }
       ];
 
-      ui.playerCountChoices.innerHTML = '';
+      setNodeHTML(ui.playerCountChoices, 'ui.playerCountChoices', '');
       playerCountOptions.forEach(option => {
         const button = document.createElement('button');
         button.type = 'button';
@@ -3166,7 +3210,7 @@
         { value: 'pro', title: 'Pro', meta: 'Strongest · ★★★★', description: 'Deepest evaluation.' }
       ];
 
-      ui.difficultyChoices.innerHTML = '';
+      setNodeHTML(ui.difficultyChoices, 'ui.difficultyChoices', '');
       difficultyOptions.forEach(option => {
         const button = document.createElement('button');
         button.type = 'button';
@@ -3472,7 +3516,7 @@
 
     function buildBoardGrid() {
       const orientation = getBoardViewOrientation();
-      ui.boardGrid.innerHTML = '';
+      setNodeHTML(ui.boardGrid, 'ui.boardGrid', '');
       for (let viewRow = ROWS - 1; viewRow >= 0; viewRow--) {
         const coord = document.createElement('div');
         coord.className = 'coord';
@@ -3962,8 +4006,8 @@
     function openPromotionModal(payload) {
       state.awaitingPromotion = payload;
       sound.playPromotionPromptSound();
-      ui.modalTitle.textContent = 'Pawn Promotion';
-      ui.modalText.textContent = `This pawn reached ${toCoord(payload.row, payload.col)} and may promote to ${PIECE_NAME[payload.promotionType]}.`;
+      setNodeText(ui.modalTitle, 'ui.modalTitle', 'Pawn Promotion');
+      setNodeText(ui.modalText, 'ui.modalText', `This pawn reached ${toCoord(payload.row, payload.col)} and may promote to ${PIECE_NAME[payload.promotionType]}.`);
       ui.modalBackdrop.classList.add('show');
       ui.modalBackdrop.setAttribute('aria-hidden', 'false');
     }
@@ -4556,19 +4600,20 @@
     }
 
     function renderStatus() {
+      if (isDominionSelectionScreenActive()) return;
       const team = getCurrentTeam();
-      ui.turnMark.className = `turn-mark ${TEAM_CLASS[team]}`;
-      ui.statusPlayer.className = `status-player ${TEAM_CLASS[team]}`;
+      if (ui.turnMark) ui.turnMark.className = `turn-mark ${TEAM_CLASS[team]}`;
+      if (ui.statusPlayer) ui.statusPlayer.className = `status-player ${TEAM_CLASS[team]}`;
 
       if (state.gameOver) {
-        ui.statusPlayer.textContent = `${TEAM_LABEL[state.winner]} Wins`;
-        ui.statusBar.innerHTML = `<strong>Game over.</strong> ${TEAM_LABEL[state.winner]} is the last surviving team.`;
-        ui.statusMeta.innerHTML = '<span class="meta-chip">Victory</span><span class="meta-chip">Match Complete</span>';
+        setNodeText(ui.statusPlayer, 'ui.statusPlayer', `${TEAM_LABEL[state.winner]} Wins`);
+        setNodeHTML(ui.statusBar, 'ui.statusBar', `<strong>Game over.</strong> ${TEAM_LABEL[state.winner]} is the last surviving team.`);
+        setNodeHTML(ui.statusMeta, 'ui.statusMeta', '<span class="meta-chip">Victory</span><span class="meta-chip">Match Complete</span>');
         return;
       }
 
       const controller = isBotPlayer(team) ? 'Bot' : 'Human';
-      ui.statusPlayer.textContent = `${TEAM_LABEL[team]} to act`;
+      setNodeText(ui.statusPlayer, 'ui.statusPlayer', `${TEAM_LABEL[team]} to act`);
 
       let line = '';
       const meta = [];
@@ -4609,11 +4654,12 @@
 
       if (state.awaitingPromotion) meta.push('Promotion pending');
 
-      ui.statusBar.innerHTML = line;
-      ui.statusMeta.innerHTML = meta.map(text => `<span class="meta-chip">${text}</span>`).join('');
+      setNodeHTML(ui.statusBar, 'ui.statusBar', line);
+      setNodeHTML(ui.statusMeta, 'ui.statusMeta', meta.map(text => `<span class="meta-chip">${text}</span>`).join(''));
     }
 
     function renderDice() {
+      if (isDominionSelectionScreenActive()) return;
       const team = getCurrentTeam();
       for (let i = 0; i < 2; i++) {
         const value = state.dice.values[i];
@@ -4626,36 +4672,38 @@
         else if (rolled && playerHasLegalMoveForDie(team, i)) dieState = 'Ready';
         else if (rolled) dieState = 'No Move';
 
-        ui.dieValues[i].textContent = value ?? '?';
+        setNodeText(ui.dieValues[i], `ui.dieValues[${i}]`, value ?? '?');
         if (value) {
           const options = DICE_ROLLS[value].map(name => `<img class=\"die-piece-icon\" src=\"${getPieceAsset(team, name)}\" alt=\"${PIECE_NAME[name]}\">`).join('');
-          ui.diePieces[i].innerHTML = `<div class=\"die-piece-icons\">${options}</div><div>${pieceText}</div>`;
+          setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, `<div class=\"die-piece-icons\">${options}</div><div>${pieceText}</div>`);
         } else {
-          ui.diePieces[i].textContent = pieceText;
+          setNodeText(ui.diePieces[i], `ui.diePieces[${i}]`, pieceText);
         }
-        ui.dieStates[i].textContent = dieState;
-        ui.dieCards[i].classList.toggle('used', state.dice.used[i]);
-        ui.dieCards[i].classList.toggle('active', state.dice.lockedDieIndex === i);
+        setNodeText(ui.dieStates[i], `ui.dieStates[${i}]`, dieState);
+        if (ui.dieCards[i]) ui.dieCards[i].classList.toggle('used', state.dice.used[i]);
+        if (ui.dieCards[i]) ui.dieCards[i].classList.toggle('active', state.dice.lockedDieIndex === i);
       }
     }
 
     function renderSelectionInfo() {
-      ui.dieChoiceBar.innerHTML = '';
+      if (isDominionSelectionScreenActive()) return;
+      setNodeHTML(ui.dieChoiceBar, 'ui.dieChoiceBar', '');
 
       if (!state.selected) {
-        ui.selectionInfo.textContent = isBotPlayer(getCurrentTeam())
+        setNodeText(ui.selectionInfo, 'ui.selectionInfo', isBotPlayer(getCurrentTeam())
           ? 'Bot-controlled turn. Human selection is disabled.'
-          : 'No piece selected.';
+          : 'No piece selected.');
         return;
       }
 
       const piece = state.board[state.selected.row][state.selected.col];
       const availableDice = getAvailableDiceForPiece(state.selected.row, state.selected.col);
-      ui.selectionInfo.textContent = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]} at ${toCoord(state.selected.row, state.selected.col)}.`;
+      setNodeText(ui.selectionInfo, 'ui.selectionInfo', `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]} at ${toCoord(state.selected.row, state.selected.col)}.`);
 
       const doubleUsage = getDoubleRollUsage();
       if (availableDice.length > 1 && state.dice.lockedDieIndex === null && !doubleUsage.isDouble) {
-        ui.selectionInfo.textContent += ' This piece can use either active die. Choose which die to spend.';
+        const current = ui.selectionInfo ? ui.selectionInfo.textContent : '';
+        setNodeText(ui.selectionInfo, 'ui.selectionInfo', `${current} This piece can use either active die. Choose which die to spend.`);
         availableDice.forEach(dieIndex => {
           const btn = document.createElement('button');
           btn.className = 'subtle';
@@ -4666,15 +4714,18 @@
       } else if (state.dice.lockedDieIndex !== null) {
         const dieValue = state.dice.values[state.dice.lockedDieIndex];
         if (doubleUsage.isDouble) {
-          ui.selectionInfo.textContent += ` Rolled ${doubleUsage.value} / ${doubleUsage.value} — ${doubleUsage.remainingUses} use(s) remaining with ${state.legalMoves.length} legal move(s).`;
+          const current = ui.selectionInfo ? ui.selectionInfo.textContent : '';
+          setNodeText(ui.selectionInfo, 'ui.selectionInfo', `${current} Rolled ${doubleUsage.value} / ${doubleUsage.value} — ${doubleUsage.remainingUses} use(s) remaining with ${state.legalMoves.length} legal move(s).`);
         } else {
-          ui.selectionInfo.textContent += ` Using Die ${state.dice.lockedDieIndex + 1} (${dieValue}) with ${state.legalMoves.length} legal move(s).`;
+          const current = ui.selectionInfo ? ui.selectionInfo.textContent : '';
+          setNodeText(ui.selectionInfo, 'ui.selectionInfo', `${current} Using Die ${state.dice.lockedDieIndex + 1} (${dieValue}) with ${state.legalMoves.length} legal move(s).`);
         }
       }
     }
 
     function renderPlayerPills() {
-      ui.playerPills.innerHTML = '';
+      if (isDominionSelectionScreenActive()) return;
+      setNodeHTML(ui.playerPills, 'ui.playerPills', '');
       const displayTeams = PLAYERS;
       displayTeams.forEach(team => {
         const pill = document.createElement('div');
@@ -4694,7 +4745,7 @@
     }
 
     function renderMoveLog() {
-      ui.moveLog.innerHTML = '';
+      setNodeHTML(ui.moveLog, 'ui.moveLog', '');
       const entries = state.moveLog.slice().reverse();
       entries.forEach(text => {
         const div = document.createElement('div');
@@ -5303,6 +5354,7 @@
     console.log('Selected internal teams:', selectedInternalTeams);
     console.log('Offline players:', offlinePlayers);
     console.log('Calling old offline start function...');
+    console.log('Starting offline match with selectedTeams:', selectedInternalTeams);
     startOfflineMatchFromDominions(selectedInternalTeams, selectedUiColors, selectedTeamStartZones, offlinePlayers);
     console.log('Game screen should now load');
   }
@@ -5383,9 +5435,9 @@
     });
     if (appState.screen === 'teamSelect') console.log('RENDER TEAM SELECT', getEffectivePlayerCount());
     if (ui.teamSelectHint) {
-      ui.teamSelectHint.textContent = getEffectivePlayerCount()
+      setNodeText(ui.teamSelectHint, 'ui.teamSelectHint', getEffectivePlayerCount()
         ? `Select ${getEffectivePlayerCount()} dominion(s): ${selectedHumanTeams.length}/${getEffectivePlayerCount()}`
-        : 'Select a player count first';
+        : 'Select a player count first');
     }
   }
 
@@ -5416,7 +5468,7 @@
   const originalBuildSetupChoices = buildSetupChoices;
   buildSetupChoices = function () {
     originalBuildSetupChoices();
-    if (ui.playerCountChoices) ui.playerCountChoices.innerHTML = '';
+    if (ui.playerCountChoices) setNodeHTML(ui.playerCountChoices, 'ui.playerCountChoices', '');
 
     makeCardChoice(ui.playModeChoices, [
       { value: 'offline', title: '🎮 Offline Play', meta: 'Local', description: 'Play on this device.' },
@@ -5478,10 +5530,10 @@
   renderSelectionInfo = function () {
     originalRenderSelectionInfo();
     if (appState.playMode === 'online' && !OnlineMatchController.isLocalTurn() && appState.screen === 'game' && !state.gameOver) {
-      ui.selectionInfo.textContent = appState.online.localTeam
+      setNodeText(ui.selectionInfo, 'ui.selectionInfo', appState.online.localTeam
         ? `Online match. You control ${TEAM_LABEL[appState.online.localTeam]}. Interaction is disabled until it is your turn.`
-        : 'Online match. Waiting for seat assignment.';
-      ui.dieChoiceBar.innerHTML = '';
+        : 'Online match. Waiting for seat assignment.');
+      setNodeHTML(ui.dieChoiceBar, 'ui.dieChoiceBar', '');
     }
   };
 
@@ -5542,8 +5594,8 @@
     state.moveLog = [...snapshot.moveLog];
     state.lastMove = snapshot.lastMove ? { ...snapshot.lastMove } : null;
     if (state.awaitingPromotion) {
-      ui.modalTitle.textContent = 'Pawn Promotion';
-      ui.modalText.textContent = `This pawn reached ${toCoord(state.awaitingPromotion.row, state.awaitingPromotion.col)} and may promote to ${PIECE_NAME[state.awaitingPromotion.promotionType]}.`;
+      setNodeText(ui.modalTitle, 'ui.modalTitle', 'Pawn Promotion');
+      setNodeText(ui.modalText, 'ui.modalText', `This pawn reached ${toCoord(state.awaitingPromotion.row, state.awaitingPromotion.col)} and may promote to ${PIECE_NAME[state.awaitingPromotion.promotionType]}.`);
       ui.modalBackdrop.classList.add('show');
       ui.modalBackdrop.setAttribute('aria-hidden', 'false');
     } else {
@@ -5577,7 +5629,7 @@
   function setOnlineError(message) {
     appState.online.errorText = message || '';
     if (appState.online.errorText) {
-      ui.lobbyStatusText.textContent = `⚠ ${appState.online.errorText}`;
+      setNodeText(ui.lobbyStatusText, 'ui.lobbyStatusText', `⚠ ${appState.online.errorText}`);
     }
   }
 
@@ -5606,7 +5658,7 @@
       this.socket.addEventListener('open', () => {
         appState.online.connected = true;
         setOnlineError('');
-        ui.lobbyStatusText.textContent = 'Connected to room server.';
+        setNodeText(ui.lobbyStatusText, 'ui.lobbyStatusText', 'Connected to room server.');
         renderLobby();
       });
       this.socket.addEventListener('close', () => {
@@ -5810,35 +5862,35 @@
   function showCountdown(seconds) {
     ui.countdownOverlay.classList.add('show');
     ui.countdownOverlay.setAttribute('aria-hidden', 'false');
-    ui.countdownValue.textContent = String(seconds);
+    setNodeText(ui.countdownValue, 'ui.countdownValue', String(seconds));
   }
   function hideCountdown() { ui.countdownOverlay.classList.remove('show'); ui.countdownOverlay.setAttribute('aria-hidden', 'true'); }
   function renderLobby() {
     const roomState = appState.online.roomState;
-    ui.lobbyConnectionPill.textContent = appState.online.connected ? 'Connected' : 'Disconnected';
+    setNodeText(ui.lobbyConnectionPill, 'ui.lobbyConnectionPill', appState.online.connected ? 'Connected' : 'Disconnected');
     ui.lobbyConnectionPill.className = `net-pill ${appState.online.connected ? 'live' : 'warn'}`;
     if (!roomState) {
-      if (appState.online.errorText) ui.lobbyStatusText.textContent = appState.online.errorText;
+      if (appState.online.errorText) setNodeText(ui.lobbyStatusText, 'ui.lobbyStatusText', appState.online.errorText);
       return;
     }
     const localPlayer = roomState.players.find(player => player.id === appState.online.localPlayerId);
     const everyonePresent = roomState.players.length === roomState.seatCount;
     const everyoneReady = everyonePresent && roomState.players.every(player => !!player.ready);
-    ui.lobbyRoomIdText.textContent = roomState.roomId;
-    ui.lobbyRoomCodeValue.textContent = roomState.roomId;
-    ui.lobbySeatCountValue.textContent = `${roomState.seatCount} humans`;
-    ui.lobbyLocalTeamValue.textContent = localPlayer ? TEAM_LABEL[localPlayer.team] : 'Waiting';
+    setNodeText(ui.lobbyRoomIdText, 'ui.lobbyRoomIdText', roomState.roomId);
+    setNodeText(ui.lobbyRoomCodeValue, 'ui.lobbyRoomCodeValue', roomState.roomId);
+    setNodeText(ui.lobbySeatCountValue, 'ui.lobbySeatCountValue', `${roomState.seatCount} humans`);
+    setNodeText(ui.lobbyLocalTeamValue, 'ui.lobbyLocalTeamValue', localPlayer ? TEAM_LABEL[localPlayer.team] : 'Waiting');
     ui.lobbyShareLinkInput.value = updateShareLink(roomState.roomId);
-    ui.lobbyStatusText.textContent = appState.online.errorText || (roomState.matchStarted ? 'Match already started.' : everyoneReady ? 'All players ready. Countdown should begin.' : everyonePresent ? 'All slots filled. Waiting for ready checks.' : `Waiting for ${roomState.seatCount - roomState.players.length} more player(s).`);
+    setNodeText(ui.lobbyStatusText, 'ui.lobbyStatusText', appState.online.errorText || (roomState.matchStarted ? 'Match already started.' : everyoneReady ? 'All players ready. Countdown should begin.' : everyonePresent ? 'All slots filled. Waiting for ready checks.' : `Waiting for ${roomState.seatCount - roomState.players.length} more player(s).`));
     renderOnlinePreferredTeamChoices();
-    ui.toggleReadyBtn.textContent = localPlayer && localPlayer.ready ? 'Unready' : 'Ready';
+    setNodeText(ui.toggleReadyBtn, 'ui.toggleReadyBtn', localPlayer && localPlayer.ready ? 'Unready' : 'Ready');
     const actionsDisabled = !appState.online.connected;
     ui.toggleReadyBtn.disabled = actionsDisabled || !localPlayer;
     ui.leaveLobbyBtn.disabled = false;
     ui.copyRoomCodeBtn.disabled = !appState.online.roomId;
     ui.copyRoomLinkBtn.disabled = !ui.lobbyShareLinkInput.value;
     ui.shareRoomBtn.disabled = !ui.lobbyShareLinkInput.value;
-    ui.lobbyPlayerSlots.innerHTML = '';
+    setNodeHTML(ui.lobbyPlayerSlots, 'ui.lobbyPlayerSlots', '');
     PLAYERS.forEach(team => {
       const player = roomState.players.find(entry => entry.team === team);
       const slot = document.createElement('div');
@@ -5887,7 +5939,7 @@
   let modeToastTimer = null;
   function showModeToast(message) {
     if (!ui.modeToast) return;
-    ui.modeToast.textContent = message;
+    setNodeText(ui.modeToast, 'ui.modeToast', message);
     ui.modeToast.classList.add('show');
     clearTimeout(modeToastTimer);
     modeToastTimer = setTimeout(() => { ui.modeToast?.classList.remove('show'); }, 1600);
