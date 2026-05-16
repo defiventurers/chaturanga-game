@@ -3336,16 +3336,36 @@
     function initializeBoard() {
       console.log('INITIALIZING BOARD');
       const b = state.board;
-      const squareToIndex = (square) => {
-        const file = square[0].toUpperCase().charCodeAt(0) - 65;
+      const squareToCoord = (square) => {
+        const file = square[0].toUpperCase();
         const rank = Number(square.slice(1));
-        return { row: 8 - rank, col: file };
+
+        const colIndex = file.charCodeAt(0) - "A".charCodeAt(0);
+        const rowIndex = rank - 1;
+
+        return { row: rowIndex, col: colIndex };
       };
+      const placedPiecesDebug = [];
+      console.table(
+        Object.entries(STARTING_POSITIONS).flatMap(([team, entries]) =>
+          entries.map(entry => {
+            const coord = squareToCoord(entry.square);
+            return {
+              team,
+              type: entry.type,
+              square: entry.square,
+              expectedRow: coord.row,
+              expectedCol: coord.col
+            };
+          })
+        )
+      );
       const placeTeam = (team) => {
         const placements = STARTING_POSITIONS[team] || [];
         placements.forEach(({ type, square }) => {
-          const { row, col } = squareToIndex(square);
+          const { row, col } = squareToCoord(square);
           b[row][col] = makePiece(team, type, type === 'king');
+          placedPiecesDebug.push({ team, type, square, row, col });
         });
       };
       if (appState.playMode === 'offline') {
@@ -3400,18 +3420,27 @@
             const piece = b[row][col];
             if (!piece) continue;
             pieces.push({
-              teamId: piece.team,
+              team: piece.team,
               type: piece.type,
               square: toCoord(row, col),
-              startingCorner: setup.teamConfigs[piece.team]?.startingCorner || null
+              row,
+              col
             });
           }
         }
         console.table(pieces.map(p => ({
-          teamId: p.teamId,
-          pieceType: p.type,
+          team: p.team,
+          type: p.type,
           square: p.square,
-          startingCorner: p.startingCorner
+          row: p.row,
+          col: p.col
+        })));
+        console.table(placedPiecesDebug.map(p => ({
+          team: p.team,
+          type: p.type,
+          square: p.square,
+          row: p.row,
+          col: p.col
         })));
         return;
       }
@@ -3419,6 +3448,13 @@
         const team = TEAM_TO_GAME_TEAM[teamKey];
         placeTeam(team);
       });
+      console.table(placedPiecesDebug.map(p => ({
+        team: p.team,
+        type: p.type,
+        square: p.square,
+        row: p.row,
+        col: p.col
+      })));
     }
 
     function getBoardViewOrientation() {
