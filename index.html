@@ -3638,12 +3638,41 @@
       return FIXED_TEAM_SETUP[team]?.startingCorner || null;
     }
 
-    function getPawnForwardVector(team) {
-      if (team === 'red') return { dirRow: 0, dirCol: 1, label: 'right' };    // RETSBA
-      if (team === 'green') return { dirRow: 1, dirCol: 0, label: 'down' };   // ABSTER
-      if (team === 'yellow') return { dirRow: -1, dirCol: 0, label: 'up' };   // POLLY
-      if (team === 'blue') return { dirRow: 0, dirCol: -1, label: 'left' };   // PENGU
-      throw new Error('Invalid teamId for Snow Guard direction: ' + team);
+    const SNOW_GUARD_DIRECTIONS = {
+      yellow: {
+        forward: { row: -1, col: 0 },
+        captures: [{ row: -1, col: -1 }, { row: -1, col: 1 }],
+        label: 'up'
+      },
+      red: {
+        forward: { row: 0, col: 1 },
+        captures: [{ row: -1, col: 1 }, { row: 1, col: 1 }],
+        label: 'right'
+      },
+      green: {
+        forward: { row: 1, col: 0 },
+        captures: [{ row: 1, col: -1 }, { row: 1, col: 1 }],
+        label: 'down'
+      },
+      blue: {
+        forward: { row: 0, col: -1 },
+        captures: [{ row: -1, col: -1 }, { row: 1, col: -1 }],
+        label: 'left'
+      }
+    };
+
+    function getSnowGuardDirection(team) {
+      const teamAliasMap = {
+        polly: 'yellow',
+        retsba: 'red',
+        abster: 'green',
+        pengu: 'blue',
+        pink: 'yellow'
+      };
+      const normalizedTeam = teamAliasMap[team] || team;
+      const direction = SNOW_GUARD_DIRECTIONS[normalizedTeam];
+      if (!direction) throw new Error('Invalid teamId for Snow Guard direction: ' + team);
+      return direction;
     }
 
     function getPossibleTargetsOnBoard(board, row, col, type, team, stateRef = state) {
@@ -3720,20 +3749,17 @@
 
     function getPawnMovesOnBoard(board, row, col, team, stateRef = state) {
       const moves = [];
-      const direction = getPawnForwardVector(team, stateRef);
-      const { dirRow, dirCol } = direction;
+      const direction = getSnowGuardDirection(team);
 
-      const forwardRow = row + dirRow;
-      const forwardCol = col + dirCol;
+      const forwardRow = row + direction.forward.row;
+      const forwardCol = col + direction.forward.col;
       if (isInside(forwardRow, forwardCol) && !board[forwardRow][forwardCol]) {
         moves.push([forwardRow, forwardCol]);
       }
 
-      const captures = dirRow !== 0
-        ? [[row + dirRow, col - 1], [row + dirRow, col + 1]]
-        : [[row - 1, col + dirCol], [row + 1, col + dirCol]];
-
-      for (const [r, c] of captures) {
+      for (const capture of direction.captures) {
+        const r = row + capture.row;
+        const c = col + capture.col;
         if (isInside(r, c) && board[r][c] && board[r][c].team !== team) {
           moves.push([r, c]);
         }
