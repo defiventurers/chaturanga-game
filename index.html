@@ -3660,8 +3660,8 @@
 
     const SNOW_GUARD_DIRECTIONS = {
       yellow: {
-        forward: { row: -1, col: 0 },
-        captures: [{ row: -1, col: -1 }, { row: -1, col: 1 }],
+        forward: { row: 1, col: 0 },
+        captures: [{ row: 1, col: -1 }, { row: 1, col: 1 }],
         label: 'up'
       },
       red: {
@@ -3670,8 +3670,8 @@
         label: 'right'
       },
       green: {
-        forward: { row: 1, col: 0 },
-        captures: [{ row: 1, col: -1 }, { row: 1, col: 1 }],
+        forward: { row: -1, col: 0 },
+        captures: [{ row: -1, col: -1 }, { row: -1, col: 1 }],
         label: 'down'
       },
       blue: {
