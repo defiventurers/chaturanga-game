@@ -1157,16 +1157,17 @@
     .die-card {
       position: relative;
       overflow: hidden;
-      border-radius: 18px;
+      border-radius: 22px;
       border: 1px solid rgba(255,255,255,0.08);
       background:
         linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
         rgba(10, 13, 20, 0.8);
-      padding: 14px 12px;
-      min-height: 134px;
+      padding: 14px;
+      min-height: 180px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: center;
+      align-items: center;
       gap: 10px;
       transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
       box-shadow: var(--shadow-sm);
@@ -1194,19 +1195,24 @@
     }
 
     .die-head {
+      width: 100%;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      align-items: flex-start;
+      justify-content: flex-start;
       gap: 8px;
       color: var(--text-soft);
       font-size: 0.82rem;
       font-weight: 800;
+      letter-spacing: 0.12em;
     }
 
     .die-state {
+      position: absolute;
+      top: 10px;
+      right: 10px;
       padding: 4px 8px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.06);
+      background: rgba(8,45,86,0.74);
       color: var(--text-soft);
       font-size: 10px;
       font-weight: 900;
@@ -1217,39 +1223,46 @@
     .die-value-wrap {
       display: grid;
       place-items: center;
-      gap: 6px;
+      gap: 10px;
       text-align: center;
+      width: 100%;
     }
 
     .die-value {
-      width: 58px;
-      height: 58px;
+      width: min(34vw, 132px);
+      height: min(34vw, 132px);
+      aspect-ratio: 1 / 1;
       display: grid;
       place-items: center;
-      border-radius: 16px;
+      border-radius: 24px;
       border: 1px solid rgba(255,255,255,0.12);
       background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-      font-size: 1.8rem;
+      font-size: clamp(42px, 11vw, 68px);
       font-weight: 900;
+      line-height: 1;
       letter-spacing: 0.02em;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     }
 
     .die-piece {
       color: var(--text-soft);
-      font-size: 0.87rem;
-      line-height: 1.35;
-      min-height: 36px;
+      font-size: clamp(12px, 3vw, 15px);
+      line-height: 1.2;
+      min-height: 44px;
+      text-align: center;
+      width: 100%;
     }
     .die-piece-icons {
       display: flex;
       justify-content: center;
-      gap: 6px;
-      margin-bottom: 4px;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      margin-bottom: 6px;
     }
     .die-piece-icon {
-      width: 30px;
-      height: 30px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       border: 1px solid rgba(255,255,255,0.24);
       background: rgba(9, 19, 37, 0.36);
@@ -1629,8 +1642,8 @@
     .board-stage { border-radius: 26px; padding: 8px; border: 1px solid rgba(180,245,255,.7); background: linear-gradient(180deg, rgba(180,240,255,.2), rgba(20,70,110,.35)); box-shadow: inset 0 0 24px rgba(255,255,255,.14), 0 0 28px rgba(80,220,255,.45); }
     .dice-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px; border-radius: 26px; border: 1px solid rgba(180,245,255,.45); background: rgba(5,30,60,.45); box-shadow: inset 0 0 20px rgba(255,255,255,.08), 0 0 22px rgba(60,200,255,.25); backdrop-filter: blur(16px); }
     .dice-stage .die-row { grid-column: 1 / -1; }
-    .dice-stage .die-card { min-height: 150px; border-radius: 22px; border: 1px solid rgba(190,245,255,.45); background: linear-gradient(180deg, rgba(160,230,255,.16), rgba(10,40,80,.42)); }
-    .ice-die-face { width: 88px; height: 88px; border-radius: 22px; font-size: 44px; }
+    .dice-stage .die-card { min-height: 186px; border-radius: 22px; border: 1px solid rgba(190,245,255,.45); background: linear-gradient(180deg, rgba(160,230,255,.16), rgba(10,40,80,.42)); }
+    .ice-die-face { width: min(34vw, 132px); height: min(34vw, 132px); border-radius: 24px; font-size: clamp(42px, 11vw, 68px); }
     .ice-primary-action, .ice-secondary-action { grid-column: 1 / -1; height: 52px; border-radius: 16px; border: 1px solid rgba(190,245,255,.65); font-weight: 900; letter-spacing: .16em; }
     .ice-primary-action { background: linear-gradient(180deg, rgba(40,190,255,.95), rgba(0,90,220,.95)); box-shadow: 0 0 20px rgba(60,210,255,.45); }
     .ice-secondary-action { background: rgba(150,210,255,.12); color: rgba(235,250,255,.86); }
@@ -1822,12 +1835,13 @@
       .cell { width: auto; height: auto; min-width: 0; min-height: 0; aspect-ratio: 1 / 1; }
       .piece { width: calc(100% - 8px); height: calc(100% - 8px); max-width: 56px; max-height: 56px; }
       .die-row { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .die-card { min-height: 112px; padding: 10px; border-radius: 14px; }
+      .die-card { min-height: 168px; padding: 10px; border-radius: 16px; }
       .die-head { font-size: 0.72rem; }
       .die-state { font-size: 0.62rem; padding: 3px 6px; }
       .die-value-wrap { gap: 8px; }
-      .die-value { width: 56px; height: 56px; font-size: 1.55rem; }
-      .die-piece { font-size: 0.8rem; line-height: 1.2; }
+      .die-value { width: min(34vw, 112px); height: min(34vw, 112px); font-size: clamp(36px, 10vw, 52px); }
+      .die-piece { font-size: clamp(12px, 3.2vw, 14px); line-height: 1.2; }
+      .die-piece-icon { width: 30px; height: 30px; }
       .controls {
         display: grid;
         grid-template-columns: 1fr 1fr;
