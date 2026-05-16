@@ -3442,6 +3442,13 @@
           row: p.row,
           col: p.col
         })));
+        console.table(placedPiecesDebug.map(p => ({
+          team: p.team,
+          type: p.type,
+          square: p.square,
+          row: p.row,
+          col: p.col
+        })));
         return;
       }
       TEAM_ORDER.forEach(teamKey => {
