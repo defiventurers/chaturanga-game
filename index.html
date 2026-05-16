@@ -2932,7 +2932,8 @@
           values: [null, null],
           used: [false, false],
           rolled: false,
-          lockedDieIndex: null
+          lockedDieIndex: null,
+          lockedDieValue: null
         },
         awaitingPromotion: null,
         gameOver: false,
@@ -3323,6 +3324,7 @@
       state.dice.used = [false, false];
       state.dice.rolled = false;
       state.dice.lockedDieIndex = null;
+      state.dice.lockedDieValue = null;
       state.awaitingPromotion = null;
       state.gameOver = false;
       state.winner = null;
@@ -3585,17 +3587,24 @@
       state.selected = { row, col };
       state.legalMoves = [];
       state.dice.lockedDieIndex = null;
+      state.dice.lockedDieValue = null;
       sound.playSelectSound();
 
-      const doubleUsage = getDoubleRollUsage();
-      if (availableDice.length === 1 || (doubleUsage.isDouble && availableDice.length > 1)) {
+      const availableDiceEntries = availableDice.map(index => ({ index, value: state.dice.values[index] }));
+      const isDoubleAvailable =
+        availableDiceEntries.length >= 2 &&
+        availableDiceEntries.every(die => die.value === availableDiceEntries[0].value);
+
+      if (availableDice.length === 1) {
         chooseDieForSelection(availableDice[0]);
+      } else if (isDoubleAvailable) {
+        chooseMoveValueForSelection(availableDiceEntries[0].value);
       } else {
         render();
       }
     }
 
-    function chooseDieForSelection(dieIndex) {
+    function chooseMoveValueForSelection(value) {
       unlockAudioFromInteraction();
       if (appState.screen !== 'game') return;
       if (!state.selected) return;
@@ -3605,15 +3614,25 @@
       const piece = state.board[row][col];
       if (!piece) return;
 
+      const dieIndex = state.dice.values.findIndex((dieValue, i) => !state.dice.used[i] && dieValue === value);
+      if (dieIndex === -1) return;
       state.dice.lockedDieIndex = dieIndex;
+      state.dice.lockedDieValue = value;
       state.legalMoves = getLegalMovesForPiece(row, col, dieIndex);
       sound.playSelectSound();
 
       if (state.legalMoves.length === 0) {
         state.dice.lockedDieIndex = null;
+        state.dice.lockedDieValue = null;
       }
 
       render();
+    }
+
+    function chooseDieForSelection(dieIndex) {
+      const dieValue = state.dice.values[dieIndex];
+      if (dieValue === null || dieValue === undefined) return;
+      chooseMoveValueForSelection(dieValue);
     }
 
     function getAvailableDiceForPiece(row, col) {
@@ -3940,6 +3959,7 @@
       state.selected = null;
       state.legalMoves = [];
       state.dice.lockedDieIndex = null;
+      state.dice.lockedDieValue = null;
     }
 
     function toCoord(row, col) {
@@ -4006,6 +4026,7 @@
       state.dice.used = [false, false];
       state.dice.rolled = false;
       state.dice.lockedDieIndex = null;
+      state.dice.lockedDieValue = null;
 
       let safety = 0;
       do {
@@ -4036,6 +4057,13 @@
       render();
     }
 
+    function consumeOneDieByValue(value) {
+      const dieIndex = state.dice.values.findIndex((dieValue, i) => !state.dice.used[i] && dieValue === value);
+      if (dieIndex === -1) return false;
+      state.dice.used[dieIndex] = true;
+      return true;
+    }
+
     function applyMoveAction(move, options = {}) {
       const {
         forcePromotionDecision = null,
@@ -4048,7 +4076,8 @@
       const captured = state.board[move.toRow][move.toCol];
       state.board[move.toRow][move.toCol] = movingPiece;
       state.board[move.fromRow][move.fromCol] = null;
-      state.dice.used[move.dieIndex] = true;
+      const consumed = consumeOneDieByValue(state.dice.values[move.dieIndex]);
+      if (!consumed) state.dice.used[move.dieIndex] = true;
       state.lastMove = {
         fromRow: move.fromRow,
         fromCol: move.fromCol,
@@ -4130,6 +4159,7 @@
       state.dice.used = [false, false];
       state.dice.rolled = true;
       state.dice.lockedDieIndex = null;
+      state.dice.lockedDieValue = null;
       clearSelection();
 
       const team = getCurrentTeam();
@@ -5765,6 +5795,7 @@
           state.dice.used = [false, false];
           state.dice.rolled = true;
           state.dice.lockedDieIndex = null;
+          state.dice.lockedDieValue = null;
           clearSelection();
           pushLog(`${TEAM_LABEL[action.actorTeam]} rolled ${action.dice[0]} and ${action.dice[1]}.`);
         }
