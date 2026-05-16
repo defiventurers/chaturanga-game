@@ -2405,7 +2405,7 @@
         const fallback = document.createElement('span');
         fallback.className = 'piece-fallback';
         fallback.textContent = getPieceLetter(piece);
-        pieceElement.appendChild(fallback);
+        appendSafeElement(pieceElement, fallback, 'pieceElement fallback');
         return;
       }
       const img = document.createElement('img');
@@ -2421,9 +2421,9 @@
         const fallback = document.createElement('span');
         fallback.className = 'piece-fallback';
         fallback.textContent = getPieceLetter(piece);
-        pieceElement.appendChild(fallback);
+        appendSafeElement(pieceElement, fallback, 'pieceElement fallback');
       };
-      pieceElement.appendChild(img);
+      appendSafeElement(pieceElement, img, 'pieceElement image');
     }
     const PIECE_VALUE = {
       king: 1200,
@@ -2609,6 +2609,37 @@
       }
       el.innerHTML = value;
     }
+    function appendSafe(parentSelectorOrId, child, context = "") {
+      const parent =
+        parentSelectorOrId.startsWith('#') || parentSelectorOrId.startsWith('.')
+          ? document.querySelector(parentSelectorOrId)
+          : document.getElementById(parentSelectorOrId);
+
+      if (!parent) {
+        console.warn("appendSafe missing parent:", parentSelectorOrId, context, child);
+        return false;
+      }
+
+      parent.appendChild(child);
+      return true;
+    }
+    function appendSafeElement(parent, child, context = "", critical = false) {
+      if (!parent) {
+        const message = `Missing appendChild container: ${context || '(unknown)'}`;
+        console.warn(message, child);
+        if (critical) throw new Error(message);
+        return false;
+      }
+      parent.appendChild(child);
+      return true;
+    }
+    function verifyBattleDomReady() {
+      const requiredIds = ['boardGrid', 'statusBar', 'dieChoiceBar', 'statusPlayer', 'playerPills'];
+      requiredIds.forEach((id) => {
+        const el = document.getElementById(id);
+        console.log("DOM CHECK", id, Boolean(el));
+      });
+    }
     function isDominionSelectionScreenActive() {
       return appState?.screen === 'teamSelect' || !!document.querySelector('.dominion-screen:not([hidden])');
     }
@@ -2667,11 +2698,11 @@
     function renderPieceExplorer() {
       if (!ui.tutorialBoard) return;
       setNodeHTML(ui.tutorialTeamSelector, 'ui.tutorialTeamSelector', '');
-      ['red','blue','green','yellow'].forEach(team => { const b=document.createElement('button'); b.className=`tutorial-choice-card team-${team} ${tutorialState.selectedTutorialTeam===team?'selected':''}`; const icon=getPieceAsset(team,'king'); b.innerHTML=`<img src='${icon}' alt='${TEAM_LABEL[team]} king'><div class='meta'><strong>${TEAM_LABEL[team]}</strong><span>team</span></div>`; b.onclick=()=>{tutorialState.selectedTutorialTeam=team; resetTutorialScenario();}; ui.tutorialTeamSelector.appendChild(b); });
+      ['red','blue','green','yellow'].forEach(team => { const b=document.createElement('button'); b.className=`tutorial-choice-card team-${team} ${tutorialState.selectedTutorialTeam===team?'selected':''}`; const icon=getPieceAsset(team,'king'); b.innerHTML=`<img src='${icon}' alt='${TEAM_LABEL[team]} king'><div class='meta'><strong>${TEAM_LABEL[team]}</strong><span>team</span></div>`; b.onclick=()=>{tutorialState.selectedTutorialTeam=team; resetTutorialScenario();}; appendSafeElement(ui.tutorialTeamSelector, b, '#tutorialTeamSelector'); });
       setNodeHTML(ui.tutorialPieceSelector, 'ui.tutorialPieceSelector', '');
-      const pieceRole={pawn:'basic unit',ship:'boat unit',elephant:'heavy unit',horse:'swift unit',king:'royal unit'}; ['pawn','ship','elephant','horse','king'].forEach(type => { const b=document.createElement('button'); b.className=`tutorial-choice-card ${tutorialState.selectedTutorialPiece===type?'selected':''}`; const icon=getPieceAsset(tutorialState.selectedTutorialTeam,type); b.innerHTML=`<img src='${icon}' alt='${PIECE_NAME[type]}'><div class='meta'><strong>${PIECE_NAME[type]}</strong><span>${pieceRole[type]}</span></div>`; b.onclick=()=>{tutorialState.selectedTutorialPiece=type; tutorialState.selectedTutorialExample=0; resetTutorialScenario();}; ui.tutorialPieceSelector.appendChild(b); });
+      const pieceRole={pawn:'basic unit',ship:'boat unit',elephant:'heavy unit',horse:'swift unit',king:'royal unit'}; ['pawn','ship','elephant','horse','king'].forEach(type => { const b=document.createElement('button'); b.className=`tutorial-choice-card ${tutorialState.selectedTutorialPiece===type?'selected':''}`; const icon=getPieceAsset(tutorialState.selectedTutorialTeam,type); b.innerHTML=`<img src='${icon}' alt='${PIECE_NAME[type]}'><div class='meta'><strong>${PIECE_NAME[type]}</strong><span>${pieceRole[type]}</span></div>`; b.onclick=()=>{tutorialState.selectedTutorialPiece=type; tutorialState.selectedTutorialExample=0; resetTutorialScenario();}; appendSafeElement(ui.tutorialPieceSelector, b, '#tutorialPieceSelector'); });
       setNodeHTML(ui.tutorialPresetSelector, 'ui.tutorialPresetSelector', '');
-      TUTORIAL_PRESETS.forEach((name, idx)=>{ const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedTutorialExample===idx?'selected':''}`; b.textContent=name; b.onclick=()=>{tutorialState.selectedTutorialExample=idx; resetTutorialScenario();}; ui.tutorialPresetSelector.appendChild(b); });
+      TUTORIAL_PRESETS.forEach((name, idx)=>{ const b=document.createElement('button'); b.className=`explorer-chip subtle ${tutorialState.selectedTutorialExample===idx?'selected':''}`; b.textContent=name; b.onclick=()=>{tutorialState.selectedTutorialExample=idx; resetTutorialScenario();}; appendSafeElement(ui.tutorialPresetSelector, b, '#tutorialPresetSelector'); });
       setNodeHTML(ui.tutorialBoard, 'ui.tutorialBoard', '');
       for (let row=7; row>=0; row--) for (let col=0; col<8; col++) {
         const cell=document.createElement('button'); cell.className=`tutorial-cell ${(row+col)%2===0?'light':'dark'}`; cell.onclick=()=>handleTutorialCellClick(row,col);
@@ -2682,8 +2713,8 @@
           else cell.classList.add('possible');
         }
         const piece=tutorialState.tutorialBoard[row][col];
-        if (piece){ const el=document.createElement('div'); el.className='piece'; renderPieceImage(piece, el); cell.appendChild(el); }
-        ui.tutorialBoard.appendChild(cell);
+        if (piece){ const el=document.createElement('div'); el.className='piece'; renderPieceImage(piece, el); appendSafeElement(cell, el, 'tutorial cell'); }
+        appendSafeElement(ui.tutorialBoard, cell, '#tutorialBoard');
       }
       renderTutorialArrows();
       const preset = TUTORIAL_PRESETS[tutorialState.selectedTutorialExample];
@@ -2695,7 +2726,7 @@
       setNodeHTML(ui.tutorialArrows, 'ui.tutorialArrows', '');
       if (!tutorialState.showTutorialMovePattern) return;
       const defs = { pawn:['M50 60 L50 32'], elephant:['M50 50 L82 50','M50 50 L18 50','M50 50 L50 18','M50 50 L50 82'], horse:['M50 50 L64 30','M50 50 L36 30','M50 50 L64 70','M50 50 L36 70'], ship:['M50 50 L70 30','M50 50 L30 30','M50 50 L70 70','M50 50 L30 70'], king:['M50 50 L70 50','M50 50 L30 50','M50 50 L50 30','M50 50 L50 70','M50 50 L68 32','M50 50 L32 32','M50 50 L68 68','M50 50 L32 68'] };
-      defs[tutorialState.selectedTutorialPiece].forEach(d=>{ const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',d); p.setAttribute('class','tutorial-arrow'); ui.tutorialArrows.appendChild(p); });
+      defs[tutorialState.selectedTutorialPiece].forEach(d=>{ const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',d); p.setAttribute('class','tutorial-arrow'); appendSafeElement(ui.tutorialArrows, p, '#tutorialArrows'); });
     }
     function handleTutorialCellClick(row,col){
       const move = tutorialState.tutorialLegalMoves.find(m=>m.toRow===row&&m.toCol===col);
@@ -3171,7 +3202,7 @@
         const div = document.createElement('div');
         div.className = 'config-pill';
         div.textContent = text;
-        ui.gameConfigPills.appendChild(div);
+        appendSafeElement(ui.gameConfigPills, div, '#gameConfigPills');
       });
     }
 
@@ -3200,7 +3231,7 @@
           appState.matchConfig.controlMap = getControlMapForPlayerCount(option.value);
           renderAppScreen();
         });
-        ui.playerCountChoices.appendChild(button);
+        appendSafeElement(ui.playerCountChoices, button, '#playerCountChoices');
       });
 
       const difficultyOptions = [
@@ -3226,7 +3257,7 @@
           appState.matchConfig.botDifficulty = option.value;
           renderAppScreen();
         });
-        ui.difficultyChoices.appendChild(button);
+        appendSafeElement(ui.difficultyChoices, button, '#difficultyChoices');
       });
     }
 
@@ -3516,13 +3547,16 @@
 
     function buildBoardGrid() {
       const orientation = getBoardViewOrientation();
+      if (!ui.boardGrid) {
+        throw new Error('Board grid container missing. Cannot render match.');
+      }
       setNodeHTML(ui.boardGrid, 'ui.boardGrid', '');
       for (let viewRow = ROWS - 1; viewRow >= 0; viewRow--) {
         const coord = document.createElement('div');
         coord.className = 'coord';
         const canonicalLeft = canonicalFromView(viewRow, 0, orientation);
         coord.textContent = canonicalLeft.row + 1;
-        ui.boardGrid.appendChild(coord);
+        appendSafeElement(ui.boardGrid, coord, '#boardGrid', true);
 
         for (let viewCol = 0; viewCol < COLS; viewCol++) {
           const cell = document.createElement('button');
@@ -3533,21 +3567,21 @@
           cell.dataset.col = canonical.col;
           cell.setAttribute('aria-label', `Cell ${toCoord(canonical.row, canonical.col)}`);
           cell.addEventListener('click', () => handleCellClick(canonical.row, canonical.col));
-          ui.boardGrid.appendChild(cell);
+          appendSafeElement(ui.boardGrid, cell, '#boardGrid', true);
         }
       }
 
       const corner = document.createElement('div');
       corner.className = 'coord corner';
       corner.textContent = '·';
-      ui.boardGrid.appendChild(corner);
+      appendSafeElement(ui.boardGrid, corner, '#boardGrid', true);
 
       for (let viewCol = 0; viewCol < COLS; viewCol++) {
         const coord = document.createElement('div');
         coord.className = 'coord';
         const canonicalBottom = canonicalFromView(0, viewCol, orientation);
         coord.textContent = String.fromCharCode(97 + canonicalBottom.col);
-        ui.boardGrid.appendChild(coord);
+        appendSafeElement(ui.boardGrid, coord, '#boardGrid', true);
       }
     }
 
@@ -4547,6 +4581,9 @@
     }
 
     function renderBoard() {
+      if (!ui.boardGrid) {
+        throw new Error('Board grid container missing. Cannot render match.');
+      }
       console.log('RENDER BOARD', {
         boardExists: !!state.board,
         tileCount: ui.boardGrid?.querySelectorAll('.cell')?.length ?? 0,
@@ -4580,7 +4617,7 @@
           cell.classList.add(move.captured ? 'capture' : 'possible');
           const marker = document.createElement('div');
           marker.className = move.captured ? 'capture-ring' : 'move-dot';
-          cell.appendChild(marker);
+          appendSafeElement(cell, marker, 'board cell marker');
         }
 
         if (piece) {
@@ -4591,7 +4628,7 @@
           renderPieceImage(piece, token);
           if (piece.isRoyal) token.innerHTML += '<div class="crest" aria-hidden="true">✦</div>';
           token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
-          cell.appendChild(token);
+          appendSafeElement(cell, token, 'board cell piece token');
           cell.setAttribute('aria-label', `${toCoord(row, col)}: ${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' royal' : ''}`);
         } else {
           cell.setAttribute('aria-label', `Cell ${toCoord(row, col)}`);
@@ -4709,7 +4746,7 @@
           btn.className = 'subtle';
           btn.textContent = `Use Die ${dieIndex + 1}`;
           btn.addEventListener('click', () => chooseDieForSelection(dieIndex));
-          ui.dieChoiceBar.appendChild(btn);
+          appendSafeElement(ui.dieChoiceBar, btn, '#dieChoiceBar');
         });
       } else if (state.dice.lockedDieIndex !== null) {
         const dieValue = state.dice.values[state.dice.lockedDieIndex];
@@ -4740,7 +4777,7 @@
           </div>
           <span class="pill-tag">${label}</span>
         `;
-        ui.playerPills.appendChild(pill);
+        appendSafeElement(ui.playerPills, pill, '#playerPills');
       });
     }
 
@@ -4751,7 +4788,7 @@
         const div = document.createElement('div');
         div.className = 'log-entry';
         div.textContent = text;
-        ui.moveLog.appendChild(div);
+        appendSafeElement(ui.moveLog, div, '#moveLog');
       });
     }
 
@@ -4939,7 +4976,7 @@
       .slot-card { padding: 10px; }
     }
   `;
-  document.head.appendChild(extraStyle);
+  appendSafeElement(document.head, extraStyle, 'document.head');
 
   const injectedMarkup = document.createElement('div');
   injectedMarkup.innerHTML = `
@@ -5044,7 +5081,7 @@
       </div>
     </div>
   `;
-  ui.appView.appendChild(injectedMarkup);
+  appendSafeElement(ui.appView, injectedMarkup, '#appView', true);
 
   Object.assign(ui, {
     screens: {
@@ -5155,7 +5192,7 @@
         primeAudioAndPlayButton();
         onSelect(choice.value);
       });
-      container.appendChild(btn);
+      appendSafeElement(container, btn, 'onlinePreferredTeam container');
     });
   }
 
@@ -5264,6 +5301,8 @@
 
       window.setTimeout(() => {
         try {
+          showGameScreen();
+          verifyBattleDomReady();
           console.log('Starting offline match init');
           console.log("STARTING_POSITIONS:", STARTING_POSITIONS);
           console.log("Selected teams:", localStorage.getItem("selectedTeams"));
@@ -5276,7 +5315,6 @@
           });
           console.log('Offline match init complete');
           clearTimeout(offlineLoadTimeout);
-          showGameScreen();
         } catch (error) {
           clearTimeout(offlineLoadTimeout);
           console.error('Offline match failed to load:', error);
@@ -5379,7 +5417,7 @@
           renderOnlinePreferredTeamChoices();
           if (appState.online.roomState) OnlineLobbyController.setPreferredTeam(team);
         });
-        container.appendChild(btn);
+        appendSafeElement(container, btn, 'playMode container');
       });
     });
   }
@@ -5544,7 +5582,7 @@
       const meta = document.createElement('span');
       meta.className = 'meta-chip';
       meta.textContent = appState.online.connected ? 'Server synced' : 'Server disconnected';
-      ui.statusMeta.appendChild(meta);
+      appendSafeElement(ui.statusMeta, meta, '#statusMeta');
     }
   };
 
@@ -5912,7 +5950,7 @@
       chip.className = `ready-chip ${readyClass}`.trim();
       chip.textContent = readyLabel;
       slot.append(slotMain, chip);
-      ui.lobbyPlayerSlots.appendChild(slot);
+      appendSafeElement(ui.lobbyPlayerSlots, slot, '#lobbyPlayerSlots');
     });
   }
 
