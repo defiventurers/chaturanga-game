@@ -2041,8 +2041,11 @@
     .ice-icon-button{min-height:44px;min-width:44px;border-radius:14px;}
     .turn-status-card{border-radius:18px;padding:10px 12px;align-items:center;}
     .turn-action{font-size:clamp(1rem,3.8vw,1.2rem);letter-spacing:.16em;}
+    .turn-meta{gap:6px;}
+    .turn-state{font-size:12px;letter-spacing:.02em;}
+    .status-meta{display:none!important;}
     .board-shell{border-radius:24px;border:1px solid rgba(210,250,255,.75);box-shadow:0 0 28px rgba(80,220,255,.45), inset 0 0 24px rgba(255,255,255,.12);background:rgba(120,220,255,.1);}
-    .dice-stage{padding:16px;border-radius:24px;display:grid;gap:14px;}
+    .dice-stage{padding:12px 16px 14px;border-radius:24px;display:grid;gap:10px;margin-top:2px;}
     .die-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
     .die-card{min-height:190px;border-radius:26px;padding:16px;background:rgba(120,220,255,.1)!important;border:1px solid rgba(210,250,255,.55)!important;box-shadow:inset 0 0 24px rgba(255,255,255,.1),0 0 22px rgba(80,220,255,.25);display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;}
     .die-value-wrap{display:grid;justify-items:center;align-items:center;gap:10px;width:100%;}
@@ -2050,7 +2053,7 @@
     .die-card.has-piece .die-value{display:none;}
     .die-piece-icon{width:clamp(72px,18vw,120px);height:clamp(72px,18vw,120px);object-fit:contain;filter:drop-shadow(0 0 12px rgba(120,230,255,.55));}
     .die-piece-name{font-size:clamp(15px,4vw,22px);font-weight:900;letter-spacing:.08em;text-align:center;text-transform:uppercase;color:#eaffff;}
-    .action-stack{grid-column:1/-1;display:grid;gap:14px;justify-items:center;margin-top:22px;}
+    .action-stack{grid-column:1/-1;display:grid;gap:10px;justify-items:center;margin-top:6px;}
     .roll-dice-button,.end-turn-button{width:min(90vw,640px);height:64px;border-radius:20px;font-size:clamp(14px,3.8vw,20px);text-transform:uppercase;letter-spacing:.18em;font-weight:900;border:1px solid rgba(220,250,255,.75);}
     .roll-dice-button{box-shadow:inset 0 0 20px rgba(255,255,255,.2),0 0 28px rgba(90,220,255,.55);}
     .end-turn-button{background:rgba(160,210,255,.12);color:rgba(240,255,255,.86);}
@@ -4760,56 +4763,26 @@
       if (ui.gameShell) ui.gameShell.className = `arctic-game-shell game-shell app-shell ${TEAM_CLASS[team]}`;
 
       if (state.gameOver) {
-        setNodeText(ui.statusPlayer, 'ui.statusPlayer', `${TEAM_LABEL[state.winner]} Wins`);
-        setNodeHTML(ui.statusBar, 'ui.statusBar', `<strong>Game over.</strong> ${TEAM_LABEL[state.winner]} is the last surviving team.`);
-        setNodeHTML(ui.statusMeta, 'ui.statusMeta', '<span class="meta-chip">Victory</span><span class="meta-chip">Match Complete</span>');
+        setNodeText(ui.statusPlayer, 'ui.statusPlayer', `${TEAM_LABEL[state.winner]} to act`);
+        setNodeText(ui.statusBar, 'ui.statusBar', 'Match complete');
+        setNodeHTML(ui.statusMeta, 'ui.statusMeta', '');
         return;
       }
 
-      const controller = isBotPlayer(team) ? 'Bot' : 'Human';
       setNodeText(ui.statusPlayer, 'ui.statusPlayer', `${TEAM_LABEL[team]} to act`);
 
-      let line = '';
-      const meta = [];
+      let line = 'Awaiting roll';
 
       if (appState.botTurnPending && isBotPlayer(team)) {
-        line = appState.botStatusText || `${TEAM_LABEL[team]} bot is taking its turn.`;
-        meta.push('Bot turn');
+        line = 'Bot thinking';
       } else if (!state.dice.rolled) {
-        line = isBotPlayer(team)
-          ? `${TEAM_LABEL[team]} is bot-controlled and will roll automatically.`
-          : `Roll the dice to activate pieces for ${TEAM_LABEL[team]}.`;
-        meta.push(controller);
-        meta.push('Awaiting roll');
+        line = 'Awaiting roll';
       } else {
-        const remainingPlayableDice = getRemainingPlayableDice(team).map(i => `Die ${i + 1}`).join(', ');
-        line = `Unused playable dice: ${remainingPlayableDice || 'none'}.`;
-        meta.push(controller);
-        meta.push(`Rolled ${state.dice.values[0]} / ${state.dice.values[1]}`);
-        meta.push(`${state.dice.used.filter(Boolean).length}/2 used`);
+        line = 'Rolled';
       }
-
-      if (state.selected) {
-        const piece = state.board[state.selected.row][state.selected.col];
-        if (piece) {
-          line += ` Selected: ${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]} at ${toCoord(state.selected.row, state.selected.col)}.`;
-          if (state.dice.lockedDieIndex !== null) {
-            line += ` Using Die ${state.dice.lockedDieIndex + 1} (${state.dice.values[state.dice.lockedDieIndex]}) with ${state.legalMoves.length} legal move(s).`;
-          } else {
-            const doubleUsage = getDoubleRollUsage();
-            if (doubleUsage.isDouble) {
-              line += ` Rolled ${doubleUsage.value} / ${doubleUsage.value} — ${doubleUsage.remainingUses} use(s) remaining.`;
-            } else {
-              line += ` Choose a die if more than one applies.`;
-            }
-          }
-        }
-      }
-
-      if (state.awaitingPromotion) meta.push('Promotion pending');
 
       setNodeHTML(ui.statusBar, 'ui.statusBar', line);
-      setNodeHTML(ui.statusMeta, 'ui.statusMeta', meta.map(text => `<span class="meta-chip">${text}</span>`).join(''));
+      setNodeHTML(ui.statusMeta, 'ui.statusMeta', '');
     }
 
     function renderDice() {
