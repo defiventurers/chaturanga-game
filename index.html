@@ -2166,6 +2166,104 @@
     .ice-tertiary-action.new-game-button { opacity: 0.82; }
     .roll-dice-button:disabled,.end-turn-button:disabled,.ice-primary-action:disabled,.ice-secondary-action:disabled { opacity: 0.55; filter: saturate(0.75); }
     .audio-controls,.log,.player-info,.player-strip,.hidden-required-dom { opacity: 0.82; }
+
+    #screenGame .turn-panel,
+    #screenGame .controls.dice-dock,
+    #screenGame .player-strip,
+    #screenGame .hidden-required-dom {
+      display: none !important;
+    }
+    #screenGame .board-stage {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+    .game-stage {
+      position: relative;
+      width: min(100vw, 560px);
+      aspect-ratio: 9 / 16;
+      margin-inline: auto;
+      overflow: hidden;
+      background-image: url("/assets/screens/arctic-dominion-game-base.png");
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
+      isolation: isolate;
+      --board-left: 17.2%;
+      --board-top: 32.25%;
+      --board-width: 70.1%;
+      --board-height: 37.8%;
+      --turn-left: 11.5%;
+      --turn-top: 20.8%;
+      --turn-width: 77%;
+      --turn-height: 7.6%;
+      --dice-left: 26.6%;
+      --dice-top: 72.2%;
+      --dice-width: 46.8%;
+      --dice-height: 8%;
+      --roll-left: 5.8%;
+      --roll-top: 82%;
+      --roll-width: 43.6%;
+      --roll-height: 7.3%;
+      --end-left: 50.5%;
+      --end-top: 82%;
+      --end-width: 43.8%;
+      --end-height: 7.3%;
+      --new-left: 25.3%;
+      --new-top: 91.25%;
+      --new-width: 49.5%;
+      --new-height: 5.3%;
+    }
+    .game-overlay { position: absolute; inset: 0; pointer-events: none; }
+    .board-hit-layer, #boardGrid {
+      position: absolute;
+      left: var(--board-left);
+      top: var(--board-top);
+      width: var(--board-width);
+      height: var(--board-height);
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      pointer-events: auto;
+      gap: 0;
+      border: 0;
+      background: transparent !important;
+    }
+    .board-cell,.cell { position: relative; background: transparent !important; border: 0 !important; padding: 0; }
+    .board-piece,.piece { width: 82%; height: 82%; object-fit: contain; display: block; margin: 9%; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.48)); }
+    .board-cell.is-selected .board-piece,.board-cell.selected .piece,.cell.selected .piece { filter: drop-shadow(0 0 7px rgba(255, 220, 70, 1)) drop-shadow(0 4px 5px rgba(0, 20, 60, 0.52)); }
+    .board-cell.is-legal::after,.board-cell.legal-move::after,.cell.legal-move::after,.cell .marker {
+      content: "";
+      position: absolute;
+      width: 28%;
+      height: 28%;
+      left: 36%;
+      top: 36%;
+      border-radius: 999px;
+      background: rgba(255, 230, 90, 0.86);
+      box-shadow: 0 0 8px rgba(255, 230, 90, 0.95), 0 0 14px rgba(56, 217, 255, 0.55);
+      pointer-events: none;
+    }
+    .cell .marker { font-size: 0 !important; color: transparent !important; }
+    .turn-overlay { position: absolute; left: var(--turn-left); top: var(--turn-top); width: var(--turn-width); height: var(--turn-height); display: grid; grid-template-columns: 1fr auto; align-items: center; pointer-events: none; padding-inline: 8%; box-sizing: border-box; }
+    .turn-copy { min-width: 0; }
+    .turn-primary { font-weight: 950; font-size: clamp(13px, 3.8vw, 22px); line-height: 1.05; color: var(--active-player-color, #ff4040); text-shadow: 0 2px 3px rgba(0, 15, 60, 0.75), 0 0 8px rgba(255, 255, 255, 0.25); }
+    .turn-secondary { margin-top: 2px; font-weight: 950; font-size: clamp(16px, 5vw, 30px); line-height: 1.05; color: #fff; text-shadow: 0 2px 4px rgba(0, 15, 60, 0.85), 0 0 8px rgba(56, 217, 255, 0.45); }
+    .turn-badge { min-width: 64px; padding: 6px 10px; border-radius: 999px; color: #fff; font-weight: 950; font-size: clamp(10px, 2.5vw, 15px); text-align: center; background: rgba(0, 95, 190, 0.42); border: 1px solid rgba(180, 240, 255, 0.7); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 10px rgba(0,35,100,0.35); }
+    .dice-overlay { position: absolute; left: var(--dice-left); top: var(--dice-top); width: var(--dice-width); height: var(--dice-height); display: grid; grid-template-columns: 1fr 1fr; gap: 7%; pointer-events: none; }
+    .die-result { display: flex; align-items: center; justify-content: center; text-align: center; flex-direction: column; color: #073766; font-weight: 950; font-size: clamp(10px, 3vw, 16px); line-height: 1.05; text-shadow: 0 1px 0 rgba(255,255,255,0.8); }
+    .die-result img { width: 48%; height: auto; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.35)); }
+    .stage-hit-button { position: absolute; appearance: none; border: 0; background: transparent; padding: 0; margin: 0; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.15); }
+    .roll-hit { left: var(--roll-left); top: var(--roll-top); width: var(--roll-width); height: var(--roll-height); }
+    .end-hit { left: var(--end-left); top: var(--end-top); width: var(--end-width); height: var(--end-height); }
+    .new-game-hit { left: var(--new-left); top: var(--new-top); width: var(--new-width); height: var(--new-height); }
+    .stage-hit-button:disabled { cursor: not-allowed; pointer-events: none; }
+    .game-stage.debug .board-hit-layer,.game-stage.debug #boardGrid { outline: 2px solid red; }
+    .game-stage.debug .turn-overlay { outline: 2px solid lime; }
+    .game-stage.debug .dice-overlay { outline: 2px solid cyan; }
+    .game-stage.debug .stage-hit-button { outline: 2px solid yellow; background: rgba(255, 255, 0, 0.12); }
     .turn-copy,.selection-info,.player-summary,.dice-subtitle,.audio-subtitle,.audio-status { color: rgba(7,55,102,0.72); }
 </style>
 </head>
@@ -2346,70 +2444,41 @@
             <span id="turnMark" class="turn-mark team-green" aria-hidden="true"></span>
           </div>
           <div class="turn-copy">
-            <div id="statusPlayer" class="turn-team-name">Green Turn</div>
-            <div id="statusBar" class="turn-action">Human · Roll dice</div>
+            <div class="turn-team-name">Green Turn</div>
+            <div class="turn-action">Human · Roll dice</div>
           </div>
-          <div class="turn-meta"><span id="statusControlBadge" class="control-badge">HUMAN</span><div id="statusMeta" class="status-meta"></div></div>
+          <div class="turn-meta"><span class="control-badge">HUMAN</span><div id="statusMeta" class="status-meta"></div></div>
         </section>
 
-                <main class="board-stage board-wrap" aria-label="Game board area">
-          <section class="board-shell" aria-label="Board presentation">
-            <div class="board-frame">
-              <div id="boardGrid" aria-label="8 by 8 game board"></div>
+        <main class="board-stage board-wrap" aria-label="Game board area">
+          <div class="game-stage">
+            <div class="game-overlay">
+              <div class="turn-overlay" aria-live="polite">
+                <div class="turn-copy">
+                  <div id="statusPlayer" class="turn-primary">Green Turn</div>
+                  <div id="statusBar" class="turn-secondary">Human · Roll dice</div>
+                </div>
+                <div id="statusControlBadge" class="turn-badge">HUMAN</div>
+              </div>
+              <div id="boardGrid" class="board-hit-layer" aria-label="8 by 8 game board"></div>
+              <div class="dice-overlay">
+                <div id="dieCard0" class="die-result" aria-live="polite">
+                  <div id="dieState0" class="hidden-required-dom">READY</div>
+                  <div id="dieValue0" class="die-value ice-die-face" aria-hidden="true">?</div>
+                  <div id="diePiece0" class="die-piece">Roll to activate</div>
+                </div>
+                <div id="dieCard1" class="die-result" aria-live="polite">
+                  <div id="dieState1" class="hidden-required-dom">READY</div>
+                  <div id="dieValue1" class="die-value ice-die-face" aria-hidden="true">?</div>
+                  <div id="diePiece1" class="die-piece">Roll to activate</div>
+                </div>
+              </div>
+              <button id="rollBtn" class="stage-hit-button roll-hit" aria-label="Roll dice"></button>
+              <button id="endTurnBtn" class="stage-hit-button end-hit" aria-label="End turn"></button>
+              <button id="newGameBtn" class="stage-hit-button new-game-hit" aria-label="New game"></button>
             </div>
-          </section>
+          </div>
         </main>
-
-        <section class="controls dice-dock dice-stage dice-panel panel" aria-labelledby="diceHeading">
-          <div class="section-label hidden" id="diceHeading"><span>Dice</span><span>Turn Actions</span></div>
-          <div class="die-row dice-grid">
-                  <div id="dieCard0" class="die-card" aria-live="polite">
-                    <div class="die-head">
-                      <span class="dice-label">DIE 1</span>
-                      <span id="dieState0" class="die-state">READY</span>
-                    </div>
-                    <div class="die-value-wrap">
-                      <div id="dieValue0" class="die-value ice-die-face" aria-hidden="true">?</div>
-                      <div id="diePiece0" class="die-piece dice-subtitle">Roll to activate</div>
-                    </div>
-                  </div>
-                  <div id="dieCard1" class="die-card" aria-live="polite">
-                    <div class="die-head">
-                      <span class="dice-label">DIE 2</span>
-                      <span id="dieState1" class="die-state">READY</span>
-                    </div>
-                    <div class="die-value-wrap">
-                      <div id="dieValue1" class="die-value ice-die-face" aria-hidden="true">?</div>
-                      <div id="diePiece1" class="die-piece dice-subtitle">Roll to activate</div>
-                    </div>
-                  </div>
-          </div>
-
-          <details class="audio-controls mobile-collapsible visually-collapsed-log" aria-label="Audio controls">
-                  <summary class="section-label"><span>Sound</span><span>Hidden</span></summary>
-                  <div class="audio-topline">
-                    <div class="audio-label-stack">
-                      <div class="audio-title">Sound</div>
-                      <div class="audio-subtitle">Short synthesized effects only.</div>
-                    </div>
-                    <button id="audioToggleBtn" class="subtle audio-toggle" type="button" aria-pressed="false">Sound Off</button>
-                  </div>
-                  <div class="audio-slider-row">
-                    <label for="volumeSlider">Volume</label>
-                    <input id="volumeSlider" class="audio-slider" type="range" min="0" max="100" step="1" value="65" disabled />
-                    <div id="volumeValue" class="audio-volume-value">65%</div>
-                  </div>
-                  <div id="audioStatus" class="audio-status">Audio unlocks on your first interaction.</div>
-          </details>
-
-          <div class="game-actions panel action-buttons" aria-label="Game actions">
-            <div class="controls action-stack">
-            <button id="rollBtn" class="primary ice-primary-action roll-dice-button">Roll Dice</button>
-            <button id="endTurnBtn" class="secondary ice-secondary-action end-turn-button">End Turn</button>
-            <button id="newGameBtn" class="warn ice-secondary-action ice-tertiary-action new-game-button">New Game</button>
-            </div>
-          </div>
-        </section>
 
         <footer class="player-info player-strip panel" aria-label="Players and match details">
           <div class="player-summary"><span>🔴 🟢 🔵 🩷</span><span id="youTeamText">YOU: Blue</span></div>
