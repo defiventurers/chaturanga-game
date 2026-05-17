@@ -2030,7 +2030,7 @@
 
 
 
-    /* Arctic Dominion layout + arctic glass theme fixes */
+    /* Arctic Dominion game-screen visual polish only */
     .game-shell {
       min-height: 100dvh;
       width: 100%;
@@ -2041,14 +2041,20 @@
       flex-direction: column;
       align-items: center;
       gap: 12px;
-      background: linear-gradient(180deg, #e8faff 0%, #c9f0ff 45%, #f7fdff 100%);
-      color: #103a56;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(56,217,255,0.35), transparent 35%),
+        radial-gradient(circle at 50% 60%, rgba(255,255,255,0.75), transparent 45%),
+        radial-gradient(circle at 12% 18%, rgba(247,253,255,0.3) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 78% 74%, rgba(189,239,255,0.36) 0 1px, transparent 1.7px),
+        linear-gradient(180deg, #0878d8 0%, #bdefff 42%, #f7fdff 100%);
+      background-size: auto, auto, 220px 220px, 260px 260px, auto;
+      color: #073766;
       box-sizing: border-box;
       overflow-x: clip;
     }
     .game-header { width: 100%; order: 1; text-align: center; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; }
-    .arctic-title-main { font-size: clamp(16px, 4.2vw, 22px); font-weight: 900; color: #1d5d86; letter-spacing: .12em; text-shadow: 0 2px 8px rgba(130, 205, 240, 0.35); }
-    .ice-icon-button { width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(120, 210, 255, 0.45); background: rgba(235, 250, 255, 0.72); backdrop-filter: blur(14px); box-shadow: 0 12px 35px rgba(40, 140, 190, 0.18); color: #1f648e; }
+    .arctic-title-main { font-size: clamp(16px, 4.2vw, 22px); font-weight: 900; color: #073766; letter-spacing: .12em; text-shadow: 0 2px 8px rgba(255, 255, 255, 0.45); }
+    .ice-icon-button { width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(56,217,255,0.55); background: linear-gradient(180deg, rgba(247,253,255,0.82), rgba(189,239,255,0.62)); backdrop-filter: blur(14px); box-shadow: 0 14px 35px rgba(6,79,158,0.22), inset 0 1px 0 rgba(255,255,255,0.85); color: #064f9e; }
 
     .turn-panel,.turn-pill,.turn-status-card,.turn-status-bar {
       width: 100%;
@@ -2060,18 +2066,18 @@
       grid-template-columns: 34px 1fr auto;
       gap: 8px;
       align-items: center;
-      border: 1px solid rgba(120, 210, 255, 0.45);
-      background: rgba(235, 250, 255, 0.72);
+      border: 1px solid rgba(56,217,255,0.55);
+      background: linear-gradient(180deg, rgba(247,253,255,0.82), rgba(189,239,255,0.62));
       backdrop-filter: blur(14px);
-      box-shadow: 0 12px 35px rgba(40, 140, 190, 0.18);
+      box-shadow: 0 14px 35px rgba(6,79,158,0.22), inset 0 1px 0 rgba(255,255,255,0.85);
       order: 1;
     }
-    .turn-team-name { color: #1e79ab; }
-    .turn-action { color: #0f4767; }
-    .control-badge { background: rgba(208, 243, 255, 0.86); color: #225f84; border: 1px solid rgba(120, 210, 255, 0.45); }
+    .turn-team-name { color: #064f9e; }
+    .turn-action { color: #073766; text-shadow: 0 0 10px rgba(247, 201, 72, 0.26); }
+    .control-badge { background: rgba(232,250,255,0.82); color: #064f9e; border: 1px solid rgba(56,217,255,0.55); }
 
     .board-wrap { width: 100%; order: 2; display: flex; justify-content: center; align-items: center; }
-    .board-stage { padding: 8px; border-radius: 22px; border: 1px solid rgba(120, 210, 255, 0.45); background: rgba(235, 250, 255, 0.72); backdrop-filter: blur(14px); box-shadow: 0 12px 35px rgba(40, 140, 190, 0.18); }
+    .board-stage { padding: 8px; border-radius: 22px; border: 1px solid rgba(56,217,255,0.55); background: linear-gradient(180deg, rgba(247,253,255,0.82), rgba(189,239,255,0.62)); backdrop-filter: blur(14px); box-shadow: 0 14px 35px rgba(6,79,158,0.22), 0 0 26px rgba(56,217,255,0.34), inset 0 1px 0 rgba(255,255,255,0.85); }
     .board-shell,.board-frame { width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 16px; background: transparent; box-shadow: none; }
     .board-frame::before,.board-frame::after{ display:none !important; }
     .board,.board-grid,.game-board {
@@ -2098,15 +2104,16 @@
       border-radius: 14px;
     }
     .board-cell,.cell { aspect-ratio: 1 / 1; width: auto; height: auto; min-width: 0; min-height: 0; }
-    .board-cell.light,.cell.light,.cell[data-color="light"] { background: linear-gradient(180deg, #f7fdff 0%, #e8f7ff 100%); }
-    .board-cell.dark,.cell.dark,.cell[data-color="dark"] { background: linear-gradient(180deg, #c9f0ff 0%, #9edfff 100%); }
+    .board-cell.light,.cell.light,.cell[data-color="light"] { background: linear-gradient(145deg, #f7fdff, #d8f7ff); box-shadow: inset 0 1px 3px rgba(255,255,255,0.75); }
+    .board-cell.dark,.cell.dark,.cell[data-color="dark"] { background: linear-gradient(145deg, #64dfff, #159adf); box-shadow: inset 0 1px 3px rgba(255,255,255,0.75); }
+    .piece,.board-piece { filter: drop-shadow(0 4px 7px rgba(6,79,158,0.35)); }
 
     .controls { width: 100%; order: 3; display: grid; gap: 8px; }
     .dice-dock,.dice-stage,.game-controls,.dice-panel {
       width: 100%; margin: 0; padding: 12px; border-radius: 18px; display: grid; gap: 12px;
-      border: 1px solid rgba(120, 210, 255, 0.45); background: rgba(235, 250, 255, 0.72); backdrop-filter: blur(14px); box-shadow: 0 12px 35px rgba(40, 140, 190, 0.18);
+      border: 1px solid rgba(56,217,255,0.55); background: linear-gradient(180deg, rgba(247,253,255,0.82), rgba(189,239,255,0.62)); backdrop-filter: blur(14px); box-shadow: 0 14px 35px rgba(6,79,158,0.22), inset 0 1px 0 rgba(255,255,255,0.85);
     }
-    .player-strip,.player-info { width: 100%; order: 4; border-radius: 14px; padding: 7px 10px; display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; border: 1px solid rgba(120, 210, 255, 0.45); background: rgba(235, 250, 255, 0.72); backdrop-filter: blur(14px); box-shadow: 0 12px 35px rgba(40, 140, 190, 0.18); }
+    .player-strip,.player-info { width: 100%; order: 4; border-radius: 14px; padding: 7px 10px; display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; border: 1px solid rgba(56,217,255,0.55); background: linear-gradient(180deg, rgba(247,253,255,0.82), rgba(189,239,255,0.62)); backdrop-filter: blur(14px); box-shadow: 0 14px 35px rgba(6,79,158,0.22), inset 0 1px 0 rgba(255,255,255,0.85); }
 </style>
 </head>
 <body>
