@@ -2191,30 +2191,30 @@
       background-repeat: no-repeat;
       background-position: center;
       isolation: isolate;
-      --board-left: 17.2%;
-      --board-top: 32.25%;
-      --board-width: 70.1%;
-      --board-height: 37.8%;
-      --turn-left: 11.5%;
-      --turn-top: 20.8%;
-      --turn-width: 77%;
-      --turn-height: 7.6%;
-      --dice-left: 26.6%;
-      --dice-top: 72.2%;
-      --dice-width: 46.8%;
-      --dice-height: 8%;
-      --roll-left: 5.8%;
-      --roll-top: 82%;
-      --roll-width: 43.6%;
-      --roll-height: 7.3%;
-      --end-left: 50.5%;
-      --end-top: 82%;
-      --end-width: 43.8%;
-      --end-height: 7.3%;
-      --new-left: 25.3%;
-      --new-top: 91.25%;
-      --new-width: 49.5%;
-      --new-height: 5.3%;
+      --board-left: 18.8%;
+      --board-top: 30.05%;
+      --board-width: 68.3%;
+      --board-height: 38.45%;
+      --turn-left: 12.0%;
+      --turn-top: 21.0%;
+      --turn-width: 79.0%;
+      --turn-height: 6.7%;
+      --dice-left: 28.0%;
+      --dice-top: 74.4%;
+      --dice-width: 44.0%;
+      --dice-height: 8.0%;
+      --roll-left: 6.0%;
+      --roll-top: 84.0%;
+      --roll-width: 42.5%;
+      --roll-height: 6.1%;
+      --end-left: 51.1%;
+      --end-top: 84.0%;
+      --end-width: 42.5%;
+      --end-height: 6.1%;
+      --new-left: 26.3%;
+      --new-top: 92.9%;
+      --new-width: 47.4%;
+      --new-height: 4.0%;
     }
     .game-overlay { position: absolute; inset: 0; pointer-events: none; }
     .board-hit-layer, #boardGrid {
@@ -2231,8 +2231,10 @@
       border: 0;
       background: transparent !important;
     }
-    .board-cell,.cell { position: relative; background: transparent !important; border: 0 !important; padding: 0; }
-    .board-piece,.piece { width: 82%; height: 82%; object-fit: contain; display: block; margin: 9%; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.48)); }
+    .board-cell,.cell { position: relative; background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; overflow: visible; color: transparent; font-size: 0; }
+    .board-cell::before,.cell::before { display: none !important; }
+    .board-cell .coord,.board-cell .cell-label,.board-cell .rank-label,.board-cell .file-label,.cell .coord,.cell .cell-label,.cell .rank-label,.cell .file-label { display: none !important; }
+    .board-piece,.piece { width: 74%; height: 74%; object-fit: contain; display: block; margin: 13%; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.48)); }
     .board-cell.is-selected .board-piece,.board-cell.selected .piece,.cell.selected .piece { filter: drop-shadow(0 0 7px rgba(255, 220, 70, 1)) drop-shadow(0 4px 5px rgba(0, 20, 60, 0.52)); }
     .board-cell.is-legal::after,.board-cell.legal-move::after,.cell.legal-move::after,.cell .marker {
       content: "";
@@ -2247,14 +2249,14 @@
       pointer-events: none;
     }
     .cell .marker { font-size: 0 !important; color: transparent !important; }
-    .turn-overlay { position: absolute; left: var(--turn-left); top: var(--turn-top); width: var(--turn-width); height: var(--turn-height); display: grid; grid-template-columns: 1fr auto; align-items: center; pointer-events: none; padding-inline: 8%; box-sizing: border-box; }
+    .turn-overlay { position: absolute; left: var(--turn-left); top: var(--turn-top); width: var(--turn-width); height: var(--turn-height); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; pointer-events: none; padding-inline: 5.5% 7%; box-sizing: border-box; }
     .turn-copy { min-width: 0; }
-    .turn-primary { font-weight: 950; font-size: clamp(13px, 3.8vw, 22px); line-height: 1.05; color: var(--active-player-color, #ff4040); text-shadow: 0 2px 3px rgba(0, 15, 60, 0.75), 0 0 8px rgba(255, 255, 255, 0.25); }
-    .turn-secondary { margin-top: 2px; font-weight: 950; font-size: clamp(16px, 5vw, 30px); line-height: 1.05; color: #fff; text-shadow: 0 2px 4px rgba(0, 15, 60, 0.85), 0 0 8px rgba(56, 217, 255, 0.45); }
-    .turn-badge { min-width: 64px; padding: 6px 10px; border-radius: 999px; color: #fff; font-weight: 950; font-size: clamp(10px, 2.5vw, 15px); text-align: center; background: rgba(0, 95, 190, 0.42); border: 1px solid rgba(180, 240, 255, 0.7); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 10px rgba(0,35,100,0.35); }
-    .dice-overlay { position: absolute; left: var(--dice-left); top: var(--dice-top); width: var(--dice-width); height: var(--dice-height); display: grid; grid-template-columns: 1fr 1fr; gap: 7%; pointer-events: none; }
-    .die-result { display: flex; align-items: center; justify-content: center; text-align: center; flex-direction: column; color: #073766; font-weight: 950; font-size: clamp(10px, 3vw, 16px); line-height: 1.05; text-shadow: 0 1px 0 rgba(255,255,255,0.8); }
-    .die-result img { width: 48%; height: auto; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.35)); }
+    .turn-primary { font-weight: 950; font-size: clamp(11px, 3vw, 18px); line-height: 1.0; color: var(--active-player-color, #ff4040); text-shadow: 0 2px 3px rgba(0, 15, 60, 0.75), 0 0 8px rgba(255, 255, 255, 0.25); }
+    .turn-secondary { margin-top: 0; font-weight: 950; font-size: clamp(14px, 4.2vw, 24px); line-height: 1.0; white-space: nowrap; color: #fff; text-shadow: 0 2px 4px rgba(0, 15, 60, 0.85), 0 0 8px rgba(56, 217, 255, 0.45); }
+    .turn-badge { min-width: 70px; padding: 6px 10px; border-radius: 999px; color: #fff; font-weight: 950; font-size: clamp(10px, 2.4vw, 14px); text-align: center; background: rgba(0, 95, 190, 0.42); border: 1px solid rgba(180, 240, 255, 0.7); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 10px rgba(0,35,100,0.35); }
+    .dice-overlay { position: absolute; left: var(--dice-left); top: var(--dice-top); width: var(--dice-width); height: var(--dice-height); display: grid; grid-template-columns: 1fr 1fr; gap: 8%; align-items: center; pointer-events: none; }
+    .die-result { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; color: #073766; font-weight: 950; font-size: clamp(10px, 3vw, 16px); line-height: 1.05; text-shadow: 0 1px 0 rgba(255,255,255,0.8); }
+    .die-result img { width: 52%; max-height: 58%; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.35)); }
     .stage-hit-button { position: absolute; appearance: none; border: 0; background: transparent; padding: 0; margin: 0; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.15); }
     .roll-hit { left: var(--roll-left); top: var(--roll-top); width: var(--roll-width); height: var(--roll-height); }
     .end-hit { left: var(--end-left); top: var(--end-top); width: var(--end-width); height: var(--end-height); }
@@ -2451,7 +2453,7 @@
         </section>
 
         <main class="board-stage board-wrap" aria-label="Game board area">
-          <div class="game-stage">
+          <div class="game-stage debug">
             <div class="game-overlay">
               <div class="turn-overlay" aria-live="polite">
                 <div class="turn-copy">
@@ -3808,36 +3810,17 @@
       }
       setNodeHTML(ui.boardGrid, 'ui.boardGrid', '');
       for (let viewRow = ROWS - 1; viewRow >= 0; viewRow--) {
-        const coord = document.createElement('div');
-        coord.className = 'coord';
-        const canonicalLeft = canonicalFromView(viewRow, 0, orientation);
-        coord.textContent = canonicalLeft.row + 1;
-        appendSafeElement(ui.boardGrid, coord, '#boardGrid', true);
-
         for (let viewCol = 0; viewCol < COLS; viewCol++) {
           const cell = document.createElement('button');
           cell.type = 'button';
           const canonical = canonicalFromView(viewRow, viewCol, orientation);
-          cell.className = `cell ${(canonical.row + canonical.col) % 2 === 0 ? 'light' : 'dark'}`;
+          cell.className = 'board-cell cell';
           cell.dataset.row = canonical.row;
           cell.dataset.col = canonical.col;
-          cell.setAttribute('aria-label', `Cell ${toCoord(canonical.row, canonical.col)}`);
+          cell.setAttribute('aria-label', toCoord(canonical.row, canonical.col));
           cell.addEventListener('click', () => handleCellClick(canonical.row, canonical.col));
           appendSafeElement(ui.boardGrid, cell, '#boardGrid', true);
         }
-      }
-
-      const corner = document.createElement('div');
-      corner.className = 'coord corner';
-      corner.textContent = '·';
-      appendSafeElement(ui.boardGrid, corner, '#boardGrid', true);
-
-      for (let viewCol = 0; viewCol < COLS; viewCol++) {
-        const coord = document.createElement('div');
-        coord.className = 'coord';
-        const canonicalBottom = canonicalFromView(0, viewCol, orientation);
-        coord.textContent = String.fromCharCode(97 + canonicalBottom.col);
-        appendSafeElement(ui.boardGrid, coord, '#boardGrid', true);
       }
     }
 
@@ -4893,10 +4876,10 @@
         const isHumanInteractive = appState.screen === 'game' && !state.gameOver && !state.awaitingPromotion && !appState.botTurnPending && !isBotPlayer(currentTeam);
         cell.disabled = !isHumanInteractive;
         cell.innerHTML = '';
-        cell.classList.remove('selected', 'possible', 'capture', 'last-from', 'last-to');
+        cell.classList.remove('selected', 'is-selected', 'possible', 'capture', 'is-legal', 'last-from', 'last-to');
 
         if (state.selected && state.selected.row === row && state.selected.col === col) {
-          cell.classList.add('selected');
+          cell.classList.add('selected', 'is-selected');
         }
 
         if (state.lastMove && state.lastMove.fromRow === row && state.lastMove.fromCol === col) {
@@ -4910,6 +4893,7 @@
         const move = state.legalMoves.find(m => m.toRow === row && m.toCol === col);
         if (move) {
           cell.classList.add(move.captured ? 'capture' : 'possible');
+          cell.classList.add('is-legal');
           const marker = document.createElement('div');
           marker.className = move.captured ? 'capture-ring' : 'move-dot';
           appendSafeElement(cell, marker, 'board cell marker');
