@@ -2035,34 +2035,33 @@
 
 
     /* Arctic Dominion redesign */
-    .game-shell{width:min(100vw,720px);margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:10px 12px calc(env(safe-area-inset-bottom) + 16px);gap:8px;background:radial-gradient(circle at 75% 4%, rgba(70,220,255,.35), transparent 28%),linear-gradient(180deg,#06172c 0%,#08294b 50%,#03101f 100%);color:#eaffff;box-sizing:border-box;overflow-x:hidden;overflow-y:visible;}
-    .arctic-topbar,.game-header{width:min(92vw,640px);margin:0 auto 6px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8px;padding:0;order:1;}
+    .game-shell{width:min(100vw,720px);margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:10px 12px calc(env(safe-area-inset-bottom) + 16px);background:radial-gradient(circle at 80% 0%, rgba(80, 220, 255, 0.35), transparent 28%),radial-gradient(circle at 15% 100%, rgba(0, 90, 200, 0.35), transparent 45%),linear-gradient(180deg, #041222 0%, #062542 45%, #020b16 100%);color:#eaffff;box-sizing:border-box;overflow-x:hidden;}
+    .game-topbar,.arctic-topbar,.game-header{width:min(92vw,640px);height:42px;display:grid;grid-template-columns:40px 1fr 40px;align-items:center;margin:0 auto 8px;}
     .arctic-title{text-align:center;letter-spacing:.22em;text-shadow:0 0 10px rgba(140,230,255,.65);} 
     .arctic-title-small{font-size:9px;color:#d8f5ff;} .arctic-title-main{font-size:clamp(13px,3.6vw,18px);font-weight:800;color:#fff;}
     .ice-icon-button{width:40px;height:40px;min-width:40px;border-radius:14px;border:1px solid rgba(190,240,255,.55);background:rgba(160,230,255,.1);box-shadow:inset 0 0 12px rgba(255,255,255,.12),0 0 12px rgba(80,200,255,.18);} 
-    .turn-status-card,.turn-status-bar{width:min(92vw,640px);margin:0 auto 8px;min-height:54px;border-radius:18px;padding:8px 12px;display:flex;align-items:center;gap:10px;border:1px solid rgba(210,250,255,.5);background:rgba(120,220,255,.12);box-shadow:inset 0 0 16px rgba(255,255,255,.08),0 0 18px rgba(80,220,255,.22);order:2;}
+    .turn-pill,.turn-status-card,.turn-status-bar{width:min(92vw,640px);min-height:52px;margin:0 auto 8px;padding:8px 12px;border-radius:18px;display:flex;align-items:center;gap:10px;background:rgba(120,220,255,.12);border:1px solid rgba(210,250,255,.5);box-shadow:inset 0 0 16px rgba(255,255,255,.08),0 0 18px rgba(80,220,255,.2);}
     .turn-avatar{width:38px;height:38px;flex:0 0 auto;}
     .turn-copy{display:grid;gap:2px;}
     .turn-team-name{font-size:clamp(15px,4vw,20px);font-weight:900;letter-spacing:.01em;text-transform:none;}
     .turn-action{font-size:clamp(11px,3vw,14px);letter-spacing:.01em;opacity:.82;text-transform:none;}
     .turn-meta,.control-badge,.status-meta{display:none!important;}
     .required-hidden-dom,.hidden-required-dom,.visually-collapsed-log{display:none!important;}
-    .board-stage{width:min(92vw,640px);margin:0 auto 10px;padding:0;border:0;background:transparent;box-shadow:none;display:flex;justify-content:center;order:3;}
-    .board-shell{width:min(92vw,640px);aspect-ratio:1/1;margin:0 auto 10px;padding:8px;box-sizing:border-box;border-radius:24px;border:1px solid rgba(220,250,255,.75);background:rgba(140,230,255,.12);box-shadow:inset 0 0 24px rgba(255,255,255,.12),0 0 30px rgba(80,220,255,.45);} 
+    .board-stage{width:min(94vw,660px);aspect-ratio:1/1;margin:0 auto 10px;padding:8px;box-sizing:border-box;border-radius:26px;background:rgba(135,230,255,.1);border:1px solid rgba(225,255,255,.72);box-shadow:inset 0 0 22px rgba(255,255,255,.12),0 0 32px rgba(85,220,255,.42);}
+    .board-shell{width:100%;height:100%;aspect-ratio:1/1;margin:0;padding:0;border-radius:18px;border:0;background:transparent;box-shadow:none;}
     .board-frame{width:100%;height:100%;padding:0;border-radius:18px;background:transparent;border:0;box-shadow:none;} .board-frame::before,.board-frame::after{display:none!important;}
     #boardGrid,.board-grid,.game-board,.board{width:100%;height:100%;}
-    .dice-stage,.game-controls,.dice-panel{width:min(92vw,640px);margin:0 auto 10px;box-sizing:border-box;overflow:visible;padding:12px;border-radius:22px;display:grid;gap:12px;background:rgba(7,35,68,.46);border:1px solid rgba(200,245,255,.45);box-shadow:inset 0 0 18px rgba(255,255,255,.08),0 0 20px rgba(65,210,255,.22);order:4;} 
+    .dice-dock,.dice-stage,.game-controls,.dice-panel{width:min(94vw,660px);margin:0 auto 10px;padding:12px;border-radius:24px;background:rgba(5,28,52,.58);border:1px solid rgba(190,240,255,.42);box-shadow:inset 0 0 20px rgba(255,255,255,.07),0 0 22px rgba(70,210,255,.22);display:grid;gap:12px;}
     .die-row,.dice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
     .die-card,.dice-card{min-height:150px;border-radius:20px;background:rgba(150,230,255,.09)!important;border:1px solid rgba(210,250,255,.4)!important;display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;padding:12px;overflow:visible;position:relative;}
     .die-head{width:100%;display:flex;justify-content:flex-start;align-items:center;}
     .die-value-wrap{display:grid;place-items:center;gap:8px;}
-    .die-value{display:grid;place-items:center;font-size:clamp(42px,12vw,64px);font-weight:900;opacity:.9;background:transparent;border:0;width:auto;height:auto;}
-    .die-card.has-piece .die-value{display:none;}
+    .die-value{display:none!important;}
     .die-piece-icon,.dice-piece-icon{width:clamp(74px,18vw,116px);height:clamp(74px,18vw,116px);object-fit:contain;filter:drop-shadow(0 0 12px rgba(120,230,255,.55));}
     .die-piece-name,.dice-piece-name{font-size:clamp(13px,3.5vw,18px);font-weight:900;letter-spacing:.08em;text-align:center;text-transform:uppercase;}
     .die-state{position:absolute;top:10px;right:10px;font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(120,220,255,.2);border:1px solid rgba(210,250,255,.45);}
-    .game-actions,.action-stack{width:min(92vw,640px);margin:0 auto;display:grid;gap:12px;overflow:visible;}
-    .game-actions{padding:0;border:0;box-shadow:none;background:transparent;order:5;}
+    .game-actions,.action-stack{width:100%;margin:0 auto;display:grid;gap:10px;overflow:visible;}
+    .game-actions{padding:0;border:0;box-shadow:none;background:transparent;}
     .action-stack{width:100%;margin:0;overflow:visible;}
     .roll-dice-button,.end-turn-button,.new-game-button{width:100%;min-height:58px;border-radius:18px;display:flex;align-items:center;justify-content:center;overflow:visible;text-align:center;white-space:nowrap;font-weight:900;letter-spacing:.16em;text-transform:uppercase;box-sizing:border-box;border:1px solid rgba(220,250,255,.7);}
     .end-turn-button{background:rgba(150,210,255,.12);color:rgba(235,250,255,.85);}
@@ -2070,8 +2069,8 @@
     .game-shell.team-red .roll-dice-button{background:linear-gradient(180deg,#ff6b7a,#9e1728);box-shadow:0 0 24px rgba(255,70,90,.55);}
     .game-shell.team-green .roll-dice-button{background:linear-gradient(180deg,#66f0ad,#087244);box-shadow:0 0 24px rgba(70,255,160,.55);}
     .game-shell.team-blue .roll-dice-button{background:linear-gradient(180deg,#6ce5ff,#145fd1);box-shadow:0 0 24px rgba(85,220,255,.65);}
-    .game-shell.team-yellow .roll-dice-button{background:linear-gradient(180deg,#ff8cdb,#a9167c);box-shadow:0 0 24px rgba(255,105,205,.55);}
-    .player-strip{width:min(92vw,640px);margin-top:8px;border-radius:18px;padding:8px 12px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:rgba(120,220,255,.12);border:1px solid rgba(200,245,255,.45);} 
+    .game-shell.team-yellow .roll-dice-button,.game-shell.team-pink .roll-dice-button{background:linear-gradient(180deg,#ff8cdb,#a9167c);box-shadow:0 0 24px rgba(255,105,205,.55);}
+    .player-strip{width:min(94vw,660px);min-height:44px;margin:0 auto;padding:8px 12px;border-radius:18px;display:flex;align-items:center;justify-content:space-between;background:rgba(120,220,255,.08);border:1px solid rgba(200,245,255,.32);} 
     .player-strip #selectionInfo,.player-strip #dieChoiceBar,.player-strip #moveLog{display:none!important;}
     .player-summary{display:flex;justify-content:space-between;font-size:.72rem;letter-spacing:.11em;opacity:.9;}
     .player-token-row .pill{min-height:28px;padding:3px 8px;}
@@ -2241,7 +2240,7 @@
 
     <section id="screenGame" class="screen" aria-label="Game screen">
       <div id="gameShell" class="arctic-game-shell game-shell app-shell">
-        <header class="arctic-topbar game-header">
+        <header class="game-topbar arctic-topbar game-header">
           <button id="restartMatchBtn" class="ice-icon-button back-button" aria-label="New Match">←</button>
           <div class="arctic-title">
             <div class="arctic-title-small">ARCTIC</div>
@@ -2250,7 +2249,7 @@
           <button id="returnMenuBtn" class="ice-icon-button menu-button" aria-label="Menu">☰</button>
         </header>
 
-        <section class="turn-status-card turn-status-bar status-card" aria-live="polite">
+        <section class="turn-pill turn-status-card turn-status-bar status-card" aria-live="polite">
           <div class="turn-avatar">
             <span id="turnMark" class="turn-mark team-green" aria-hidden="true"></span>
           </div>
@@ -2261,11 +2260,6 @@
           <div class="turn-meta"><span id="statusControlBadge" class="control-badge">HUMAN</span><div id="statusMeta" class="status-meta"></div></div>
         </section>
 
-        <section class="panel visually-collapsed-log hidden-required-dom" aria-label="Match summary">
-          <div id="gameTopSummary" class="subtitle">Offline · 1 human, 3 bots, Medium difficulty.</div>
-          <div id="gameConfigPills" class="config-pills" aria-live="polite"></div>
-        </section>
-
         <main class="board-stage board-wrap" aria-label="Game board area">
           <section class="board-shell" aria-label="Board presentation">
             <div class="board-frame">
@@ -2274,7 +2268,7 @@
           </section>
         </main>
 
-        <section class="dice-stage dice-panel panel" aria-labelledby="diceHeading">
+        <section class="dice-dock dice-stage dice-panel panel" aria-labelledby="diceHeading">
           <div class="section-label hidden" id="diceHeading"><span>Dice</span><span>Turn Actions</span></div>
           <div class="die-row dice-grid">
                   <div id="dieCard0" class="die-card" aria-live="polite">
@@ -2316,13 +2310,12 @@
                   <div id="audioStatus" class="audio-status">Audio unlocks on your first interaction.</div>
           </details>
 
-        </section>
-
-        <section class="game-actions panel" aria-label="Game actions">
-          <div class="controls action-stack">
+          <div class="game-actions panel action-buttons" aria-label="Game actions">
+            <div class="controls action-stack">
             <button id="rollBtn" class="primary ice-primary-action roll-dice-button">Roll Dice</button>
             <button id="endTurnBtn" class="secondary ice-secondary-action end-turn-button">End Turn</button>
             <button id="newGameBtn" class="warn ice-secondary-action ice-tertiary-action new-game-button">New Game</button>
+            </div>
           </div>
         </section>
 
@@ -2335,6 +2328,10 @@
           </div>
           <div id="moveLog" class="log visually-collapsed-log" role="log" aria-live="polite"></div>
         </footer>
+        <section class="hidden-required-dom" aria-hidden="true">
+          <div id="gameTopSummary" class="subtitle">Offline · 1 human, 3 bots, Medium difficulty.</div>
+          <div id="gameConfigPills" class="config-pills" aria-live="polite"></div>
+        </section>
       </div>
     </section>
   </div>
