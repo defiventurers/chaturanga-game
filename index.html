@@ -1638,9 +1638,9 @@
       justify-content: stretch;
       padding: 0;
       background:
-        radial-gradient(circle at top right, rgba(82, 210, 255, 0.35), transparent 35%),
-        radial-gradient(circle at bottom left, rgba(0, 120, 255, 0.25), transparent 45%),
-        linear-gradient(180deg, #06152b 0%, #082a4b 50%, #03101f 100%);
+        radial-gradient(circle at top right, rgba(120, 224, 255, 0.3), transparent 35%),
+        radial-gradient(circle at bottom left, rgba(144, 212, 255, 0.22), transparent 45%),
+        linear-gradient(180deg, #f8fdff 0%, #edf8ff 55%, #e6f4ff 100%);
     }
     .arctic-game-shell {
       min-height: 100dvh;
@@ -2043,48 +2043,48 @@
       flex-direction: column;
       align-items: center;
       padding: 10px 10px calc(env(safe-area-inset-bottom) + 14px);
-      gap: 8px;
+      gap: 12px;
       background:
-        radial-gradient(circle at 50% -8%, rgba(124, 233, 255, 0.35), transparent 42%),
-        radial-gradient(circle at 20% 100%, rgba(73, 164, 255, 0.2), transparent 44%),
-        linear-gradient(180deg, #041327 0%, #0a2a4e 56%, #020b17 100%);
-      color: #eaffff;
+        radial-gradient(circle at 50% -8%, rgba(158, 231, 255, 0.35), transparent 42%),
+        radial-gradient(circle at 20% 100%, rgba(102, 189, 255, 0.15), transparent 44%),
+        linear-gradient(180deg, #fbfeff 0%, #f1f9ff 56%, #ebf5ff 100%);
+      color: #12385c;
       box-sizing: border-box;
       overflow-x: hidden;
     }
     .game-topbar,.arctic-topbar,.game-header { width:min(96vw,700px); margin:0; display:grid; grid-template-columns:44px 1fr 44px; align-items:center; gap:8px; }
-    .arctic-title { text-align:center; letter-spacing:.24em; text-shadow:0 0 10px rgba(150,230,255,.66); }
-    .arctic-title-small { font-size:9px; color:#cfefff; }
-    .arctic-title-main { font-size:clamp(14px,3.8vw,20px); font-weight:900; color:#fff; }
-    .ice-icon-button { width:44px; height:44px; border-radius:14px; border:1px solid rgba(184,244,255,.6); background:linear-gradient(180deg, rgba(162,234,255,.22), rgba(16,62,104,.36)); box-shadow: inset 0 0 14px rgba(255,255,255,.18), 0 0 12px rgba(80,220,255,.22); }
+    .arctic-title { text-align:center; letter-spacing:.24em; text-shadow:0 0 10px rgba(140,216,255,.42); }
+    .arctic-title-small { font-size:9px; color:#67a7cc; }
+    .arctic-title-main { font-size:clamp(14px,3.8vw,20px); font-weight:900; color:#1e567f; }
+    .ice-icon-button { width:44px; height:44px; border-radius:14px; border:1px solid rgba(159,225,247,.88); background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(218,242,255,.94)); box-shadow: inset 0 0 14px rgba(255,255,255,.8), 0 0 12px rgba(140,220,255,.34); color:#256896; }
 
     .turn-pill,.turn-status-card,.turn-status-bar {
       width:min(96vw,700px); margin:0; min-height:50px; border-radius:16px; padding:8px 10px;
       display:grid; grid-template-columns:34px 1fr auto; gap:8px; align-items:center;
-      border:1px solid rgba(200,248,255,.46); background:linear-gradient(165deg, rgba(130,224,255,.18), rgba(6,43,82,.45));
-      box-shadow: inset 0 0 16px rgba(255,255,255,.1), 0 0 18px rgba(80,220,255,.2);
+      border:1px solid rgba(176,225,247,.76); background:linear-gradient(165deg, rgba(255,255,255,.96), rgba(223,244,255,.88));
+      box-shadow: inset 0 0 16px rgba(255,255,255,.7), 0 0 18px rgba(122,210,247,.2);
     }
-    .turn-avatar { width:34px; height:34px; border-radius:999px; display:grid; place-items:center; background:rgba(116,216,255,.18); border:1px solid rgba(205,247,255,.6); }
-    .turn-team-name { font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:800; color:#9ce5ff; }
+    .turn-avatar { width:34px; height:34px; border-radius:999px; display:grid; place-items:center; background:rgba(129,206,240,.16); border:1px solid rgba(168,221,245,.72); }
+    .turn-team-name { font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:800; color:#3d89ba; }
     .turn-action { font-size:clamp(13px,3.4vw,16px); font-weight:900; letter-spacing:.04em; }
     .turn-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
-    .control-badge { padding:4px 8px; border-radius:999px; font-size:10px; font-weight:900; border:1px solid rgba(204,247,255,.55); background:rgba(120,220,255,.15); }
+    .control-badge { padding:4px 8px; border-radius:999px; font-size:10px; font-weight:900; border:1px solid rgba(171,220,242,.72); background:rgba(215,243,255,.86); color:#275f88; }
 
-    .board-stage { width:min(97vw,700px); aspect-ratio:1/1; margin:0; padding:6px; border-radius:22px; border:1px solid rgba(205,248,255,.66); background:linear-gradient(180deg, rgba(170,240,255,.2), rgba(18,72,120,.34)); box-shadow: inset 0 0 20px rgba(255,255,255,.14), 0 0 28px rgba(85,220,255,.44); display:flex; justify-content:center; }
+    .board-stage { width:min(97vw,700px); aspect-ratio:1/1; margin:0 auto; padding:6px; border-radius:22px; border:1px solid rgba(181,229,249,.84); background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(219,242,255,.85)); box-shadow: inset 0 0 20px rgba(255,255,255,.65), 0 0 28px rgba(117,206,245,.3); display:flex; justify-content:center; }
     .board-shell,.board-frame { width:100%; height:100%; margin:0; padding:0; border:0; border-radius:16px; background:transparent; box-shadow:none; }
     .board-frame::before,.board-frame::after{ display:none !important; }
     #boardGrid,.board-grid,.game-board,.board { width:100%; height:100%; }
 
     .dice-dock,.dice-stage,.game-controls,.dice-panel {
       width:min(97vw,700px); margin:0; padding:12px; border-radius:18px; display:grid; gap:12px;
-      border:1px solid rgba(197,246,255,.4); background:linear-gradient(180deg, rgba(9,40,72,.62), rgba(4,27,52,.7));
-      box-shadow: inset 0 0 16px rgba(255,255,255,.07), 0 0 18px rgba(65,210,255,.2);
+      border:1px solid rgba(174,224,246,.65); background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(225,246,255,.86));
+      box-shadow: inset 0 0 16px rgba(255,255,255,.7), 0 0 18px rgba(105,204,245,.2);
     }
     .die-row,.dice-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     .die-card,.dice-card {
       min-height:158px; border-radius:18px; padding:10px;
-      border:1px solid rgba(210,250,255,.48) !important;
-      background:linear-gradient(160deg, rgba(191,241,255,.18), rgba(10,43,83,.5)) !important;
+      border:1px solid rgba(178,226,247,.7) !important;
+      background:linear-gradient(160deg, rgba(255,255,255,.95), rgba(218,243,255,.86)) !important;
       display:grid; grid-template-rows:auto 1fr auto; align-items:center; justify-items:center; position:relative;
     }
     .die-head { width:100%; display:flex; justify-content:space-between; align-items:center; }
@@ -2096,7 +2096,13 @@
       mix-blend-mode: multiply; background: transparent !important;
     }
     .die-piece-name,.dice-piece-name { font-size:clamp(13px,3.5vw,18px); font-weight:900; letter-spacing:.08em; text-align:center; text-transform:uppercase; }
-    .die-state { position:absolute; top:8px; right:8px; font-size:10px; padding:4px 7px; border-radius:999px; border:1px solid rgba(210,250,255,.45); background:rgba(120,220,255,.2); }
+    .die-state { position:absolute; top:8px; right:8px; font-size:10px; padding:4px 7px; border-radius:999px; border:1px solid rgba(174,220,241,.72); background:rgba(219,244,255,.88); color:#316f98; }
+    .die-card.rollable { cursor: pointer; }
+    .die-piece-name.tap-to-roll { text-transform: uppercase; letter-spacing: .12em; }
+    .game-shell.team-red .die-piece-name.tap-to-roll { color:#ff2e4d; text-shadow:0 0 8px rgba(255,46,77,.65); }
+    .game-shell.team-green .die-piece-name.tap-to-roll { color:#00d96f; text-shadow:0 0 8px rgba(0,217,111,.65); }
+    .game-shell.team-blue .die-piece-name.tap-to-roll { color:#00e3ff; text-shadow:0 0 8px rgba(0,227,255,.65); }
+    .game-shell.team-pink .die-piece-name.tap-to-roll { color:#ff4bc9; text-shadow:0 0 8px rgba(255,75,201,.65); }
 
     .game-actions,.action-stack { width:100%; display:grid; gap:12px; }
     .game-actions { padding:0; border:0; background:transparent; box-shadow:none; }
@@ -2104,7 +2110,7 @@
       width:100%; min-height:76px; border-radius:20px; font-size:clamp(18px,4.8vw,26px); font-weight:900; letter-spacing:.14em; text-transform:uppercase;
       border:1px solid rgba(220,250,255,.78); box-shadow: inset 0 0 24px rgba(255,255,255,.2), 0 0 30px rgba(80,220,255,.4);
     }
-    .end-turn-button { min-height:72px; background:linear-gradient(180deg, rgba(178,229,255,.18), rgba(33,79,125,.35)); color:rgba(238,250,255,.94); }
+    .end-turn-button { min-height:72px; background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(212,239,255,.9)); color:#235f87; }
     .new-game-button { width:100%; min-height:44px; border-radius:14px; opacity:.66; font-size:clamp(12px,3vw,15px); letter-spacing:.1em; }
     .game-shell.team-red .roll-dice-button{background:linear-gradient(180deg,#ff6d88,#9b1529); box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(255,80,101,.58);}    
     .game-shell.team-green .roll-dice-button{background:linear-gradient(180deg,#66f0ad,#0a7347); box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(70,255,160,.58);}    
@@ -4858,12 +4864,13 @@
           setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, `<div class="die-piece-group"><img class="die-piece-icon" src="${iconSrc}" alt="${pieceLabel}" loading="lazy" decoding="async" /><span class="die-piece-name">${pieceLabel}</span></div>`);
           if (ui.dieCards[i]) ui.dieCards[i].classList.add('has-piece');
         } else {
-          setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, '<div class="die-piece-group"><span class="die-piece-name">Tap to roll</span></div>');
+          setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, '<div class="die-piece-group"><span class="die-piece-name tap-to-roll">Tap to roll</span></div>');
           if (ui.dieCards[i]) ui.dieCards[i].classList.remove('has-piece');
         }
         setNodeText(ui.dieStates[i], `ui.dieStates[${i}]`, dieState);
         if (ui.dieCards[i]) ui.dieCards[i].classList.toggle('used', state.dice.used[i]);
         if (ui.dieCards[i]) ui.dieCards[i].classList.toggle('active', state.dice.lockedDieIndex === i);
+        if (ui.dieCards[i]) ui.dieCards[i].classList.toggle('rollable', !state.dice.rolled && !state.gameOver && !state.awaitingPromotion && !appState.botTurnPending && !isBotPlayer(getCurrentTeam()));
       }
     }
 
@@ -5041,6 +5048,14 @@
     });
 
     ui.rollBtn.addEventListener('click', () => { sound.playButtonSound(); rollDice(); });
+    ui.dieCards.forEach((card) => {
+      card?.addEventListener('click', () => {
+        if (!state.dice.rolled && !ui.rollBtn.disabled) {
+          sound.playButtonSound();
+          rollDice();
+        }
+      });
+    });
     ui.endTurnBtn.addEventListener('click', () => { sound.playButtonSound(); endTurnEarly(); });
     ui.newGameBtn.addEventListener('click', () => { primeAudioAndPlayButton(); startNewMatch(); });
     ui.modalConfirmBtn.addEventListener('click', () => { sound.playButtonSound(); confirmPromotion(); });
