@@ -2044,10 +2044,15 @@
     .board-shell{border-radius:24px;border:1px solid rgba(210,250,255,.75);box-shadow:0 0 28px rgba(80,220,255,.45), inset 0 0 24px rgba(255,255,255,.12);background:rgba(120,220,255,.1);}
     .dice-stage{padding:16px;border-radius:24px;display:grid;gap:14px;}
     .die-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-    .die-card{min-height:180px;border-radius:24px;background:rgba(150,230,255,.1)!important;border:1px solid rgba(210,250,255,.45)!important;display:grid;grid-template-rows:auto 1fr;align-items:center;}
-    .die-value{width:min(32vw,130px);height:min(32vw,130px);aspect-ratio:1/1;border-radius:24px;display:grid;place-items:center;background:rgba(220,250,255,.14);border:1px solid rgba(235,255,255,.7);box-shadow:inset 0 0 26px rgba(255,255,255,.18),0 0 22px rgba(100,220,255,.45);font-size:56px;font-weight:900;}
-    .action-stack{margin-top:2px;display:grid;gap:10px;justify-items:center;}
-    .roll-dice-button,.end-turn-button{width:min(88vw,620px);height:58px;border-radius:18px;text-transform:uppercase;letter-spacing:.18em;font-weight:900;border:1px solid rgba(220,250,255,.75);}
+    .die-card{min-height:190px;border-radius:26px;padding:16px;background:rgba(120,220,255,.1)!important;border:1px solid rgba(210,250,255,.55)!important;box-shadow:inset 0 0 24px rgba(255,255,255,.1),0 0 22px rgba(80,220,255,.25);display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;}
+    .die-value-wrap{display:grid;justify-items:center;align-items:center;gap:10px;width:100%;}
+    .die-value{width:clamp(72px,18vw,120px);height:clamp(72px,18vw,120px);aspect-ratio:1/1;border-radius:22px;display:grid;place-items:center;background:rgba(220,250,255,.14);border:1px solid rgba(235,255,255,.7);box-shadow:inset 0 0 26px rgba(255,255,255,.18),0 0 22px rgba(100,220,255,.45);font-size:56px;font-weight:900;}
+    .die-card.has-piece .die-value{display:none;}
+    .die-piece-icon{width:clamp(72px,18vw,120px);height:clamp(72px,18vw,120px);object-fit:contain;filter:drop-shadow(0 0 12px rgba(120,230,255,.55));}
+    .die-piece-name{font-size:clamp(15px,4vw,22px);font-weight:900;letter-spacing:.08em;text-align:center;text-transform:uppercase;color:#eaffff;}
+    .action-stack{grid-column:1/-1;display:grid;gap:14px;justify-items:center;margin-top:22px;}
+    .roll-dice-button,.end-turn-button{width:min(90vw,640px);height:64px;border-radius:20px;font-size:clamp(14px,3.8vw,20px);text-transform:uppercase;letter-spacing:.18em;font-weight:900;border:1px solid rgba(220,250,255,.75);}
+    .roll-dice-button{box-shadow:inset 0 0 20px rgba(255,255,255,.2),0 0 28px rgba(90,220,255,.55);}
     .end-turn-button{background:rgba(160,210,255,.12);color:rgba(240,255,255,.86);}
     .game-shell.team-red .roll-dice-button{background:linear-gradient(180deg,#ff6b7a,#991a2b);box-shadow:0 0 24px rgba(255,70,90,.55);}
     .game-shell.team-green .roll-dice-button{background:linear-gradient(180deg,#66f0ad,#087244);box-shadow:0 0 24px rgba(70,255,160,.55);}
@@ -2307,7 +2312,7 @@
           </details>
         </section>
 
-        <footer class="player-strip panel" aria-label="Players and match details">
+        <footer class="player-strip panel visually-collapsed-log" aria-label="Players and match details">
           <div class="player-summary"><span>4 PLAYERS</span><span id="youTeamText">YOU BLUE</span></div>
           <div id="playerPills" class="player-token-row pill-row"></div>
           <div class="player-strip-meta">
@@ -3747,7 +3752,7 @@
       }
     }
 
-    function chooseMoveValueForSelection(value) {
+    function chooseMoveValueForSelection(value, preferredDieIndex = null) {
       unlockAudioFromInteraction();
       if (appState.screen !== 'game') return;
       if (!state.selected) return;
@@ -3757,7 +3762,12 @@
       const piece = state.board[row][col];
       if (!piece) return;
 
-      const dieIndex = state.dice.values.findIndex((dieValue, i) => !state.dice.used[i] && dieValue === value);
+      let dieIndex = -1;
+      if (preferredDieIndex !== null && !state.dice.used[preferredDieIndex] && state.dice.values[preferredDieIndex] === value) {
+        dieIndex = preferredDieIndex;
+      } else {
+        dieIndex = state.dice.values.findIndex((dieValue, i) => !state.dice.used[i] && dieValue === value);
+      }
       if (dieIndex === -1) return;
       state.dice.lockedDieIndex = dieIndex;
       state.dice.lockedDieValue = value;
@@ -3775,7 +3785,7 @@
     function chooseDieForSelection(dieIndex) {
       const dieValue = state.dice.values[dieIndex];
       if (dieValue === null || dieValue === undefined) return;
-      chooseMoveValueForSelection(dieValue);
+      chooseMoveValueForSelection(dieValue, dieIndex);
     }
 
     function getAvailableDiceForPiece(row, col) {
@@ -3997,6 +4007,22 @@
       return playerHasLegalMoveForDieOnState(state, team, dieIndex);
     }
 
+    function teamHasLegalMoveForPieceType(team, pieceType, stateRef = state, dieIndex = null) {
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const piece = stateRef.board[row][col];
+          if (!piece || piece.team !== team || piece.type !== pieceType) continue;
+          if (dieIndex === null) {
+            const availableDice = getAvailableDiceForPiece(row, col);
+            if (availableDice.length > 0) return true;
+          } else if (getLegalMovesForPieceOnState(stateRef, row, col, dieIndex).length > 0) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
     function getRemainingPlayableDiceOnState(stateRef, team) {
       const playable = [];
       for (let dieIndex = 0; dieIndex < 2; dieIndex++) {
@@ -4200,8 +4226,25 @@
       render();
     }
 
-    function consumeOneDieByValue(value) {
-      const dieIndex = state.dice.values.findIndex((dieValue, i) => !state.dice.used[i] && dieValue === value);
+    function consumeDieByIdOrFirstMatch(activeDieId, value, pieceType) {
+      const dieIdToIndex = { die1: 0, die2: 1 };
+      let dieIndex = -1;
+      const preferredIndex = activeDieId ? dieIdToIndex[activeDieId] : null;
+      if (
+        preferredIndex !== null &&
+        preferredIndex !== undefined &&
+        !state.dice.used[preferredIndex] &&
+        state.dice.values[preferredIndex] === value &&
+        DICE_ROLLS[value]?.includes(pieceType)
+      ) {
+        dieIndex = preferredIndex;
+      } else {
+        dieIndex = state.dice.values.findIndex((dieValue, i) =>
+          !state.dice.used[i] &&
+          dieValue === value &&
+          DICE_ROLLS[dieValue]?.includes(pieceType)
+        );
+      }
       if (dieIndex === -1) return false;
       state.dice.used[dieIndex] = true;
       return true;
@@ -4219,7 +4262,8 @@
       const captured = state.board[move.toRow][move.toCol];
       state.board[move.toRow][move.toCol] = movingPiece;
       state.board[move.fromRow][move.fromCol] = null;
-      const consumed = consumeOneDieByValue(state.dice.values[move.dieIndex]);
+      const activeDieId = move.dieIndex === 0 ? 'die1' : move.dieIndex === 1 ? 'die2' : null;
+      const consumed = consumeDieByIdOrFirstMatch(activeDieId, state.dice.values[move.dieIndex], movingPiece.type);
       if (!consumed) state.dice.used[move.dieIndex] = true;
       state.lastMove = {
         fromRow: move.fromRow,
@@ -4774,7 +4818,6 @@
       for (let i = 0; i < 2; i++) {
         const value = state.dice.values[i];
         const rolled = value !== null;
-        const pieceNames = value ? DICE_ROLLS[value].map(name => PIECE_NAME[name]) : [];
         let dieState = 'Idle';
 
         if (state.dice.used[i]) dieState = 'Used';
@@ -4784,20 +4827,14 @@
 
         setNodeText(ui.dieValues[i], `ui.dieValues[${i}]`, value ?? '?');
         if (value) {
-          const pieceLines = DICE_ROLLS[value]
-            .map(type => {
-              const pieceLabel = PIECE_NAME[type];
-              const iconSrc = getPieceAsset(team, type);
-              return `
-                <div class="die-piece-entry">
-                  <img class="die-piece-icon" src="${iconSrc}" alt="${pieceLabel}" loading="lazy" decoding="async" />
-                  <span class="die-piece-name">${pieceLabel}</span>
-                </div>
-              `;
-            }).join('');
-          setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, `<div class="die-piece-group">${pieceLines}</div>`);
+          const pieceType = DICE_ROLLS[value].find(type => teamHasLegalMoveForPieceType(team, type, state, i)) || DICE_ROLLS[value][0];
+          const pieceLabel = PIECE_NAME[pieceType];
+          const iconSrc = getPieceAsset(team, pieceType);
+          setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, `<div class="die-piece-group"><img class="die-piece-icon" src="${iconSrc}" alt="${pieceLabel}" loading="lazy" decoding="async" /><span class="die-piece-name">${pieceLabel}</span></div>`);
+          if (ui.dieCards[i]) ui.dieCards[i].classList.add('has-piece');
         } else {
-          setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, '<div class="die-piece-group"><span class="die-piece-name">ROLL TO ACTIVATE</span></div>');
+          setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, '<div class="die-piece-group"><span class="die-piece-name">?</span></div>');
+          if (ui.dieCards[i]) ui.dieCards[i].classList.remove('has-piece');
         }
         setNodeText(ui.dieStates[i], `ui.dieStates[${i}]`, dieState);
         if (ui.dieCards[i]) ui.dieCards[i].classList.toggle('used', state.dice.used[i]);
