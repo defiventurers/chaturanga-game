@@ -2008,55 +2008,67 @@
     .player-count-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
     .team-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
     .team-select-stage {
-      --team-red-left: 5.0%;
-      --team-red-top: 81.4%;
-      --team-red-width: 42.0%;
-      --team-red-height: 5.0%;
-      --team-green-left: 53.0%;
-      --team-green-top: 81.4%;
-      --team-green-width: 42.0%;
-      --team-green-height: 5.0%;
-      --team-pink-left: 5.0%;
-      --team-pink-top: 89.0%;
-      --team-pink-width: 42.0%;
-      --team-pink-height: 5.0%;
-      --team-blue-left: 53.0%;
-      --team-blue-top: 89.0%;
-      --team-blue-width: 42.0%;
-      --team-blue-height: 5.0%;
+      --team-red-left: 6.0%;
+      --team-red-top: 84.6%;
+      --team-red-width: 42.5%;
+      --team-red-height: 4.9%;
+      --team-green-left: 51.8%;
+      --team-green-top: 84.6%;
+      --team-green-width: 42.5%;
+      --team-green-height: 4.9%;
+      --team-pink-left: 6.0%;
+      --team-pink-top: 91.0%;
+      --team-pink-width: 42.5%;
+      --team-pink-height: 4.9%;
+      --team-blue-left: 51.8%;
+      --team-blue-top: 91.0%;
+      --team-blue-width: 42.5%;
+      --team-blue-height: 4.9%;
     }
     .team-retsba-hotspot,
     .team-abster-hotspot,
     .team-polly-hotspot,
     .team-pengu-hotspot {
       position: absolute;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      background: transparent;
-      border: 0;
-      padding: 0;
-      margin: 0;
-      color: #ffffff;
-      font-weight: 900;
-      line-height: 1;
-      text-shadow: 0 2px 4px rgba(0, 20, 70, 0.85), 0 0 8px rgba(255, 255, 255, 0.45);
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      color: transparent !important;
+      text-shadow: none !important;
+      font-size: 0 !important;
+      line-height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: hidden;
       cursor: pointer;
-      font-size: clamp(24px, 7vw, 42px);
-      letter-spacing: 0.02em;
-      white-space: nowrap;
+    }
+    .team-retsba-hotspot *,
+    .team-abster-hotspot *,
+    .team-polly-hotspot *,
+    .team-pengu-hotspot * {
+      color: transparent !important;
+      text-shadow: none !important;
+      font-size: 0 !important;
+      line-height: 0 !important;
     }
     .team-retsba-hotspot { left: var(--team-red-left); top: var(--team-red-top); width: var(--team-red-width); height: var(--team-red-height); }
     .team-abster-hotspot { left: var(--team-green-left); top: var(--team-green-top); width: var(--team-green-width); height: var(--team-green-height); }
     .team-polly-hotspot { left: var(--team-pink-left); top: var(--team-pink-top); width: var(--team-pink-width); height: var(--team-pink-height); }
     .team-pengu-hotspot { left: var(--team-blue-left); top: var(--team-blue-top); width: var(--team-blue-width); height: var(--team-blue-height); }
+    .team-retsba-hotspot.selected,
+    .team-abster-hotspot.selected,
+    .team-polly-hotspot.selected,
+    .team-pengu-hotspot.selected {
+      outline: 2px solid rgba(255, 230, 90, 0.9);
+      outline-offset: -2px;
+      background: rgba(255, 230, 90, 0.08) !important;
+    }
     .team-select-stage.debug .team-retsba-hotspot,
     .team-select-stage.debug .team-abster-hotspot,
     .team-select-stage.debug .team-polly-hotspot,
     .team-select-stage.debug .team-pengu-hotspot {
-      outline: 2px solid white;
-      background: rgba(255, 255, 255, 0.08);
+      outline: 2px solid yellow;
+      background: rgba(255, 255, 0, 0.12) !important;
     }
     .team-continue-hotspot { left: 31%; top: 13%; width: 38%; height: 6.2%; }
     .selected-player-outline {
@@ -2386,10 +2398,10 @@
         <img class="menu-bg-fill" src="/assets/screens/team-select.png" alt="" aria-hidden="true" />
         <div class="menu-stage team-select-stage">
           <img class="menu-art" src="/assets/screens/team-select.png" alt="Choose Teams" />
-          <button id="hitRetsba" class="hotspot team-retsba-hotspot" aria-label="Toggle RETSBA">RETSBA</button>
-          <button id="hitAbster" class="hotspot team-abster-hotspot" aria-label="Toggle ABSTER">ABSTER</button>
-          <button id="hitPolly" class="hotspot team-polly-hotspot" aria-label="Toggle POLLY">POLLY</button>
-          <button id="hitPengu" class="hotspot team-pengu-hotspot" aria-label="Toggle PENGU">PENGU</button>
+          <button id="hitRetsba" class="hotspot team-retsba-hotspot" aria-label="Select Retsba">RETSBA</button>
+          <button id="hitAbster" class="hotspot team-abster-hotspot" aria-label="Select Abster">ABSTER</button>
+          <button id="hitPolly" class="hotspot team-polly-hotspot" aria-label="Select Polly">POLLY</button>
+          <button id="hitPengu" class="hotspot team-pengu-hotspot" aria-label="Select Pengu">PENGU</button>
           <div id="teamOutlineRetsba" class="team-selected-outline" aria-hidden="true"></div>
           <div id="teamOutlineAbster" class="team-selected-outline" aria-hidden="true"></div>
           <div id="teamOutlinePolly" class="team-selected-outline" aria-hidden="true"></div>
