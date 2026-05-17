@@ -1181,10 +1181,10 @@
       border-radius: 22px;
       border: 1px solid rgba(255,255,255,0.08);
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
-        rgba(10, 13, 20, 0.8);
-      padding: 14px;
-      min-height: 180px;
+        linear-gradient(145deg, rgba(220, 248, 255, 0.2), rgba(22, 74, 122, 0.42)),
+        rgba(7, 24, 46, 0.78);
+      padding: 14px 12px 12px;
+      min-height: 208px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -1254,7 +1254,7 @@
 
     .die-piece {
       color: var(--ice-white);
-      font-size: clamp(1rem, 1.9vw, 1.5rem);
+      font-size: clamp(1rem, 1.8vw, 1.38rem);
       line-height: 1.05;
       text-align: center;
       width: 100%;
@@ -1264,27 +1264,44 @@
       text-wrap: balance;
       text-shadow: 0 0 12px rgba(120, 232, 255, 0.42);
       display: grid;
-      gap: 4px;
+      gap: 10px;
       justify-items: center;
       align-content: center;
     }
     .die-piece-group {
       display: grid;
-      gap: 4px;
+      gap: 8px;
       width: 100%;
+    }
+    .die-piece-entry {
+      display: grid;
+      justify-items: center;
+      gap: 5px;
+      padding: 4px 4px 2px;
+      border-radius: 12px;
+      background: rgba(210, 247, 255, 0.07);
+      border: 1px solid rgba(170, 238, 255, 0.2);
+    }
+    .die-piece-icon {
+      width: clamp(56px, 7vw, 72px);
+      height: clamp(56px, 7vw, 72px);
+      object-fit: contain;
+      filter: drop-shadow(0 3px 8px rgba(5, 24, 38, 0.6)) drop-shadow(0 0 10px rgba(116, 228, 255, 0.55));
     }
     .die-piece-name {
       display: block;
       width: 100%;
-      padding: 2px 4px;
+      padding: 2px 6px;
       border-radius: 8px;
-      background: rgba(214, 247, 255, 0.06);
+      background: rgba(214, 247, 255, 0.08);
+      font-size: clamp(0.74rem, 1.35vw, 0.9rem);
     }
 
     .controls {
       display: grid;
-      gap: 10px;
-      margin-top: 14px;
+      gap: 12px;
+      margin-top: 16px;
+      justify-items: center;
     }
 
     .pill-row {
@@ -1653,11 +1670,12 @@
     .board-stage { border-radius: 26px; padding: 8px; border: 1px solid rgba(180,245,255,.7); background: linear-gradient(180deg, rgba(180,240,255,.2), rgba(20,70,110,.35)); box-shadow: inset 0 0 24px rgba(255,255,255,.14), 0 0 28px rgba(80,220,255,.45); }
     .dice-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; border-radius: 18px; border: 1px solid rgba(180,245,255,.26); background: rgba(5,30,60,.32); box-shadow: inset 0 0 18px rgba(255,255,255,.06), 0 0 12px rgba(60,200,255,.16); backdrop-filter: blur(14px); }
     .dice-stage .die-row { grid-column: 1 / -1; }
-    .dice-stage .die-card { border-radius: 20px; border: 1px solid rgba(190,245,255,.4); background: linear-gradient(180deg, rgba(160,230,255,.14), rgba(10,40,80,.36)); }
+    .dice-stage .die-card { border-radius: 20px; border: 1px solid rgba(190,245,255,.5); background: linear-gradient(150deg, rgba(198, 242, 255, .24), rgba(10,40,80,.4)); box-shadow: inset 0 0 20px rgba(220,248,255,.16), 0 0 18px rgba(90,215,255,.2); }
     .ice-die-face { width: min(34vw, 132px); height: min(34vw, 132px); border-radius: 24px; font-size: clamp(42px, 11vw, 68px); }
-    .ice-primary-action, .ice-secondary-action { grid-column: 1 / -1; height: 52px; border-radius: 16px; border: 1px solid rgba(190,245,255,.65); font-weight: 900; letter-spacing: .16em; }
-    .ice-primary-action { background: linear-gradient(180deg, rgba(40,190,255,.95), rgba(0,90,220,.95)); box-shadow: 0 0 20px rgba(60,210,255,.45); }
-    .ice-secondary-action { background: rgba(150,210,255,.12); color: rgba(235,250,255,.86); }
+    .ice-primary-action, .ice-secondary-action { grid-column: 1 / -1; min-height: 60px; width: min(100%, 520px); border-radius: 18px; border: 1px solid rgba(190,245,255,.7); font-weight: 900; letter-spacing: .16em; padding: 14px 18px; }
+    .ice-primary-action { background: linear-gradient(180deg, rgba(40,190,255,.95), rgba(0,90,220,.95)); box-shadow: 0 0 22px rgba(60,210,255,.5), inset 0 1px 0 rgba(255,255,255,.35); font-size: clamp(1.06rem, 2.2vw, 1.28rem); }
+    .ice-secondary-action { background: linear-gradient(180deg, rgba(155,220,255,.24), rgba(18,58,100,.42)); color: rgba(242,252,255,.96); box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 0 14px rgba(90,200,255,.24); }
+    .ice-tertiary-action { min-height: 48px; width: min(92%, 460px); font-size: .9rem; opacity: .88; }
     .player-strip { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 16px; border: 1px solid rgba(180,245,255,.22); background: rgba(5,30,60,.2); }
     .player-strip .mobile-collapsible { grid-column: 1 / -1; }
     .player-token-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -1852,7 +1870,7 @@
       .die-value-wrap { gap: 8px; }
       .die-value { width: min(34vw, 112px); height: min(34vw, 112px); font-size: clamp(36px, 10vw, 52px); }
       .die-piece { font-size: clamp(12px, 3.2vw, 14px); line-height: 1.2; }
-      .die-piece-icon { width: 30px; height: 30px; }
+      .die-piece-icon { width: 44px; height: 44px; }
       .controls {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -2244,7 +2262,7 @@
           <div class="controls">
             <button id="rollBtn" class="primary ice-primary-action">Roll Dice</button>
             <button id="endTurnBtn" class="secondary ice-secondary-action">End Turn</button>
-            <button id="newGameBtn" class="warn ice-secondary-action">New Game</button>
+            <button id="newGameBtn" class="warn ice-secondary-action ice-tertiary-action">New Game</button>
           </div>
           <details class="audio-controls mobile-collapsible" aria-label="Audio controls">
                   <summary class="section-label"><span>Sound</span><span>Hidden</span></summary>
@@ -4741,7 +4759,17 @@
 
         setNodeText(ui.dieValues[i], `ui.dieValues[${i}]`, value ?? '?');
         if (value) {
-          const pieceLines = pieceNames.map(name => `<span class="die-piece-name">${name}</span>`).join('');
+          const pieceLines = DICE_ROLLS[value]
+            .map(type => {
+              const pieceLabel = PIECE_NAME[type];
+              const iconSrc = getPieceAsset(team, type);
+              return `
+                <div class="die-piece-entry">
+                  <img class="die-piece-icon" src="${iconSrc}" alt="${pieceLabel}" loading="lazy" decoding="async" />
+                  <span class="die-piece-name">${pieceLabel}</span>
+                </div>
+              `;
+            }).join('');
           setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, `<div class="die-piece-group">${pieceLines}</div>`);
         } else {
           setNodeHTML(ui.diePieces[i], `ui.diePieces[${i}]`, '<div class="die-piece-group"><span class="die-piece-name">ROLL TO ACTIVATE</span></div>');
