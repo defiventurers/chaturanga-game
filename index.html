@@ -2056,13 +2056,12 @@
     .die-card,.dice-card{min-height:150px;border-radius:20px;background:rgba(150,230,255,.09)!important;border:1px solid rgba(210,250,255,.4)!important;display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;padding:12px;overflow:visible;position:relative;}
     .die-head{width:100%;display:flex;justify-content:flex-start;align-items:center;}
     .die-value-wrap{display:grid;place-items:center;gap:8px;}
-    .die-value{display:grid;place-items:center;font-size:clamp(42px,12vw,64px);font-weight:900;opacity:.9;background:transparent;border:0;width:auto;height:auto;}
-    .die-card.has-piece .die-value{display:none;}
+    .die-value{display:none!important;}
     .die-piece-icon,.dice-piece-icon{width:clamp(74px,18vw,116px);height:clamp(74px,18vw,116px);object-fit:contain;filter:drop-shadow(0 0 12px rgba(120,230,255,.55));}
     .die-piece-name,.dice-piece-name{font-size:clamp(13px,3.5vw,18px);font-weight:900;letter-spacing:.08em;text-align:center;text-transform:uppercase;}
     .die-state{position:absolute;top:10px;right:10px;font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(120,220,255,.2);border:1px solid rgba(210,250,255,.45);}
-    .game-actions,.action-stack{width:min(92vw,640px);margin:0 auto;display:grid;gap:12px;overflow:visible;}
-    .game-actions{padding:0;border:0;box-shadow:none;background:transparent;order:5;}
+    .game-actions,.action-stack{width:100%;margin:0 auto;display:grid;gap:10px;overflow:visible;}
+    .game-actions{padding:0;border:0;box-shadow:none;background:transparent;}
     .action-stack{width:100%;margin:0;overflow:visible;}
     .roll-dice-button,.end-turn-button,.new-game-button{width:100%;min-height:58px;border-radius:18px;display:flex;align-items:center;justify-content:center;overflow:visible;text-align:center;white-space:nowrap;font-weight:900;letter-spacing:.16em;text-transform:uppercase;box-sizing:border-box;border:1px solid rgba(220,250,255,.7);}
     .end-turn-button{background:rgba(150,210,255,.12);color:rgba(235,250,255,.85);}
@@ -2311,13 +2310,12 @@
                   <div id="audioStatus" class="audio-status">Audio unlocks on your first interaction.</div>
           </details>
 
-        </section>
-
-        <section class="game-actions panel" aria-label="Game actions">
-          <div class="controls action-stack">
+          <div class="game-actions panel action-buttons" aria-label="Game actions">
+            <div class="controls action-stack">
             <button id="rollBtn" class="primary ice-primary-action roll-dice-button">Roll Dice</button>
             <button id="endTurnBtn" class="secondary ice-secondary-action end-turn-button">End Turn</button>
             <button id="newGameBtn" class="warn ice-secondary-action ice-tertiary-action new-game-button">New Game</button>
+            </div>
           </div>
         </section>
 
