@@ -2074,7 +2074,7 @@
     .board-stage { padding: 8px; border-radius: 22px; border: 1px solid rgba(120, 210, 255, 0.45); background: rgba(235, 250, 255, 0.72); backdrop-filter: blur(14px); box-shadow: 0 12px 35px rgba(40, 140, 190, 0.18); }
     .board-shell,.board-frame { width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 16px; background: transparent; box-shadow: none; }
     .board-frame::before,.board-frame::after{ display:none !important; }
-    .board,#boardGrid,.board-grid,.game-board {
+    .board,.board-grid,.game-board {
       width: min(92vw, 520px);
       aspect-ratio: 1 / 1;
       height: auto;
@@ -2085,6 +2085,17 @@
       overflow: hidden;
       border-radius: 14px;
       max-width: 100%;
+    }
+    #boardGrid {
+      width: min(92vw, 520px);
+      aspect-ratio: 1 / 1;
+      height: auto;
+      margin-inline: auto;
+      max-width: 100%;
+      grid-template-columns: minmax(20px, 5.5%) repeat(8, minmax(0, 1fr));
+      grid-template-rows: repeat(8, minmax(0, 1fr)) minmax(20px, 5.5%);
+      overflow: hidden;
+      border-radius: 14px;
     }
     .board-cell,.cell { aspect-ratio: 1 / 1; width: auto; height: auto; min-width: 0; min-height: 0; }
     .board-cell.light,.cell.light,.cell[data-color="light"] { background: linear-gradient(180deg, #f7fdff 0%, #e8f7ff 100%); }
