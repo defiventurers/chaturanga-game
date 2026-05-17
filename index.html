@@ -1654,7 +1654,7 @@
       min-height: 100dvh;
       width: 100%;
       margin: 0;
-      padding: clamp(10px, 2.5vw, 22px);
+      padding: clamp(8px, 2.2vw, 16px) clamp(10px, 2.5vw, 22px) clamp(2px, 1vw, 8px);
       border-radius: 0;
       display: flex;
       flex-direction: column;
@@ -2239,9 +2239,17 @@
       box-shadow: none;
       padding: 0;
     }
+
+    #screenGame .game-screen,
+    #screenGame .screen-game,
+    #screenGame {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
     .game-stage {
       position: relative;
-      width: min(100vw, 560px);
+      width: min(100vw, 620px);
       aspect-ratio: 9 / 16;
       margin-inline: auto;
       overflow: hidden;
@@ -2250,30 +2258,30 @@
       background-repeat: no-repeat;
       background-position: center;
       isolation: isolate;
-      --board-left: 19.2%;
-      --board-top: 30.45%;
-      --board-width: 67.4%;
-      --board-height: 37.1%;
+      --board-left: 19.7%;
+      --board-top: 30.15%;
+      --board-width: 66.6%;
+      --board-height: 36.95%;
       --turn-left: 12.2%;
-      --turn-top: 21.1%;
+      --turn-top: 21.05%;
       --turn-width: 77.6%;
-      --turn-height: 6.3%;
+      --turn-height: 6.35%;
       --dice-left: 28.4%;
-      --dice-top: 73.55%;
-      --dice-width: 43.2%;
-      --dice-height: 6.6%;
-      --roll-left: 6.6%;
-      --roll-top: 83.95%;
-      --roll-width: 41.5%;
-      --roll-height: 5.85%;
-      --end-left: 51.4%;
-      --end-top: 83.95%;
-      --end-width: 41.8%;
-      --end-height: 5.85%;
-      --new-left: 27.4%;
-      --new-top: 91.65%;
-      --new-width: 45.2%;
-      --new-height: 3.9%;
+      --dice-top: 73.05%;
+      --dice-width: 43.1%;
+      --dice-height: 6.45%;
+      --roll-left: 6.9%;
+      --roll-top: 83.45%;
+      --roll-width: 41.0%;
+      --roll-height: 5.55%;
+      --end-left: 51.9%;
+      --end-top: 83.45%;
+      --end-width: 41.0%;
+      --end-height: 5.55%;
+      --new-left: 27.2%;
+      --new-top: 91.15%;
+      --new-width: 45.5%;
+      --new-height: 3.85%;
     }
     .game-overlay { position: absolute; inset: 0; pointer-events: none; }
     .board-hit-layer, #boardGrid {
@@ -2293,7 +2301,7 @@
     .board-cell,.cell { position: relative; background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; overflow: visible; color: transparent; font-size: 0; }
     .board-cell::before,.cell::before { display: none !important; }
     .board-cell .coord,.board-cell .cell-label,.board-cell .rank-label,.board-cell .file-label,.cell .coord,.cell .cell-label,.cell .rank-label,.cell .file-label { display: none !important; }
-    .board-piece,.piece { width: 70%; height: 70%; object-fit: contain; display: block; margin: 15%; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.48)); }
+    .board-piece,.piece { width: 68%; height: 68%; object-fit: contain; display: block; margin: 16%; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.48)); }
     .board-cell.is-selected .board-piece,.board-cell.selected .piece,.cell.selected .piece { filter: drop-shadow(0 0 7px rgba(255, 220, 70, 1)) drop-shadow(0 4px 5px rgba(0, 20, 60, 0.52)); }
     .board-cell.is-legal::after,.board-cell.legal-move::after,.cell.legal-move::after,.cell .marker {
       content: "";
@@ -2310,12 +2318,12 @@
     .cell .marker { font-size: 0 !important; color: transparent !important; }
     .turn-overlay { position: absolute; left: var(--turn-left); top: var(--turn-top); width: var(--turn-width); height: var(--turn-height); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; pointer-events: none; padding-inline: 5.5% 7%; box-sizing: border-box; }
     .turn-copy { min-width: 0; }
-    .turn-primary { font-weight: 950; font-size: clamp(11px, 2.8vw, 18px); line-height: 1; color: var(--active-player-color, #ff4040); text-shadow: 0 2px 3px rgba(0, 15, 60, 0.75), 0 0 8px rgba(255, 255, 255, 0.25); }
-    .turn-secondary { margin-top: 0; font-weight: 950; font-size: clamp(14px, 4vw, 24px); line-height: 1; white-space: nowrap; color: #fff; text-shadow: 0 2px 4px rgba(0, 15, 60, 0.85), 0 0 8px rgba(56, 217, 255, 0.45); }
+    .turn-primary { font-weight: 950; font-size: clamp(11px, 2.7vw, 18px); line-height: 1; color: var(--active-player-color, #ff4040); text-shadow: 0 2px 3px rgba(0, 15, 60, 0.75), 0 0 8px rgba(255, 255, 255, 0.25); }
+    .turn-secondary { margin-top: 0; font-weight: 950; font-size: clamp(14px, 3.8vw, 23px); line-height: 1; white-space: nowrap; color: #fff; text-shadow: 0 2px 4px rgba(0, 15, 60, 0.85), 0 0 8px rgba(56, 217, 255, 0.45); }
     .turn-badge { min-width: 70px; padding: 6px 10px; border-radius: 999px; color: #fff; font-weight: 950; font-size: clamp(10px, 2.4vw, 14px); text-align: center; background: rgba(0, 95, 190, 0.42); border: 1px solid rgba(180, 240, 255, 0.7); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 10px rgba(0,35,100,0.35); }
     .dice-overlay { position: absolute; left: var(--dice-left); top: var(--dice-top); width: var(--dice-width); height: var(--dice-height); display: grid; grid-template-columns: 1fr 1fr; gap: 8%; align-items: center; justify-items: center; pointer-events: none; }
     .die-result { height: 100%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; overflow: hidden; color: #073766; font-weight: 950; font-size: clamp(10px, 3vw, 16px); line-height: 1.05; text-shadow: 0 1px 0 rgba(255,255,255,0.8); }
-    .die-result img { width: 46%; max-height: 52%; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.35)); }
+    .die-result img { width: 44%; max-height: 50%; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.35)); }
     .stage-hit-button { position: absolute; appearance: none; border: 0; background: transparent; padding: 0; margin: 0; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.15); }
     .roll-hit { left: var(--roll-left); top: var(--roll-top); width: var(--roll-width); height: var(--roll-height); }
     .end-hit { left: var(--end-left); top: var(--end-top); width: var(--end-width); height: var(--end-height); }
