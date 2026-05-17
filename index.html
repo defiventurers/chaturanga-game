@@ -1637,10 +1637,18 @@
       align-items: stretch;
       justify-content: stretch;
       padding: 0;
+      --ice-bg-top: #d8f6ff;
+      --ice-bg-mid: #b8ecff;
+      --ice-bg-bottom: #eafcff;
+      --ice-cyan-glow: rgba(56, 217, 255, 0.32);
+      --ice-blue-glow: rgba(8, 120, 216, 0.18);
+      --frost-panel: rgba(220, 247, 255, 0.72);
+      --frost-border: rgba(56, 217, 255, 0.45);
       background:
-        radial-gradient(circle at top right, rgba(120, 224, 255, 0.3), transparent 35%),
-        radial-gradient(circle at bottom left, rgba(144, 212, 255, 0.22), transparent 45%),
-        linear-gradient(180deg, #f8fdff 0%, #edf8ff 55%, #e6f4ff 100%);
+        radial-gradient(circle at 50% 18%, rgba(56, 217, 255, 0.38), transparent 34%),
+        radial-gradient(circle at 50% 52%, rgba(255, 255, 255, 0.55), transparent 42%),
+        linear-gradient(180deg, #d8f6ff 0%, #b8ecff 48%, #eafcff 100%);
+      background-blend-mode: screen, soft-light, normal;
     }
     .arctic-game-shell {
       min-height: 100dvh;
@@ -2041,13 +2049,11 @@
       flex-direction: column;
       align-items: center;
       gap: 12px;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(56,217,255,0.35), transparent 35%),
-        radial-gradient(circle at 50% 60%, rgba(255,255,255,0.75), transparent 45%),
-        radial-gradient(circle at 12% 18%, rgba(247,253,255,0.3) 0 1px, transparent 1.8px),
-        radial-gradient(circle at 78% 74%, rgba(189,239,255,0.36) 0 1px, transparent 1.7px),
-        linear-gradient(180deg, #0878d8 0%, #bdefff 42%, #f7fdff 100%);
-      background-size: auto, auto, 220px 220px, 260px 260px, auto;
+      background: linear-gradient(
+        180deg,
+        rgba(232, 250, 255, 0.82),
+        rgba(184, 236, 255, 0.62)
+      );
       color: #073766;
       box-sizing: border-box;
       overflow-x: clip;
@@ -2066,10 +2072,16 @@
       grid-template-columns: 34px 1fr auto;
       gap: 8px;
       align-items: center;
-      border: 1px solid rgba(56,217,255,0.55);
-      background: linear-gradient(180deg, rgba(247,253,255,0.82), rgba(189,239,255,0.62));
+      border: 1px solid rgba(56, 217, 255, 0.42);
+      background: linear-gradient(
+        180deg,
+        rgba(232, 250, 255, 0.78),
+        rgba(184, 236, 255, 0.58)
+      );
       backdrop-filter: blur(14px);
-      box-shadow: 0 14px 35px rgba(6,79,158,0.22), inset 0 1px 0 rgba(255,255,255,0.85);
+      box-shadow:
+        0 12px 28px rgba(8, 120, 216, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.75);
       order: 1;
     }
     .turn-team-name { color: #064f9e; }
@@ -2077,7 +2089,7 @@
     .control-badge { background: rgba(232,250,255,0.82); color: #064f9e; border: 1px solid rgba(56,217,255,0.55); }
 
     .board-wrap { width: 100%; order: 2; display: flex; justify-content: center; align-items: center; }
-    .board-stage { padding: 8px; border-radius: 22px; border: 1px solid rgba(56,217,255,0.55); background: linear-gradient(180deg, rgba(247,253,255,0.82), rgba(189,239,255,0.62)); backdrop-filter: blur(14px); box-shadow: 0 14px 35px rgba(6,79,158,0.22), 0 0 26px rgba(56,217,255,0.34), inset 0 1px 0 rgba(255,255,255,0.85); }
+    .board-stage { padding: 8px; border-radius: 22px; border: 1px solid rgba(56, 217, 255, 0.42); background: linear-gradient(180deg, rgba(232, 250, 255, 0.78), rgba(184, 236, 255, 0.58)); backdrop-filter: blur(14px); box-shadow: 0 12px 28px rgba(8, 120, 216, 0.16), 0 0 26px rgba(56, 217, 255, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.75); }
     .board-shell,.board-frame { width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 16px; background: transparent; box-shadow: none; }
     .board-frame::before,.board-frame::after{ display:none !important; }
     .board,.board-grid,.game-board {
