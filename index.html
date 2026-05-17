@@ -2191,10 +2191,10 @@
       background-repeat: no-repeat;
       background-position: center;
       isolation: isolate;
-      --board-left: 17.2%;
-      --board-top: 32.25%;
-      --board-width: 70.1%;
-      --board-height: 37.8%;
+      --board-left: 19.4%;
+      --board-top: 30.25%;
+      --board-width: 68.9%;
+      --board-height: 38.65%;
       --turn-left: 11.5%;
       --turn-top: 20.8%;
       --turn-width: 77%;
@@ -2231,8 +2231,10 @@
       border: 0;
       background: transparent !important;
     }
-    .board-cell,.cell { position: relative; background: transparent !important; border: 0 !important; padding: 0; }
-    .board-piece,.piece { width: 82%; height: 82%; object-fit: contain; display: block; margin: 9%; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.48)); }
+    .board-cell,.cell { position: relative; background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; overflow: visible; color: transparent; font-size: 0; }
+    .board-cell::before,.cell::before { display: none !important; }
+    .board-cell .coord,.board-cell .cell-label,.board-cell .rank-label,.board-cell .file-label,.cell .coord,.cell .cell-label,.cell .rank-label,.cell .file-label { display: none !important; }
+    .board-piece,.piece { width: 76%; height: 76%; object-fit: contain; display: block; margin: 12%; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.48)); }
     .board-cell.is-selected .board-piece,.board-cell.selected .piece,.cell.selected .piece { filter: drop-shadow(0 0 7px rgba(255, 220, 70, 1)) drop-shadow(0 4px 5px rgba(0, 20, 60, 0.52)); }
     .board-cell.is-legal::after,.board-cell.legal-move::after,.cell.legal-move::after,.cell .marker {
       content: "";
@@ -2451,7 +2453,7 @@
         </section>
 
         <main class="board-stage board-wrap" aria-label="Game board area">
-          <div class="game-stage">
+          <div class="game-stage debug">
             <div class="game-overlay">
               <div class="turn-overlay" aria-live="polite">
                 <div class="turn-copy">
@@ -3808,36 +3810,17 @@
       }
       setNodeHTML(ui.boardGrid, 'ui.boardGrid', '');
       for (let viewRow = ROWS - 1; viewRow >= 0; viewRow--) {
-        const coord = document.createElement('div');
-        coord.className = 'coord';
-        const canonicalLeft = canonicalFromView(viewRow, 0, orientation);
-        coord.textContent = canonicalLeft.row + 1;
-        appendSafeElement(ui.boardGrid, coord, '#boardGrid', true);
-
         for (let viewCol = 0; viewCol < COLS; viewCol++) {
           const cell = document.createElement('button');
           cell.type = 'button';
           const canonical = canonicalFromView(viewRow, viewCol, orientation);
-          cell.className = `cell ${(canonical.row + canonical.col) % 2 === 0 ? 'light' : 'dark'}`;
+          cell.className = 'board-cell cell';
           cell.dataset.row = canonical.row;
           cell.dataset.col = canonical.col;
-          cell.setAttribute('aria-label', `Cell ${toCoord(canonical.row, canonical.col)}`);
+          cell.setAttribute('aria-label', toCoord(canonical.row, canonical.col));
           cell.addEventListener('click', () => handleCellClick(canonical.row, canonical.col));
           appendSafeElement(ui.boardGrid, cell, '#boardGrid', true);
         }
-      }
-
-      const corner = document.createElement('div');
-      corner.className = 'coord corner';
-      corner.textContent = '·';
-      appendSafeElement(ui.boardGrid, corner, '#boardGrid', true);
-
-      for (let viewCol = 0; viewCol < COLS; viewCol++) {
-        const coord = document.createElement('div');
-        coord.className = 'coord';
-        const canonicalBottom = canonicalFromView(0, viewCol, orientation);
-        coord.textContent = String.fromCharCode(97 + canonicalBottom.col);
-        appendSafeElement(ui.boardGrid, coord, '#boardGrid', true);
       }
     }
 
@@ -4893,10 +4876,10 @@
         const isHumanInteractive = appState.screen === 'game' && !state.gameOver && !state.awaitingPromotion && !appState.botTurnPending && !isBotPlayer(currentTeam);
         cell.disabled = !isHumanInteractive;
         cell.innerHTML = '';
-        cell.classList.remove('selected', 'possible', 'capture', 'last-from', 'last-to');
+        cell.classList.remove('selected', 'is-selected', 'possible', 'capture', 'is-legal', 'last-from', 'last-to');
 
         if (state.selected && state.selected.row === row && state.selected.col === col) {
-          cell.classList.add('selected');
+          cell.classList.add('selected', 'is-selected');
         }
 
         if (state.lastMove && state.lastMove.fromRow === row && state.lastMove.fromCol === col) {
@@ -4910,6 +4893,7 @@
         const move = state.legalMoves.find(m => m.toRow === row && m.toCol === col);
         if (move) {
           cell.classList.add(move.captured ? 'capture' : 'possible');
+          cell.classList.add('is-legal');
           const marker = document.createElement('div');
           marker.className = move.captured ? 'capture-ring' : 'move-dot';
           appendSafeElement(cell, marker, 'board cell marker');
