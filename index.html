@@ -2035,45 +2035,86 @@
 
 
     /* Arctic Dominion redesign */
-    .game-shell{width:min(100vw,720px);margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:10px 12px calc(env(safe-area-inset-bottom) + 16px);gap:8px;background:radial-gradient(circle at 75% 4%, rgba(70,220,255,.35), transparent 28%),linear-gradient(180deg,#06172c 0%,#08294b 50%,#03101f 100%);color:#eaffff;box-sizing:border-box;overflow-x:hidden;overflow-y:visible;}
-    .game-topbar,.arctic-topbar,.game-header{width:min(92vw,640px);margin:0 auto 6px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8px;padding:0;order:1;}
-    .arctic-title{text-align:center;letter-spacing:.22em;text-shadow:0 0 10px rgba(140,230,255,.65);} 
-    .arctic-title-small{font-size:9px;color:#d8f5ff;} .arctic-title-main{font-size:clamp(13px,3.6vw,18px);font-weight:800;color:#fff;}
-    .ice-icon-button{width:40px;height:40px;min-width:40px;border-radius:14px;border:1px solid rgba(190,240,255,.55);background:rgba(160,230,255,.1);box-shadow:inset 0 0 12px rgba(255,255,255,.12),0 0 12px rgba(80,200,255,.18);} 
-    .turn-pill,.turn-status-card,.turn-status-bar{width:min(92vw,640px);margin:0 auto 8px;min-height:54px;border-radius:18px;padding:8px 12px;display:flex;align-items:center;gap:10px;border:1px solid rgba(210,250,255,.5);background:rgba(120,220,255,.12);box-shadow:inset 0 0 16px rgba(255,255,255,.08),0 0 18px rgba(80,220,255,.22);order:2;}
-    .turn-avatar{width:38px;height:38px;flex:0 0 auto;}
-    .turn-copy{display:grid;gap:2px;}
-    .turn-team-name{font-size:clamp(15px,4vw,20px);font-weight:900;letter-spacing:.01em;text-transform:none;}
-    .turn-action{font-size:clamp(11px,3vw,14px);letter-spacing:.01em;opacity:.82;text-transform:none;}
-    .turn-meta,.control-badge,.status-meta{display:none!important;}
-    .required-hidden-dom,.hidden-required-dom,.visually-collapsed-log{display:none!important;}
-    .board-stage{width:min(94vw,660px);aspect-ratio:1/1;margin:0 auto 10px;padding:8px;box-sizing:border-box;border-radius:26px;background:rgba(135,230,255,.10);border:1px solid rgba(225,255,255,.72);box-shadow:inset 0 0 22px rgba(255,255,255,.12),0 0 32px rgba(85,220,255,.42);display:flex;justify-content:center;order:3;}
-    .board-shell{width:100%;height:100%;margin:0;padding:0;box-sizing:border-box;border-radius:18px;border:0;background:transparent;box-shadow:none;} 
-    .board-frame{width:100%;height:100%;padding:0;border-radius:18px;background:transparent;border:0;box-shadow:none;} .board-frame::before,.board-frame::after{display:none!important;}
-    #boardGrid,.board-grid,.game-board,.board{width:100%;height:100%;}
-    .dice-dock,.dice-stage,.game-controls,.dice-panel{width:100%;max-width:min(94vw,660px);margin:0 auto 10px;box-sizing:border-box;overflow:visible;padding:12px;border-radius:22px;display:grid;gap:12px;background:rgba(7,35,68,.46);border:1px solid rgba(200,245,255,.45);box-shadow:inset 0 0 18px rgba(255,255,255,.08),0 0 20px rgba(65,210,255,.22);order:4;} 
-    .die-row,.dice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    .die-card,.dice-card{min-height:150px;border-radius:20px;background:rgba(150,230,255,.09)!important;border:1px solid rgba(210,250,255,.4)!important;display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;padding:12px;overflow:visible;position:relative;}
-    .die-head{width:100%;display:flex;justify-content:flex-start;align-items:center;}
-    .die-value-wrap{display:grid;place-items:center;gap:8px;}
-    .die-value{display:none!important;}
-    .die-piece-icon,.dice-piece-icon{width:clamp(74px,18vw,116px);height:clamp(74px,18vw,116px);object-fit:contain;filter:drop-shadow(0 0 12px rgba(120,230,255,.55));}
-    .die-piece-name,.dice-piece-name{font-size:clamp(13px,3.5vw,18px);font-weight:900;letter-spacing:.08em;text-align:center;text-transform:uppercase;}
-    .die-state{position:absolute;top:10px;right:10px;font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(120,220,255,.2);border:1px solid rgba(210,250,255,.45);}
-    .game-actions,.action-stack{width:100%;margin:0 auto;display:grid;gap:14px;overflow:visible;}
-    .game-actions{padding:0;border:0;box-shadow:none;background:transparent;}
-    .action-stack{width:100%;display:grid;gap:14px;margin-top:16px;overflow:visible;box-sizing:border-box;}
-    .roll-dice-button,.end-turn-button{width:100%;min-height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;overflow:visible;box-sizing:border-box;font-size:clamp(16px,4.4vw,24px);font-weight:900;letter-spacing:.16em;text-transform:uppercase;text-align:center;white-space:nowrap;border:1px solid rgba(220,250,255,.78);box-shadow:inset 0 0 24px rgba(255,255,255,.18),0 0 28px rgba(80,220,255,.42);}
-    .end-turn-button{background:linear-gradient(180deg,rgba(170,225,255,.18),rgba(45,90,135,.34));color:rgba(235,250,255,.92);}
-    .new-game-button{width:100%;min-height:48px;border-radius:16px;opacity:.58;font-size:clamp(12px,3.2vw,15px);letter-spacing:.12em;}
-    .game-shell.team-red .roll-dice-button{background:linear-gradient(180deg,#ff6b7a,#9e1728);box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(255,70,90,.58);}
-    .game-shell.team-green .roll-dice-button{background:linear-gradient(180deg,#66f0ad,#087244);box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(70,255,160,.58);}
-    .game-shell.team-blue .roll-dice-button{background:linear-gradient(180deg,#6ce5ff,#145fd1);box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(85,220,255,.65);}
-    .game-shell.team-pink .roll-dice-button{background:linear-gradient(180deg,#ff8cdb,#a9167c);box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(255,105,205,.58);}
-    .player-strip{width:min(94vw,660px);margin-top:8px;border-radius:18px;padding:8px 12px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:rgba(120,220,255,.12);border:1px solid rgba(200,245,255,.45);} 
-    .player-strip #selectionInfo,.player-strip #dieChoiceBar,.player-strip #moveLog{display:none!important;}
-    .player-summary{display:flex;justify-content:space-between;font-size:.72rem;letter-spacing:.11em;opacity:.9;}
-    .player-token-row .pill{min-height:28px;padding:3px 8px;}
+    .game-shell {
+      width: min(100vw, 760px);
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 10px calc(env(safe-area-inset-bottom) + 14px);
+      gap: 8px;
+      background:
+        radial-gradient(circle at 50% -8%, rgba(124, 233, 255, 0.35), transparent 42%),
+        radial-gradient(circle at 20% 100%, rgba(73, 164, 255, 0.2), transparent 44%),
+        linear-gradient(180deg, #041327 0%, #0a2a4e 56%, #020b17 100%);
+      color: #eaffff;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    .game-topbar,.arctic-topbar,.game-header { width:min(96vw,700px); margin:0; display:grid; grid-template-columns:44px 1fr 44px; align-items:center; gap:8px; }
+    .arctic-title { text-align:center; letter-spacing:.24em; text-shadow:0 0 10px rgba(150,230,255,.66); }
+    .arctic-title-small { font-size:9px; color:#cfefff; }
+    .arctic-title-main { font-size:clamp(14px,3.8vw,20px); font-weight:900; color:#fff; }
+    .ice-icon-button { width:44px; height:44px; border-radius:14px; border:1px solid rgba(184,244,255,.6); background:linear-gradient(180deg, rgba(162,234,255,.22), rgba(16,62,104,.36)); box-shadow: inset 0 0 14px rgba(255,255,255,.18), 0 0 12px rgba(80,220,255,.22); }
+
+    .turn-pill,.turn-status-card,.turn-status-bar {
+      width:min(96vw,700px); margin:0; min-height:50px; border-radius:16px; padding:8px 10px;
+      display:grid; grid-template-columns:34px 1fr auto; gap:8px; align-items:center;
+      border:1px solid rgba(200,248,255,.46); background:linear-gradient(165deg, rgba(130,224,255,.18), rgba(6,43,82,.45));
+      box-shadow: inset 0 0 16px rgba(255,255,255,.1), 0 0 18px rgba(80,220,255,.2);
+    }
+    .turn-avatar { width:34px; height:34px; border-radius:999px; display:grid; place-items:center; background:rgba(116,216,255,.18); border:1px solid rgba(205,247,255,.6); }
+    .turn-team-name { font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:800; color:#9ce5ff; }
+    .turn-action { font-size:clamp(13px,3.4vw,16px); font-weight:900; letter-spacing:.04em; }
+    .turn-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+    .control-badge { padding:4px 8px; border-radius:999px; font-size:10px; font-weight:900; border:1px solid rgba(204,247,255,.55); background:rgba(120,220,255,.15); }
+
+    .board-stage { width:min(97vw,700px); aspect-ratio:1/1; margin:0; padding:6px; border-radius:22px; border:1px solid rgba(205,248,255,.66); background:linear-gradient(180deg, rgba(170,240,255,.2), rgba(18,72,120,.34)); box-shadow: inset 0 0 20px rgba(255,255,255,.14), 0 0 28px rgba(85,220,255,.44); display:flex; justify-content:center; }
+    .board-shell,.board-frame { width:100%; height:100%; margin:0; padding:0; border:0; border-radius:16px; background:transparent; box-shadow:none; }
+    .board-frame::before,.board-frame::after{ display:none !important; }
+    #boardGrid,.board-grid,.game-board,.board { width:100%; height:100%; }
+
+    .dice-dock,.dice-stage,.game-controls,.dice-panel {
+      width:min(97vw,700px); margin:0; padding:12px; border-radius:18px; display:grid; gap:12px;
+      border:1px solid rgba(197,246,255,.4); background:linear-gradient(180deg, rgba(9,40,72,.62), rgba(4,27,52,.7));
+      box-shadow: inset 0 0 16px rgba(255,255,255,.07), 0 0 18px rgba(65,210,255,.2);
+    }
+    .die-row,.dice-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .die-card,.dice-card {
+      min-height:158px; border-radius:18px; padding:10px;
+      border:1px solid rgba(210,250,255,.48) !important;
+      background:linear-gradient(160deg, rgba(191,241,255,.18), rgba(10,43,83,.5)) !important;
+      display:grid; grid-template-rows:auto 1fr auto; align-items:center; justify-items:center; position:relative;
+    }
+    .die-head { width:100%; display:flex; justify-content:space-between; align-items:center; }
+    .die-value-wrap { display:grid; gap:8px; place-items:center; }
+    .die-value { display:none !important; }
+    .die-piece-icon,.dice-piece-icon {
+      width:clamp(86px,20vw,122px); height:clamp(86px,20vw,122px); object-fit:contain;
+      filter: drop-shadow(0 0 14px rgba(120,230,255,.55)) contrast(1.12) saturate(1.08);
+      mix-blend-mode: multiply; background: transparent !important;
+    }
+    .die-piece-name,.dice-piece-name { font-size:clamp(13px,3.5vw,18px); font-weight:900; letter-spacing:.08em; text-align:center; text-transform:uppercase; }
+    .die-state { position:absolute; top:8px; right:8px; font-size:10px; padding:4px 7px; border-radius:999px; border:1px solid rgba(210,250,255,.45); background:rgba(120,220,255,.2); }
+
+    .game-actions,.action-stack { width:100%; display:grid; gap:12px; }
+    .game-actions { padding:0; border:0; background:transparent; box-shadow:none; }
+    .roll-dice-button,.end-turn-button {
+      width:100%; min-height:76px; border-radius:20px; font-size:clamp(18px,4.8vw,26px); font-weight:900; letter-spacing:.14em; text-transform:uppercase;
+      border:1px solid rgba(220,250,255,.78); box-shadow: inset 0 0 24px rgba(255,255,255,.2), 0 0 30px rgba(80,220,255,.4);
+    }
+    .end-turn-button { min-height:72px; background:linear-gradient(180deg, rgba(178,229,255,.18), rgba(33,79,125,.35)); color:rgba(238,250,255,.94); }
+    .new-game-button { width:100%; min-height:44px; border-radius:14px; opacity:.66; font-size:clamp(12px,3vw,15px); letter-spacing:.1em; }
+    .game-shell.team-red .roll-dice-button{background:linear-gradient(180deg,#ff6d88,#9b1529); box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(255,80,101,.58);}    
+    .game-shell.team-green .roll-dice-button{background:linear-gradient(180deg,#66f0ad,#0a7347); box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(70,255,160,.58);}    
+    .game-shell.team-blue .roll-dice-button{background:linear-gradient(180deg,#6ce5ff,#165fd3); box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(85,220,255,.65);}    
+    .game-shell.team-pink .roll-dice-button{background:linear-gradient(180deg,#ff8cdb,#a9167c); box-shadow:inset 0 0 22px rgba(255,255,255,.2),0 0 32px rgba(255,105,205,.58);}    
+
+    .player-strip { width:min(97vw,700px); margin:0; border-radius:14px; padding:7px 10px; display:grid; grid-template-columns:1fr auto; gap:6px; align-items:center; background:rgba(115,216,255,.11); border:1px solid rgba(196,244,255,.4); }
+    .player-strip #selectionInfo,.player-strip #dieChoiceBar,.player-strip #moveLog { display:none !important; }
+    .player-summary { display:flex; justify-content:space-between; font-size:.68rem; letter-spacing:.1em; opacity:.92; }
+    .player-token-row .pill { min-height:26px; padding:3px 8px; }
 </style>
 </head>
 <body>
@@ -2243,8 +2284,7 @@
         <header class="game-topbar arctic-topbar game-header">
           <button id="restartMatchBtn" class="ice-icon-button back-button" aria-label="New Match">←</button>
           <div class="arctic-title">
-            <div class="arctic-title-small">ARCTIC</div>
-            <div class="arctic-title-main">DOMINION</div>
+            <div class="arctic-title-main">ARCTIC DOMINION</div>
           </div>
           <button id="returnMenuBtn" class="ice-icon-button menu-button" aria-label="Menu">☰</button>
         </header>
@@ -2274,7 +2314,7 @@
                   <div id="dieCard0" class="die-card" aria-live="polite">
                     <div class="die-head">
                       <span class="dice-label">DIE 1</span>
-                      <span id="dieState0" class="die-state">Idle</span>
+                      <span id="dieState0" class="die-state">READY</span>
                     </div>
                     <div class="die-value-wrap">
                       <div id="dieValue0" class="die-value ice-die-face" aria-hidden="true">?</div>
@@ -2284,7 +2324,7 @@
                   <div id="dieCard1" class="die-card" aria-live="polite">
                     <div class="die-head">
                       <span class="dice-label">DIE 2</span>
-                      <span id="dieState1" class="die-state">Idle</span>
+                      <span id="dieState1" class="die-state">READY</span>
                     </div>
                     <div class="die-value-wrap">
                       <div id="dieValue1" class="die-value ice-die-face" aria-hidden="true">?</div>
