@@ -3019,10 +3019,16 @@
       }
 
       function updateUiStatus(message) {
-        setNodeText(ui.audioStatus, 'ui.audioStatus', message);
-        setNodeText(ui.audioToggleBtn, 'ui.audioToggleBtn', enabled ? 'Sound On' : 'Sound Off');
-        ui.audioToggleBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-        ui.volumeSlider.disabled = !unlocked || !supported;
+        if (ui.audioStatus) {
+          setNodeText(ui.audioStatus, 'ui.audioStatus', message);
+        }
+        if (ui.audioToggleBtn) {
+          setNodeText(ui.audioToggleBtn, 'ui.audioToggleBtn', enabled ? 'Sound On' : 'Sound Off');
+          ui.audioToggleBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        }
+        if (ui.volumeSlider) {
+          ui.volumeSlider.disabled = !unlocked || !supported;
+        }
         setNodeText(ui.volumeValue, 'ui.volumeValue', `${Math.round(volume * 100)}%`);
       }
 
@@ -5148,19 +5154,23 @@
       returnToMenu();
     });
 
-    ui.audioToggleBtn.addEventListener('click', async () => {
-      const unlocked = await sound.unlock();
-      if (!unlocked) return;
-      if (ui.audioToggleBtn.getAttribute('aria-pressed') === 'true') sound.toggleEnabled();
-      else sound.setEnabled(true);
-      sound.playButtonSound();
-    });
+    if (ui.audioToggleBtn) {
+      ui.audioToggleBtn.addEventListener('click', async () => {
+        const unlocked = await sound.unlock();
+        if (!unlocked) return;
+        if (ui.audioToggleBtn.getAttribute('aria-pressed') === 'true') sound.toggleEnabled();
+        else sound.setEnabled(true);
+        sound.playButtonSound();
+      });
+    }
 
-    ui.volumeSlider.addEventListener('input', (e) => {
-      const nextVolume = Number(e.target.value) / 100;
-      sound.setVolume(nextVolume);
-      sound.playButtonSound();
-    });
+    if (ui.volumeSlider) {
+      ui.volumeSlider.addEventListener('input', (e) => {
+        const nextVolume = Number(e.target.value) / 100;
+        sound.setVolume(nextVolume);
+        sound.playButtonSound();
+      });
+    }
 
     ui.rollBtn.addEventListener('click', () => { sound.playButtonSound(); rollDice(); });
     ui.dieCards.forEach((card) => {
