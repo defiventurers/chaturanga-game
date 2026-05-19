@@ -2259,7 +2259,7 @@
       box-shadow: 0 8px 18px rgba(8,120,216,0.18), inset 0 1px 0 rgba(255,255,255,0.8);
     }
     .action-buttons,.game-actions,.controls-actions {
-      width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 12px;
+      width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: calc((min(92vw, 420px) / 8) * 0.75);
     }
     .action-stack { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .roll-dice-button,button.roll-dice,.ice-primary-action {
@@ -2340,6 +2340,8 @@
       --board-top: 30.75%;
       --board-width: 67.35%;
       --board-height: 36.85%;
+      --board-tile-size: calc(var(--board-width) / 8);
+      --action-button-offset: calc(var(--board-tile-size) * 0.75);
       --dice-left: 28.0%;
       --dice-top: 72.85%;
       --dice-width: 44.2%;
@@ -2372,10 +2374,34 @@
       border: 0;
       background: transparent !important;
     }
-    .board-cell,.cell { position: relative; background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; overflow: visible; color: transparent; font-size: 0; }
+    .board-cell,.cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: visible;
+      color: transparent;
+      font-size: 0;
+    }
     .board-cell::before,.cell::before { display: none !important; }
     .board-cell .coord,.board-cell .cell-label,.board-cell .rank-label,.board-cell .file-label,.cell .coord,.cell .cell-label,.cell .rank-label,.cell .file-label { display: none !important; }
-    .board-piece,.piece { width: 66%; height: 66%; margin: 17%; object-fit: contain; display: block; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 20, 60, 0.48)); }
+    .board-piece,.piece {
+      width: 86%;
+      height: 86%;
+      max-width: 86%;
+      max-height: 86%;
+      margin: auto;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+      filter: drop-shadow(0 3px 5px rgba(6, 55, 102, 0.35));
+      transform: none;
+    }
     .board-cell.is-selected .board-piece,.board-cell.selected .piece,.cell.selected .piece { filter: drop-shadow(0 0 7px rgba(255, 220, 70, 1)) drop-shadow(0 4px 5px rgba(0, 20, 60, 0.52)); }
     .board-cell.is-legal::after,.board-cell.legal-move::after,.cell.legal-move::after,.cell .marker {
       content: "";
@@ -2457,14 +2483,10 @@
         0 0 6px rgba(255,255,255,0.25);
     }
     .stage-hit-button { position: absolute; appearance: none; border: 0; background: transparent; padding: 0; margin: 0; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.15); }
-    .roll-hit { left: var(--roll-left); top: var(--roll-top); width: var(--roll-width); height: var(--roll-height); }
-    .end-hit { left: var(--end-left); top: var(--end-top); width: var(--end-width); height: var(--end-height); }
-    .new-game-hit { left: var(--new-left); top: var(--new-top); width: var(--new-width); height: var(--new-height); }
+    .roll-hit { left: var(--roll-left); top: calc(var(--roll-top) + var(--action-button-offset)); width: var(--roll-width); height: var(--roll-height); }
+    .end-hit { left: var(--end-left); top: calc(var(--end-top) + var(--action-button-offset)); width: var(--end-width); height: var(--end-height); }
+    .new-game-hit { left: var(--new-left); top: calc(var(--new-top) + var(--action-button-offset)); width: var(--new-width); height: var(--new-height); }
     .stage-hit-button:disabled { cursor: not-allowed; pointer-events: none; }
-    .game-stage.debug .board-hit-layer,.game-stage.debug #boardGrid { outline: 2px solid red; }
-    .game-stage.debug .turn-overlay { outline: 2px solid lime; }
-    .game-stage.debug .dice-overlay { outline: 2px solid cyan; }
-    .game-stage.debug .stage-hit-button { outline: 2px solid yellow; background: rgba(255, 255, 0, 0.12); }
     .turn-copy,.selection-info,.player-summary,.dice-subtitle,.audio-subtitle,.audio-status { color: rgba(7,55,102,0.72); }
 </style>
 </head>
