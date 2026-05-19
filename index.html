@@ -2502,12 +2502,22 @@
     .stage-hit-button:disabled { cursor: not-allowed; pointer-events: none; }
     .debug-piece-layer { transform: translate(var(--piece-layer-offset-x), var(--piece-layer-offset-y)); }
     .action-buttons,.game-actions,.controls-actions { transform: translate(var(--actions-offset-x), var(--actions-offset-y)); }
-    .drag-debug-toolbar { position: fixed; bottom: 12px; left: 8px; right: 8px; z-index: 99999; background: rgba(0, 20, 40, 0.88); color: white; border: 1px solid rgba(80, 220, 255, 0.7); border-radius: 12px; padding: 8px; font-size: 12px; display: none; gap: 6px; touch-action: none; }
+    .drag-debug-toolbar { position: fixed; bottom: 12px; left: 8px; right: 8px; z-index: 99999; background: rgba(0, 20, 40, 0.88); color: white; border: 1px solid rgba(80, 220, 255, 0.7); border-radius: 12px; padding: 8px; font-size: 12px; display: none; gap: 6px; touch-action: none; pointer-events: auto; }
     .drag-debug-toolbar.is-visible { display: grid; }
     .drag-debug-toolbar .debug-mode-label { font-weight: 700; color: #9feeff; }
     .drag-debug-toolbar .debug-btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
     .drag-debug-toolbar button { font-size: 12px; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(120,220,255,.8); background: rgba(11,42,68,.95); color: #fff; }
     .drag-debug-toolbar button.active { background: rgba(43,123,160,.95); }
+    .calibrate-mode .board,
+    .calibrate-mode .game-board,
+    .calibrate-mode .board-wrap { touch-action: none; }
+    .calibration-grid-overlay { position: fixed; left: var(--calib-left); top: var(--calib-top); width: var(--calib-width); height: var(--calib-height); z-index: 99999 !important; border: 2px solid red; pointer-events: auto !important; touch-action: none !important; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    .calibration-handle { position: absolute; width: 40px; height: 40px; background: rgba(255, 220, 0, 0.9); border: 2px solid #111; border-radius: 50%; z-index: 99999 !important; pointer-events: auto !important; touch-action: none !important; }
+    .calibration-handle.tl { left: -20px; top: -20px; }
+    .calibration-handle.tr { right: -20px; top: -20px; }
+    .calibration-handle.bl { left: -20px; bottom: -20px; }
+    .calibration-handle.br { right: -20px; bottom: -20px; }
+    .is-calibrating-drag .calibration-grid-outline, .calibration-handle.is-active { box-shadow: 0 0 0 2px rgba(255,255,0,.8), 0 0 14px rgba(0,255,255,.85); }
     .drag-debug-active { touch-action: none; }
     .turn-copy,.selection-info,.player-summary,.dice-subtitle,.audio-subtitle,.audio-status { color: rgba(7,55,102,0.72); }
 </style>
@@ -2759,7 +2769,9 @@
   </div>
 
   <script>
-    const DEBUG_DRAG_MODE = new URLSearchParams(window.location.search).get('drag') === '1';
+    const urlParams = new URLSearchParams(window.location.search);
+    const CALIBRATE_MODE = urlParams.get('calibrate') === '1';
+    const DEBUG_DRAG_MODE = CALIBRATE_MODE || urlParams.get('drag') === '1';
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch((error) => {
@@ -3073,9 +3085,10 @@
     const dragDebug = {
       enabled: DEBUG_DRAG_MODE,
       mode: null,
-      state: { startX: 0, startY: 0, baseX: 0, baseY: 0 },
+      state: { startX: 0, startY: 0, baseX: 0, baseY: 0, baseW: 0, baseH: 0, dx: 0, dy: 0 },
       activeTarget: null,
-      pointerId: null
+      pointerId: null,
+      isDragging: false
     };
 
     function initDragDebugMode() {
@@ -3091,8 +3104,40 @@
       root.style.setProperty('--actions-offset-y', `${Number(values.actionsY) || 0}px`);
       root.style.setProperty('--piece-size', values.pieceSize || '86%');
       ui.boardGrid?.classList.add('debug-piece-layer');
+      document.body.classList.toggle('calibrate-mode', CALIBRATE_MODE);
       ui.dragDebugToolbar.classList.add('is-visible');
-      const modes = ['pieces-layer', 'A1', 'A8', 'H8', 'buttons'];
+      const modes = ['board-move', 'board-resize-tl', 'board-resize-tr', 'board-resize-bl', 'board-resize-br', 'pieces-layer', 'A1', 'A8', 'H8', 'buttons'];
+      const calibrateStorageKey = 'arctic_board_calibration';
+      const savedCalib = JSON.parse(localStorage.getItem(calibrateStorageKey) || '{}');
+      let calibrationRect = null;
+      let calibrationOverlay = null;
+      const applyBoardRect = (rect) => {
+        if (!rect || !ui.boardGrid) return;
+        ui.boardGrid.style.left = `${rect.left}px`;
+        ui.boardGrid.style.top = `${rect.top}px`;
+        ui.boardGrid.style.width = `${rect.width}px`;
+        ui.boardGrid.style.height = `${rect.height}px`;
+      };
+      const syncOverlayFromBoard = () => {
+        if (!calibrationOverlay || !ui.boardGrid) return;
+        const boardRect = ui.boardGrid.getBoundingClientRect();
+        calibrationRect = { left: boardRect.left, top: boardRect.top, width: boardRect.width, height: boardRect.height };
+        calibrationOverlay.style.setProperty('--calib-left', `${boardRect.left}px`);
+        calibrationOverlay.style.setProperty('--calib-top', `${boardRect.top}px`);
+        calibrationOverlay.style.setProperty('--calib-width', `${boardRect.width}px`);
+        calibrationOverlay.style.setProperty('--calib-height', `${boardRect.height}px`);
+      };
+      if (CALIBRATE_MODE && ui.boardGrid && !document.querySelector('.calibration-grid-overlay')) {
+        if (Number.isFinite(savedCalib.left)) applyBoardRect(savedCalib);
+        calibrationOverlay = document.createElement('div');
+        calibrationOverlay.className = 'calibration-grid-overlay';
+        calibrationOverlay.innerHTML = `<div class="calibration-handle tl" data-calibration-target="board-resize-tl"></div><div class="calibration-handle tr" data-calibration-target="board-resize-tr"></div><div class="calibration-handle bl" data-calibration-target="board-resize-bl"></div><div class="calibration-handle br" data-calibration-target="board-resize-br"></div>`;
+        document.body.appendChild(calibrationOverlay);
+        syncOverlayFromBoard();
+        window.addEventListener('resize', syncOverlayFromBoard);
+      } else {
+        calibrationOverlay = document.querySelector('.calibration-grid-overlay');
+      }
       ui.dragDebugToolbar.innerHTML = `<div class="debug-mode-label">Drag Calibration (?drag=1)</div><div class="debug-btn-row">${['Drag Pieces Layer','Drag A1','Drag A8','Drag H8','Drag Buttons','Reset','Copy Values'].map(label => `<button type="button" data-debug-btn="${label}">${label}</button>`).join('')}</div><div id="dragDebugValues"></div>`;
       const valuesNode = ui.dragDebugToolbar.querySelector('#dragDebugValues');
       const btnFor = (label) => ui.dragDebugToolbar.querySelector(`[data-debug-btn="${label}"]`);
@@ -3110,7 +3155,10 @@
           }, {})
         };
         localStorage.setItem(storageKey, JSON.stringify(payload));
-        valuesNode.textContent = `Layer(${payload.pieceLayerX}, ${payload.pieceLayerY}) Buttons(${payload.actionsX}, ${payload.actionsY})`;
+        const gridOffsetX = ui.boardGrid ? Math.round(ui.boardGrid.getBoundingClientRect().left) : 0;
+        const gridOffsetY = ui.boardGrid ? Math.round(ui.boardGrid.getBoundingClientRect().top) : 0;
+        const gridSizeAdjust = ui.boardGrid ? Math.round(ui.boardGrid.getBoundingClientRect().width) : 0;
+        valuesNode.textContent = `mode:${dragDebug.mode || '-'} dragging:${dragDebug.isDragging ? 'yes' : 'no'} dx:${Math.round(dragDebug.state.dx)} dy:${Math.round(dragDebug.state.dy)} grid-offset-x:${gridOffsetX} grid-offset-y:${gridOffsetY} grid-size-adjust:${gridSizeAdjust} piece-size:${getComputedStyle(root).getPropertyValue('--piece-size').trim()} actions-offset-y:${getComputedStyle(root).getPropertyValue('--actions-offset-y').trim()}`;
       };
       const setMode = (mode) => {
         dragDebug.mode = mode;
@@ -3141,8 +3189,12 @@
       const onDown = (event) => {
         if (!dragDebug.mode) return;
         let target = null;
+        const calibrationTarget = event.target.closest('[data-calibration-target]')?.dataset.calibrationTarget;
+        if (calibrationTarget) dragDebug.mode = calibrationTarget;
+        if (CALIBRATE_MODE && dragDebug.mode === 'board-move' && event.target.classList.contains('calibration-grid-overlay')) target = calibrationOverlay;
         if (dragDebug.mode === 'buttons') target = ui.actionButtonsGroup;
         if (dragDebug.mode === 'pieces-layer' && event.target.closest('.piece')) target = ui.boardGrid;
+        if (CALIBRATE_MODE && dragDebug.mode?.startsWith('board-resize')) target = event.target.closest('.calibration-handle');
         if (modes.includes(dragDebug.mode) && ['A1', 'A8', 'H8'].includes(dragDebug.mode)) target = document.querySelector(`[data-debug-square="${dragDebug.mode}"]`);
         if (!target) return;
         dragDebug.activeTarget = target;
@@ -3157,19 +3209,44 @@
         } else {
           dragDebug.state.baseX = Number(target.dataset.debugOffsetX || 0); dragDebug.state.baseY = Number(target.dataset.debugOffsetY || 0);
         }
-        target.setPointerCapture(event.pointerId);
-        document.body.classList.add('drag-debug-active');
+        if (CALIBRATE_MODE && (dragDebug.mode === 'board-move' || dragDebug.mode?.startsWith('board-resize'))) {
+          syncOverlayFromBoard();
+          dragDebug.state.baseX = calibrationRect.left;
+          dragDebug.state.baseY = calibrationRect.top;
+          dragDebug.state.baseW = calibrationRect.width;
+          dragDebug.state.baseH = calibrationRect.height;
+        }
+        if (target.setPointerCapture) target.setPointerCapture(event.pointerId);
+        dragDebug.isDragging = true;
+        document.body.classList.add('drag-debug-active', 'is-calibrating-drag');
+        if (dragDebug.mode?.startsWith('board-resize')) target.classList.add('is-active');
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        event.stopPropagation();
         event.preventDefault();
       };
       const onMove = (event) => {
         if (!dragDebug.activeTarget || dragDebug.pointerId !== event.pointerId) return;
         const dx = event.clientX - dragDebug.state.startX;
         const dy = event.clientY - dragDebug.state.startY;
+        dragDebug.state.dx = dx; dragDebug.state.dy = dy;
         const newX = dragDebug.state.baseX + dx, newY = dragDebug.state.baseY + dy;
         if (dragDebug.activeTarget === ui.boardGrid) {
           root.style.setProperty('--piece-layer-offset-x', `${newX}px`); root.style.setProperty('--piece-layer-offset-y', `${newY}px`);
         } else if (dragDebug.activeTarget === ui.actionButtonsGroup) {
           root.style.setProperty('--actions-offset-x', `${newX}px`); root.style.setProperty('--actions-offset-y', `${newY}px`);
+        } else if (CALIBRATE_MODE && dragDebug.mode === 'board-move') {
+          applyBoardRect({ left: dragDebug.state.baseX + dx, top: dragDebug.state.baseY + dy, width: dragDebug.state.baseW, height: dragDebug.state.baseH });
+          syncOverlayFromBoard();
+        } else if (CALIBRATE_MODE && dragDebug.mode?.startsWith('board-resize')) {
+          let { baseX, baseY, baseW, baseH } = dragDebug.state;
+          let left = baseX, top = baseY, width = baseW, height = baseH;
+          if (dragDebug.mode.endsWith('tl')) { left = baseX + dx; top = baseY + dy; width = baseW - dx; height = baseH - dy; }
+          if (dragDebug.mode.endsWith('tr')) { top = baseY + dy; width = baseW + dx; height = baseH - dy; }
+          if (dragDebug.mode.endsWith('bl')) { left = baseX + dx; width = baseW - dx; height = baseH + dy; }
+          if (dragDebug.mode.endsWith('br')) { width = baseW + dx; height = baseH + dy; }
+          applyBoardRect({ left, top, width: Math.max(120, width), height: Math.max(120, height) });
+          syncOverlayFromBoard();
         } else {
           dragDebug.activeTarget.dataset.debugOffsetX = `${newX}`; dragDebug.activeTarget.dataset.debugOffsetY = `${newY}`;
           dragDebug.activeTarget.style.transform = `translate(${newX}px, ${newY}px)`;
@@ -3179,13 +3256,26 @@
       };
       const onUp = (event) => {
         if (!dragDebug.activeTarget || dragDebug.pointerId !== event.pointerId) return;
-        dragDebug.activeTarget.releasePointerCapture(event.pointerId);
+        if (dragDebug.activeTarget.releasePointerCapture) dragDebug.activeTarget.releasePointerCapture(event.pointerId);
+        dragDebug.activeTarget.classList.remove?.('is-active');
         dragDebug.activeTarget = null; dragDebug.pointerId = null;
-        document.body.classList.remove('drag-debug-active');
+        dragDebug.isDragging = false;
+        document.body.classList.remove('drag-debug-active', 'is-calibrating-drag');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        if (CALIBRATE_MODE && ui.boardGrid) {
+          const b = ui.boardGrid.getBoundingClientRect();
+          localStorage.setItem(calibrateStorageKey, JSON.stringify({ left: b.left, top: b.top, width: b.width, height: b.height }));
+        }
+        save();
       };
       document.addEventListener('pointerdown', onDown, { passive: false });
       document.addEventListener('pointermove', onMove, { passive: false });
       document.addEventListener('pointerup', onUp, { passive: false });
+      document.addEventListener('pointercancel', onUp, { passive: false });
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onUp, { passive: false });
+      window.addEventListener('pointercancel', onUp, { passive: false });
       ['A1','A8','H8'].forEach((sq) => {
         const el = document.querySelector(`[data-debug-square="${sq}"]`);
         const offset = values.squareOffsets?.[sq];
@@ -3196,7 +3286,7 @@
         }
       });
       save();
-      setMode('pieces-layer');
+      setMode(CALIBRATE_MODE ? 'board-move' : 'pieces-layer');
     }
 
     function setText(selectorOrId, value) {
