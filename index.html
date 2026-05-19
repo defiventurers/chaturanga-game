@@ -61,6 +61,11 @@
       --team-blue-bg: linear-gradient(180deg, rgba(88,144,246,0.22), rgba(26,43,77,0.92));
       --team-yellow-bg: linear-gradient(180deg, rgba(255,96,189,0.28), rgba(109,20,70,0.92));
       --glow-cyan: #73e7ff;
+      --piece-layer-offset-x: 0px;
+      --piece-layer-offset-y: 0px;
+      --piece-size: 86%;
+      --actions-offset-x: 0px;
+      --actions-offset-y: 0px;
     }
 
     * { box-sizing: border-box; }
@@ -1028,10 +1033,11 @@
 
     .piece,
       .board-piece,
-      .piece-token {
+      .piece-token,
+      .game-piece {
       --piece-color: #fff;
-      width: 58px;
-      height: 58px;
+      width: var(--piece-size, 58px);
+      height: var(--piece-size, 58px);
       position: relative;
       z-index: 2;
       display: flex;
@@ -1051,6 +1057,7 @@
     .piece img,
     .board-piece img,
     .piece-token img,
+    .game-piece img,
     .png-piece-full {
       background: transparent !important;
       background-color: transparent !important;
@@ -2493,6 +2500,15 @@
     .end-hit { left: var(--end-left); top: calc(var(--end-top) + var(--action-button-offset)); width: var(--end-width); height: var(--end-height); }
     .new-game-hit { left: var(--new-left); top: calc(var(--new-top) + var(--action-button-offset)); width: var(--new-width); height: var(--new-height); }
     .stage-hit-button:disabled { cursor: not-allowed; pointer-events: none; }
+    .debug-piece-layer { transform: translate(var(--piece-layer-offset-x), var(--piece-layer-offset-y)); }
+    .action-buttons,.game-actions,.controls-actions { transform: translate(var(--actions-offset-x), var(--actions-offset-y)); }
+    .drag-debug-toolbar { position: fixed; bottom: 12px; left: 8px; right: 8px; z-index: 99999; background: rgba(0, 20, 40, 0.88); color: white; border: 1px solid rgba(80, 220, 255, 0.7); border-radius: 12px; padding: 8px; font-size: 12px; display: none; gap: 6px; touch-action: none; }
+    .drag-debug-toolbar.is-visible { display: grid; }
+    .drag-debug-toolbar .debug-mode-label { font-weight: 700; color: #9feeff; }
+    .drag-debug-toolbar .debug-btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .drag-debug-toolbar button { font-size: 12px; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(120,220,255,.8); background: rgba(11,42,68,.95); color: #fff; }
+    .drag-debug-toolbar button.active { background: rgba(43,123,160,.95); }
+    .drag-debug-active { touch-action: none; }
     .turn-copy,.selection-info,.player-summary,.dice-subtitle,.audio-subtitle,.audio-status { color: rgba(7,55,102,0.72); }
 </style>
 </head>
@@ -2702,9 +2718,11 @@
                   <div id="diePiece1" class="die-piece">Roll to activate</div>
                 </div>
               </div>
-              <button id="rollBtn" class="stage-hit-button roll-hit" aria-label="Roll dice"></button>
-              <button id="endTurnBtn" class="stage-hit-button end-hit" aria-label="End turn"></button>
-              <button id="newGameBtn" class="stage-hit-button new-game-hit" aria-label="New game"></button>
+              <div id="actionButtonsGroup" class="controls-actions">
+                <button id="rollBtn" class="stage-hit-button roll-hit" aria-label="Roll dice"></button>
+                <button id="endTurnBtn" class="stage-hit-button end-hit" aria-label="End turn"></button>
+                <button id="newGameBtn" class="stage-hit-button new-game-hit" aria-label="New game"></button>
+              </div>
             </div>
           </div>
         </main>
@@ -2726,6 +2744,7 @@
       </div>
     </section>
   </div>
+  <div id="dragDebugToolbar" class="drag-debug-toolbar" aria-live="polite"></div>
 
   <div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalText">
@@ -2740,6 +2759,7 @@
   </div>
 
   <script>
+    const DEBUG_DRAG_MODE = new URLSearchParams(window.location.search).get('drag') === '1';
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch((error) => {
@@ -3032,6 +3052,8 @@
       rollBtn: document.getElementById('rollBtn'),
       endTurnBtn: document.getElementById('endTurnBtn'),
       newGameBtn: document.getElementById('newGameBtn'),
+      actionButtonsGroup: document.getElementById('actionButtonsGroup'),
+      dragDebugToolbar: document.getElementById('dragDebugToolbar'),
       audioToggleBtn: document.getElementById('audioToggleBtn'),
       volumeSlider: document.getElementById('volumeSlider'),
       volumeValue: document.getElementById('volumeValue'),
@@ -3047,6 +3069,135 @@
       modalCancelBtn: document.getElementById('modalCancelBtn'),
       gameShell: document.getElementById('gameShell')
     };
+
+    const dragDebug = {
+      enabled: DEBUG_DRAG_MODE,
+      mode: null,
+      state: { startX: 0, startY: 0, baseX: 0, baseY: 0 },
+      activeTarget: null,
+      pointerId: null
+    };
+
+    function initDragDebugMode() {
+      if (!dragDebug.enabled || !ui.dragDebugToolbar) return;
+      const root = document.documentElement;
+      const storageKey = 'arctic_drag_debug_offsets';
+      const defaults = { pieceLayerX: 0, pieceLayerY: 0, actionsX: 0, actionsY: 0, pieceSize: '86%', squareOffsets: {} };
+      const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      const values = { ...defaults, ...saved };
+      root.style.setProperty('--piece-layer-offset-x', `${Number(values.pieceLayerX) || 0}px`);
+      root.style.setProperty('--piece-layer-offset-y', `${Number(values.pieceLayerY) || 0}px`);
+      root.style.setProperty('--actions-offset-x', `${Number(values.actionsX) || 0}px`);
+      root.style.setProperty('--actions-offset-y', `${Number(values.actionsY) || 0}px`);
+      root.style.setProperty('--piece-size', values.pieceSize || '86%');
+      ui.boardGrid?.classList.add('debug-piece-layer');
+      ui.dragDebugToolbar.classList.add('is-visible');
+      const modes = ['pieces-layer', 'A1', 'A8', 'H8', 'buttons'];
+      ui.dragDebugToolbar.innerHTML = `<div class="debug-mode-label">Drag Calibration (?drag=1)</div><div class="debug-btn-row">${['Drag Pieces Layer','Drag A1','Drag A8','Drag H8','Drag Buttons','Reset','Copy Values'].map(label => `<button type="button" data-debug-btn="${label}">${label}</button>`).join('')}</div><div id="dragDebugValues"></div>`;
+      const valuesNode = ui.dragDebugToolbar.querySelector('#dragDebugValues');
+      const btnFor = (label) => ui.dragDebugToolbar.querySelector(`[data-debug-btn="${label}"]`);
+      const save = () => {
+        const payload = {
+          pieceLayerX: parseFloat(getComputedStyle(root).getPropertyValue('--piece-layer-offset-x')) || 0,
+          pieceLayerY: parseFloat(getComputedStyle(root).getPropertyValue('--piece-layer-offset-y')) || 0,
+          actionsX: parseFloat(getComputedStyle(root).getPropertyValue('--actions-offset-x')) || 0,
+          actionsY: parseFloat(getComputedStyle(root).getPropertyValue('--actions-offset-y')) || 0,
+          pieceSize: getComputedStyle(root).getPropertyValue('--piece-size').trim() || '86%',
+          squareOffsets: ['A1','A8','H8'].reduce((acc, sq) => {
+            const el = document.querySelector(`[data-debug-square="${sq}"]`);
+            if (el) acc[sq] = { x: Number(el.dataset.debugOffsetX || 0), y: Number(el.dataset.debugOffsetY || 0) };
+            return acc;
+          }, {})
+        };
+        localStorage.setItem(storageKey, JSON.stringify(payload));
+        valuesNode.textContent = `Layer(${payload.pieceLayerX}, ${payload.pieceLayerY}) Buttons(${payload.actionsX}, ${payload.actionsY})`;
+      };
+      const setMode = (mode) => {
+        dragDebug.mode = mode;
+        ui.dragDebugToolbar.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        if (mode === 'pieces-layer') btnFor('Drag Pieces Layer')?.classList.add('active');
+        if (mode === 'A1') btnFor('Drag A1')?.classList.add('active');
+        if (mode === 'A8') btnFor('Drag A8')?.classList.add('active');
+        if (mode === 'H8') btnFor('Drag H8')?.classList.add('active');
+        if (mode === 'buttons') btnFor('Drag Buttons')?.classList.add('active');
+      };
+      ui.dragDebugToolbar.addEventListener('click', async (event) => {
+        const label = event.target?.dataset?.debugBtn;
+        if (!label) return;
+        if (label === 'Reset') {
+          localStorage.removeItem(storageKey);
+          root.style.setProperty('--piece-layer-offset-x', '0px'); root.style.setProperty('--piece-layer-offset-y', '0px');
+          root.style.setProperty('--actions-offset-x', '0px'); root.style.setProperty('--actions-offset-y', '0px');
+          document.querySelectorAll('[data-debug-square]').forEach((el) => { el.dataset.debugOffsetX = '0'; el.dataset.debugOffsetY = '0'; el.style.transform = ''; });
+          save(); return;
+        }
+        if (label === 'Copy Values') {
+          await copyText(`--piece-layer-offset-x: ${getComputedStyle(root).getPropertyValue('--piece-layer-offset-x').trim()};\n--piece-layer-offset-y: ${getComputedStyle(root).getPropertyValue('--piece-layer-offset-y').trim()};\n--piece-size: ${getComputedStyle(root).getPropertyValue('--piece-size').trim()};\n--actions-offset-x: ${getComputedStyle(root).getPropertyValue('--actions-offset-x').trim()};\n--actions-offset-y: ${getComputedStyle(root).getPropertyValue('--actions-offset-y').trim()};`);
+          return;
+        }
+        const map = { 'Drag Pieces Layer': 'pieces-layer', 'Drag A1': 'A1', 'Drag A8': 'A8', 'Drag H8': 'H8', 'Drag Buttons': 'buttons' };
+        setMode(map[label] || null);
+      });
+      const onDown = (event) => {
+        if (!dragDebug.mode) return;
+        let target = null;
+        if (dragDebug.mode === 'buttons') target = ui.actionButtonsGroup;
+        if (dragDebug.mode === 'pieces-layer' && event.target.closest('.piece')) target = ui.boardGrid;
+        if (modes.includes(dragDebug.mode) && ['A1', 'A8', 'H8'].includes(dragDebug.mode)) target = document.querySelector(`[data-debug-square="${dragDebug.mode}"]`);
+        if (!target) return;
+        dragDebug.activeTarget = target;
+        dragDebug.pointerId = event.pointerId;
+        dragDebug.state.startX = event.clientX; dragDebug.state.startY = event.clientY;
+        if (target === ui.boardGrid) {
+          dragDebug.state.baseX = parseFloat(getComputedStyle(root).getPropertyValue('--piece-layer-offset-x')) || 0;
+          dragDebug.state.baseY = parseFloat(getComputedStyle(root).getPropertyValue('--piece-layer-offset-y')) || 0;
+        } else if (target === ui.actionButtonsGroup) {
+          dragDebug.state.baseX = parseFloat(getComputedStyle(root).getPropertyValue('--actions-offset-x')) || 0;
+          dragDebug.state.baseY = parseFloat(getComputedStyle(root).getPropertyValue('--actions-offset-y')) || 0;
+        } else {
+          dragDebug.state.baseX = Number(target.dataset.debugOffsetX || 0); dragDebug.state.baseY = Number(target.dataset.debugOffsetY || 0);
+        }
+        target.setPointerCapture(event.pointerId);
+        document.body.classList.add('drag-debug-active');
+        event.preventDefault();
+      };
+      const onMove = (event) => {
+        if (!dragDebug.activeTarget || dragDebug.pointerId !== event.pointerId) return;
+        const dx = event.clientX - dragDebug.state.startX;
+        const dy = event.clientY - dragDebug.state.startY;
+        const newX = dragDebug.state.baseX + dx, newY = dragDebug.state.baseY + dy;
+        if (dragDebug.activeTarget === ui.boardGrid) {
+          root.style.setProperty('--piece-layer-offset-x', `${newX}px`); root.style.setProperty('--piece-layer-offset-y', `${newY}px`);
+        } else if (dragDebug.activeTarget === ui.actionButtonsGroup) {
+          root.style.setProperty('--actions-offset-x', `${newX}px`); root.style.setProperty('--actions-offset-y', `${newY}px`);
+        } else {
+          dragDebug.activeTarget.dataset.debugOffsetX = `${newX}`; dragDebug.activeTarget.dataset.debugOffsetY = `${newY}`;
+          dragDebug.activeTarget.style.transform = `translate(${newX}px, ${newY}px)`;
+        }
+        save();
+        event.preventDefault();
+      };
+      const onUp = (event) => {
+        if (!dragDebug.activeTarget || dragDebug.pointerId !== event.pointerId) return;
+        dragDebug.activeTarget.releasePointerCapture(event.pointerId);
+        dragDebug.activeTarget = null; dragDebug.pointerId = null;
+        document.body.classList.remove('drag-debug-active');
+      };
+      document.addEventListener('pointerdown', onDown, { passive: false });
+      document.addEventListener('pointermove', onMove, { passive: false });
+      document.addEventListener('pointerup', onUp, { passive: false });
+      ['A1','A8','H8'].forEach((sq) => {
+        const el = document.querySelector(`[data-debug-square="${sq}"]`);
+        const offset = values.squareOffsets?.[sq];
+        if (el && offset) {
+          el.dataset.debugOffsetX = `${Number(offset.x) || 0}`;
+          el.dataset.debugOffsetY = `${Number(offset.y) || 0}`;
+          el.style.transform = `translate(${Number(offset.x) || 0}px, ${Number(offset.y) || 0}px)`;
+        }
+      });
+      save();
+      setMode('pieces-layer');
+    }
 
     function setText(selectorOrId, value) {
       const el =
@@ -5129,6 +5280,16 @@
         if (piece) {
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
+          token.dataset.debugSquare = toCoord(row, col);
+          if (DEBUG_DRAG_MODE) {
+            const savedDebug = JSON.parse(localStorage.getItem('arctic_drag_debug_offsets') || '{}');
+            const sqOffset = savedDebug.squareOffsets?.[token.dataset.debugSquare];
+            if (sqOffset) {
+              token.dataset.debugOffsetX = `${Number(sqOffset.x) || 0}`;
+              token.dataset.debugOffsetY = `${Number(sqOffset.y) || 0}`;
+              token.style.transform = `translate(${Number(sqOffset.x) || 0}px, ${Number(sqOffset.y) || 0}px)`;
+            }
+          }
           console.log('PIECE DEBUG:', JSON.stringify(piece));
           console.log('piece keys:', Object.keys(piece));
           renderPieceImage(piece, token);
@@ -6612,6 +6773,7 @@
   window.addEventListener('resize', syncMobileCollapsibles);
 
     buildSetupChoices();
+    initDragDebugMode();
     syncMobileCollapsibles();
     renderAppScreen();
     resetTutorialScenario();
