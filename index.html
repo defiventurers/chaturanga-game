@@ -2005,11 +2005,11 @@
     .menu-screen {
       position: fixed;
       inset: 0;
-      width: 100vw;
-      height: 100dvh;
-      min-height: 100vh;
+      width: 100%;
+      min-height: 100dvh;
       background: #061b3a;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: hidden;
       z-index: 99999;
       display: flex;
       align-items: flex-start;
@@ -2030,24 +2030,20 @@
       user-select: none;
     }
     .menu-stage {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      height: 100dvh;
-      width: min(100vw, calc(100dvh * 2 / 3));
+      position: relative;
+      width: min(100vw, 430px);
+      max-width: 430px;
       aspect-ratio: 2 / 3;
+      margin-inline: auto;
       z-index: 2;
       overflow: hidden;
     }
     .menu-art {
-      position: absolute;
-      inset: 0;
+      display: block;
       width: 100%;
       height: 100%;
-      object-fit: fill;
-      object-position: top center;
-      display: block;
+      object-fit: contain;
+      object-position: center top;
       user-select: none;
       -webkit-user-drag: none;
       pointer-events: none;
