@@ -2925,6 +2925,18 @@
       6: ['ship']
     };
 
+
+    function getDieSignature(value) {
+      const types = DICE_ROLLS[value] || [];
+      return types.slice().sort().join("|");
+    }
+
+    function isSemanticDoubleAvailable(availableDiceEntries) {
+      if (availableDiceEntries.length < 2) return false;
+      const firstSignature = getDieSignature(availableDiceEntries[0].value);
+      return availableDiceEntries.every(die => getDieSignature(die.value) === firstSignature);
+    }
+
     const appState = {
       screen: 'cover',
       splashTimer: null,
@@ -4295,14 +4307,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       sound.playSelectSound();
 
       const availableDiceEntries = availableDice.map(index => ({ index, value: state.dice.values[index] }));
-      const isDoubleAvailable =
-        availableDiceEntries.length >= 2 &&
-        availableDiceEntries.every(die => die.value === availableDiceEntries[0].value);
+      const isSemanticDouble = isSemanticDoubleAvailable(availableDiceEntries);
 
       if (availableDice.length === 1) {
         chooseDieForSelection(availableDice[0]);
-      } else if (isDoubleAvailable) {
-        chooseMoveValueForSelection(availableDiceEntries[0].value);
+      } else if (isSemanticDouble) {
+        chooseDieForSelection(availableDice[0]);
       } else {
         render();
       }
@@ -4369,7 +4379,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       }
       if (availableDice.length === 0) return { isDouble: false, value: null, remainingUses: 0 };
       const firstValue = availableDice[0].value;
-      const isDouble = availableDice.every(die => die.value === firstValue);
+      const firstSignature = getDieSignature(firstValue);
+      const isDouble = availableDice.every(die => getDieSignature(die.value) === firstSignature);
       return {
         isDouble,
         value: isDouble ? firstValue : null,
