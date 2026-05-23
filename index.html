@@ -2042,6 +2042,28 @@
     .team-select-screen { position: relative; }
     .hitbox-layer { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
     .hitbox { position: absolute; z-index: 100; pointer-events: auto; background: transparent; border: 0; padding: 0; margin: 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; appearance: none; -webkit-appearance: none; }
+    #screenMenu .screen-stage {
+      position: relative;
+    }
+    #screenMenu .hitbox-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #screenMenu .hitbox {
+      position: absolute;
+      pointer-events: auto;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
     .hitbox:focus, .hitbox:active, .hitbox:focus-visible { outline: none; border: 0; box-shadow: none; background: transparent; }
     .hitbox.disabled { cursor: not-allowed; }
     .mode-toast { position: absolute; left: 50%; bottom: 15%; transform: translateX(-50%); z-index: 20; background: rgba(6, 27, 58, 0.92); color: #e9f4ff; border-radius: 999px; padding: 6px 12px; font-size: 0.85rem; letter-spacing: .02em; pointer-events: none; opacity: 0; transition: opacity .18s ease; }
