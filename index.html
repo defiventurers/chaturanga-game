@@ -2053,25 +2053,17 @@
       pointer-events: none;
     }
     .menu-screen-shell { position: fixed; inset: 0; }
-    .hotspot { position: absolute; z-index: 100; background: transparent; border: 0; outline: none; padding: 0; margin: 0; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; appearance: none; -webkit-appearance: none; }
-    .hotspot:focus, .hotspot:active, .hotspot:focus-visible { outline: none; border: 0; box-shadow: none; background: transparent; }
-    .hotspot.disabled { cursor: not-allowed; }
+    .screen-container,
+    .menu-screen,
+    .mode-screen,
+    .player-count-screen,
+    .team-select-screen { position: relative; }
+    .hitbox-layer { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
+    .hitbox { position: absolute; z-index: 100; pointer-events: auto; background: transparent; border: 0; padding: 0; margin: 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; appearance: none; -webkit-appearance: none; }
+    .hitbox:focus, .hitbox:active, .hitbox:focus-visible { outline: none; border: 0; box-shadow: none; background: transparent; }
+    .hitbox.disabled { cursor: not-allowed; }
     .mode-toast { position: absolute; left: 50%; bottom: 15%; transform: translateX(-50%); z-index: 20; background: rgba(6, 27, 58, 0.92); color: #e9f4ff; border-radius: 999px; padding: 6px 12px; font-size: 0.85rem; letter-spacing: .02em; pointer-events: none; opacity: 0; transition: opacity .18s ease; }
     .mode-toast.show { opacity: 1; }
-    .play-now-hotspot { left: 13%; top: 72%; width: 74%; height: 10%; }
-    .how-to-play-hotspot { left: 22%; top: 84%; width: 56%; height: 7%; }
-    .mode-offline-hotspot { left: 8%; top: 31%; width: 84%; height: 19%; }
-    .mode-online-hotspot { left: 8%; top: 53%; width: 84%; height: 18%; }
-    .mode-continue-hotspot { left: 13%; top: 76%; width: 74%; height: 9%; }
-    .mode-back-hotspot { left: 23%; top: 88%; width: 54%; height: 7%; }
-    .mode-top-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
-    .player-count-continue-hotspot { left: 27%; top: 20%; width: 46%; height: 6.5%; }
-    .player-one-hotspot { left: 8%; top: 29%; width: 84%; height: 15%; }
-    .player-two-hotspot { left: 8%; top: 46%; width: 84%; height: 15%; }
-    .player-three-hotspot { left: 8%; top: 63%; width: 84%; height: 15%; }
-    .player-four-hotspot { left: 8%; top: 80%; width: 84%; height: 15%; }
-    .player-count-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
-    .team-back-hotspot { left: 3%; top: 2%; width: 12%; height: 8%; }
     .team-select-stage {
       --team-red-left: 6.0%;
       --team-red-top: 84.6%;
@@ -2120,22 +2112,6 @@
     .team-abster-hotspot { left: var(--team-green-left); top: var(--team-green-top); width: var(--team-green-width); height: var(--team-green-height); }
     .team-polly-hotspot { left: var(--team-pink-left); top: var(--team-pink-top); width: var(--team-pink-width); height: var(--team-pink-height); }
     .team-pengu-hotspot { left: var(--team-blue-left); top: var(--team-blue-top); width: var(--team-blue-width); height: var(--team-blue-height); }
-    .team-retsba-hotspot.selected,
-    .team-abster-hotspot.selected,
-    .team-polly-hotspot.selected,
-    .team-pengu-hotspot.selected {
-      outline: 2px solid rgba(255, 230, 90, 0.9);
-      outline-offset: -2px;
-      background: rgba(255, 230, 90, 0.08) !important;
-    }
-    .team-select-stage.debug .team-retsba-hotspot,
-    .team-select-stage.debug .team-abster-hotspot,
-    .team-select-stage.debug .team-polly-hotspot,
-    .team-select-stage.debug .team-pengu-hotspot {
-      outline: 2px solid yellow;
-      background: rgba(255, 255, 0, 0.12) !important;
-    }
-    .team-continue-hotspot { left: 31%; top: 13%; width: 38%; height: 6.2%; }
     .selected-player-outline {
       position: absolute;
       z-index: 8;
@@ -2520,31 +2496,6 @@
     .is-calibrating-drag .calibration-grid-outline, .calibration-handle.is-active { box-shadow: 0 0 0 2px rgba(255,255,0,.8), 0 0 14px rgba(0,255,255,.85); }
     .drag-debug-active { touch-action: none; }
     .turn-copy,.selection-info,.player-summary,.dice-subtitle,.audio-subtitle,.audio-status { color: rgba(7,55,102,0.72); }
-    .hitbox-editor-mode .hotspot,
-    .hitbox-editor-mode .stage-hit-button,
-    .hitbox-editor-mode .hitbox-edit-target { background: rgba(255, 0, 0, 0.22) !important; border: 2px solid rgba(255, 255, 0, 0.9) !important; box-sizing: border-box; }
-    .hitbox-editor-hidden .hotspot,
-    .hitbox-editor-hidden .stage-hit-button,
-    .hitbox-editor-hidden .hitbox-edit-target { background: transparent !important; border-color: transparent !important; }
-    .hitbox-editor-mode .hotspot::after,
-    .hitbox-editor-mode .stage-hit-button::after,
-    .hitbox-editor-mode .hitbox-edit-target::after { content: attr(data-hitbox); position: absolute; left: 4px; top: 4px; color: #fff; background: rgba(0,0,0,.75); padding: 2px 5px; font-size: 11px; border-radius: 4px; pointer-events: none; z-index: 2; }
-    .hitbox-handle { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #000; border-radius: 50%; z-index: 3; pointer-events: auto; touch-action: none; }
-    .hitbox-handle.tl { left: -7px; top: -7px; cursor: nwse-resize; }
-    .hitbox-handle.tr { right: -7px; top: -7px; cursor: nesw-resize; }
-    .hitbox-handle.bl { left: -7px; bottom: -7px; cursor: nesw-resize; }
-    .hitbox-handle.br { right: -7px; bottom: -7px; cursor: nwse-resize; }
-    @media (pointer: coarse) {
-      .hitbox-handle { width: 28px; height: 28px; }
-      .hitbox-handle.tl { left: -14px; top: -14px; }
-      .hitbox-handle.tr { right: -14px; top: -14px; }
-      .hitbox-handle.bl { left: -14px; bottom: -14px; }
-      .hitbox-handle.br { right: -14px; bottom: -14px; }
-    }
-    .hitbox-editor-toolbar { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 100000; background: rgba(7, 18, 30, 0.92); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 12px; padding: 8px; display: none; gap: 6px; font-size: 12px; }
-    .hitbox-editor-toolbar.visible { display: grid; }
-    .hitbox-editor-toolbar .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    .hitbox-editor-toolbar button { background: #164872; color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; padding: 4px 8px; }
 </style>
 </head>
 <body>
@@ -2552,7 +2503,7 @@
     <section id="screenCover" class="screen active" aria-label="Cover screen">
       <div id="coverContinueArea" class="menu-screen" role="button" tabindex="0" aria-label="Tap or click to continue">
         <img class="menu-bg-fill" src="/assets/screens/cover.png" alt="" aria-hidden="true" />
-        <div class="menu-stage">
+        <div class="menu-stage hitbox-layer">
           <img class="menu-art" src="/assets/screens/cover.png" alt="Arctic Dominion Cover" />
         </div>
       </div>
@@ -2561,10 +2512,10 @@
     <section id="screenMenu" class="screen" aria-label="Main menu">
       <div class="menu-screen-shell menu-screen">
         <img class="menu-bg-fill" src="/assets/screens/main-menu.png" alt="" aria-hidden="true" />
-        <div class="menu-stage">
+        <div class="menu-stage hitbox-layer menu-screen">
           <img class="menu-art" src="/assets/screens/main-menu.png" alt="Arctic Dominion Main Menu" />
-          <button id="menuPlayBtn" class="hotspot play-now-hotspot" aria-label="Play Now"></button>
-          <button id="menuHowBtn" class="hotspot how-to-play-hotspot" aria-label="How To Play"></button>
+          <button id="menuPlayBtn" class="hitbox" aria-label="Play Now"></button>
+          <button id="menuHowBtn" class="hitbox" aria-label="How To Play"></button>
         </div>
       </div>
     </section>
@@ -2584,13 +2535,13 @@
     <section id="screenModeSelect" class="screen" aria-label="Mode select">
       <div id="modeSelectShell" class="menu-screen-shell menu-screen">
         <img id="modeSelectBg" class="menu-bg-fill" src="/assets/screens/mode-offline-selected.png" alt="" aria-hidden="true" />
-        <div class="menu-stage">
+        <div class="menu-stage hitbox-layer mode-screen">
           <img id="modeSelectArt" class="menu-art" src="/assets/screens/mode-offline-selected.png" alt="Choose Play Mode" />
-          <button id="modeOfflineBtn" class="hotspot mode-offline-hotspot" aria-label="Offline Battle"></button>
-          <button id="modeOnlineBtn" class="hotspot mode-online-hotspot" aria-label="Online Room"></button>
-          <button id="modeContinueBtn" class="hotspot mode-continue-hotspot" aria-label="Continue"></button>
-          <button id="modeBackBtn" class="hotspot mode-back-hotspot" aria-label="Back"></button>
-          <button id="modeTopBackBtn" class="hotspot mode-top-back-hotspot" aria-label="Back"></button>
+          <button id="modeOfflineBtn" class="hitbox" aria-label="Offline Battle"></button>
+          <button id="modeOnlineBtn" class="hitbox" aria-label="Online Room"></button>
+          <button id="modeContinueBtn" class="hitbox" aria-label="Continue"></button>
+          <button id="modeBackBtn" class="hitbox" aria-label="Back"></button>
+          <button id="modeTopBackBtn" class="hitbox" aria-label="Back"></button>
           <div id="modeToast" class="mode-toast" aria-live="polite"></div>
         </div>
       </div>
@@ -2599,15 +2550,15 @@
     <section id="screenPlayerCount" class="screen" aria-label="Player count selection">
       <div class="menu-screen-shell menu-screen">
         <img class="menu-bg-fill" src="/assets/screens/player-count.png" alt="" aria-hidden="true" />
-        <div class="menu-stage">
+        <div class="menu-stage hitbox-layer player-count-screen">
           <img class="menu-art" src="/assets/screens/player-count.png" alt="Choose Player Count" />
           <div id="playerCountOutline" class="selected-player-outline" aria-hidden="true"></div>
-          <button id="playerCountOneBtn" class="hotspot player-one-hotspot" aria-label="1 Player"></button>
-          <button id="playerCountTwoBtn" class="hotspot player-two-hotspot" aria-label="2 Player"></button>
-          <button id="playerCountThreeBtn" class="hotspot player-three-hotspot" aria-label="3 Player"></button>
-          <button id="playerCountFourBtn" class="hotspot player-four-hotspot" aria-label="4 Player"></button>
-          <button id="playerCountBackBtn" class="hotspot player-count-back-hotspot" aria-label="Back"></button>
-          <button id="playerCountContinueBtn" class="hotspot player-count-continue-hotspot" aria-label="Continue" type="button"></button>
+          <button id="playerCountOneBtn" class="hitbox" aria-label="1 Player"></button>
+          <button id="playerCountTwoBtn" class="hitbox" aria-label="2 Player"></button>
+          <button id="playerCountThreeBtn" class="hitbox" aria-label="3 Player"></button>
+          <button id="playerCountFourBtn" class="hitbox" aria-label="4 Player"></button>
+          <button id="playerCountBackBtn" class="hitbox" aria-label="Back"></button>
+          <button id="playerCountContinueBtn" class="hitbox" aria-label="Continue" type="button"></button>
         </div>
       </div>
     </section>
@@ -2615,19 +2566,19 @@
     <section id="screenTeamSelect" class="screen" aria-label="Team select">
       <div class="menu-screen-shell menu-screen">
         <img class="menu-bg-fill" src="/assets/screens/team-select.png" alt="" aria-hidden="true" />
-        <div class="menu-stage team-select-stage">
+        <div class="menu-stage team-select-stage hitbox-layer team-select-screen">
           <img class="menu-art" src="/assets/screens/team-select.png" alt="Choose Teams" />
-          <button id="hitRetsba" class="hotspot team-retsba-hotspot" aria-label="Select Retsba">RETSBA</button>
-          <button id="hitAbster" class="hotspot team-abster-hotspot" aria-label="Select Abster">ABSTER</button>
-          <button id="hitPolly" class="hotspot team-polly-hotspot" aria-label="Select Polly">POLLY</button>
-          <button id="hitPengu" class="hotspot team-pengu-hotspot" aria-label="Select Pengu">PENGU</button>
+          <button id="hitRetsba" class="hitbox team-retsba-hotspot" aria-label="Select Retsba"></button>
+          <button id="hitAbster" class="hitbox team-abster-hotspot" aria-label="Select Abster"></button>
+          <button id="hitPolly" class="hitbox team-polly-hotspot" aria-label="Select Polly"></button>
+          <button id="hitPengu" class="hitbox team-pengu-hotspot" aria-label="Select Pengu"></button>
           <div id="teamOutlineRetsba" class="team-selected-outline" aria-hidden="true"></div>
           <div id="teamOutlineAbster" class="team-selected-outline" aria-hidden="true"></div>
           <div id="teamOutlinePolly" class="team-selected-outline" aria-hidden="true"></div>
           <div id="teamOutlinePengu" class="team-selected-outline" aria-hidden="true"></div>
           <div id="teamSelectHint" class="team-select-hint" aria-hidden="true"></div>
-          <button id="teamSelectBackBtn" class="hotspot team-back-hotspot" aria-label="Back to Player Count"></button>
-          <button id="teamContinueBtn" class="hotspot team-continue-hotspot" aria-label="Start Game" type="button"></button>
+          <button id="teamSelectBackBtn" class="hitbox" aria-label="Back to Player Count"></button>
+          <button id="teamContinueBtn" class="hitbox" aria-label="Start Game" type="button"></button>
         </div>
       </div>
     </section>
@@ -3106,6 +3057,38 @@
       modalCancelBtn: document.getElementById('modalCancelBtn'),
       gameShell: document.getElementById('gameShell')
     };
+    const HITBOXES = {
+      menuPlayBtn: { left: '13.16%', top: '75.33%', width: '74.41%', height: '12.92%' },
+      modeBackBtn: { left: '0%', top: '0%', width: '16.94%', height: '10.59%' },
+      menuHowBtn: { left: '22.37%', top: '88.93%', width: '54.51%', height: '5.95%' },
+      modeTopBackBtn: { left: '23.22%', top: '85.09%', width: '54.17%', height: '8%' },
+      modeContinueBtn: { left: '13.89%', top: '72.87%', width: '73.89%', height: '10.98%' },
+      playerCountBackBtn: { left: '7.36%', top: '81.53%', width: '88.48%', height: '18.47%' },
+      modeOnlineBtn: { left: '7.63%', top: '50.46%', width: '85.14%', height: '19.76%' },
+      modeOfflineBtn: { left: '7.64%', top: '30%', width: '86.11%', height: '19.11%' },
+      playerCountContinueBtn: { left: '25.69%', top: '20.56%', width: '48.47%', height: '7.91%' },
+      playerCountThreeBtn: { left: '7.78%', top: '66.66%', width: '85.56%', height: '13.29%' },
+      playerCountFourBtn: { left: '0%', top: '0%', width: '17.08%', height: '9.57%' },
+      playerCountTwoBtn: { left: '7.92%', top: '46.85%', width: '85.83%', height: '18.18%' },
+      playerCountOneBtn: { left: '8.89%', top: '28.8%', width: '85%', height: '17.54%' },
+      hitRetsba: { left: '0%', top: '22.03%', width: '49.58%', height: '31.8%' },
+      hitAbster: { left: '52.36%', top: '21.76%', width: '47.22%', height: '32.44%' },
+      hitPengu: { left: '52.09%', top: '54.63%', width: '46.81%', height: '30.31%' },
+      hitPolly: { left: '0.42%', top: '54.35%', width: '50.83%', height: '30.78%' },
+      teamSelectBackBtn: { left: '0%', top: '0%', width: '15.97%', height: '9.85%' },
+      teamContinueBtn: { left: '34.72%', top: '16.12%', width: '31.53%', height: '5.41%' }
+    };
+
+    function applyHitboxConfig() {
+      Object.entries(HITBOXES).forEach(([id, rect]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.left = rect.left;
+        el.style.top = rect.top;
+        el.style.width = rect.width;
+        el.style.height = rect.height;
+      });
+    }
 
     const dragDebug = {
       enabled: DEBUG_DRAG_MODE,
@@ -6878,110 +6861,6 @@
     OnlineMatchController,
     MultiplayerService
   };
-  function initHitboxEditorMode() {
-    const enabled = new URLSearchParams(window.location.search).get('hitbox') === '1';
-    if (!enabled) return;
-    const storageKey = 'arctic_hitbox_editor_values_v1';
-    const targets = Array.from(document.querySelectorAll('.hotspot, .stage-hit-button, #returnMenuBtn'));
-    const store = JSON.parse(localStorage.getItem(storageKey) || '{}');
-    const toolbar = document.createElement('div');
-    toolbar.className = 'hitbox-editor-toolbar visible';
-    let selected = null;
-    let editingLocked = false;
-    let hidden = false;
-    let dragState = null;
-    const fmt = (v) => `${Math.max(0, Math.min(100, v)).toFixed(2)}%`;
-    const nameOf = (el, idx) => el.dataset.hitbox || el.id || el.getAttribute('aria-label') || `hitbox-${idx}`;
-    const parsePct = (value, fallback) => {
-      const n = Number.parseFloat((value || '').toString().replace('%', ''));
-      return Number.isFinite(n) ? n : fallback;
-    };
-    const readRect = (el) => ({
-      left: parsePct(el.style.left, 0),
-      top: parsePct(el.style.top, 0),
-      width: parsePct(el.style.width, 10),
-      height: parsePct(el.style.height, 8)
-    });
-    const writeRect = (el, rect) => {
-      el.style.left = fmt(rect.left);
-      el.style.top = fmt(rect.top);
-      el.style.width = fmt(rect.width);
-      el.style.height = fmt(rect.height);
-      store[el.dataset.hitbox] = { left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
-      localStorage.setItem(storageKey, JSON.stringify(store));
-      renderToolbar();
-    };
-    const renderToolbar = () => {
-      const r = selected ? readRect(selected) : null;
-      toolbar.innerHTML = `<div class="row"><strong>Selected:</strong> ${selected ? selected.dataset.hitbox : 'none'} | x:${r ? r.left.toFixed(2) : '-'}% y:${r ? r.top.toFixed(2) : '-'}% w:${r ? r.width.toFixed(2) : '-'}% h:${r ? r.height.toFixed(2) : '-'}%</div><div class="row"><button data-act="reset-selected">Reset selected</button><button data-act="reset-all">Reset all</button><button data-act="copy">Copy Values</button><button data-act="toggle-visible">${hidden ? 'Show' : 'Hide'} hitboxes</button><button data-act="toggle-lock">${editingLocked ? 'Unlock' : 'Lock'} editing</button></div>`;
-    };
-    document.body.classList.add('hitbox-editor-mode');
-    document.body.appendChild(toolbar);
-    targets.forEach((el, idx) => {
-      el.dataset.hitbox = nameOf(el, idx + 1);
-      el.classList.add('hitbox-edit-target');
-      if (store[el.dataset.hitbox]) Object.assign(el.style, store[el.dataset.hitbox]);
-      ['tl', 'tr', 'bl', 'br'].forEach((corner) => {
-        const handle = document.createElement('span');
-        handle.className = `hitbox-handle ${corner}`;
-        handle.dataset.corner = corner;
-        el.appendChild(handle);
-      });
-      el.addEventListener('click', () => { selected = el; renderToolbar(); });
-      el.addEventListener('pointerdown', (event) => {
-        if (editingLocked) return;
-        event.preventDefault();
-        selected = el;
-        const parentRect = el.parentElement.getBoundingClientRect();
-        const startRect = readRect(el);
-        dragState = { el, parentRect, startX: event.clientX, startY: event.clientY, startRect, corner: event.target.dataset.corner || null };
-        el.setPointerCapture(event.pointerId);
-        renderToolbar();
-      });
-      el.addEventListener('pointermove', (event) => {
-        if (!dragState || dragState.el !== el) return;
-        event.preventDefault();
-        const dx = ((event.clientX - dragState.startX) / dragState.parentRect.width) * 100;
-        const dy = ((event.clientY - dragState.startY) / dragState.parentRect.height) * 100;
-        const next = { ...dragState.startRect };
-        if (dragState.corner) {
-          if (dragState.corner.includes('l')) { next.left += dx; next.width -= dx; }
-          if (dragState.corner.includes('r')) next.width += dx;
-          if (dragState.corner.includes('t')) { next.top += dy; next.height -= dy; }
-          if (dragState.corner.includes('b')) next.height += dy;
-        } else { next.left += dx; next.top += dy; }
-        next.width = Math.max(2, next.width);
-        next.height = Math.max(2, next.height);
-        next.left = Math.max(0, Math.min(100 - next.width, next.left));
-        next.top = Math.max(0, Math.min(100 - next.height, next.top));
-        writeRect(el, next);
-      });
-      const clearDrag = () => { dragState = null; };
-      el.addEventListener('pointerup', clearDrag);
-      el.addEventListener('pointercancel', clearDrag);
-    });
-    toolbar.addEventListener('click', async (event) => {
-      const action = event.target.dataset.act;
-      if (!action) return;
-      if (action === 'reset-selected' && selected) {
-        delete store[selected.dataset.hitbox];
-        localStorage.setItem(storageKey, JSON.stringify(store));
-        selected.style.left = ''; selected.style.top = ''; selected.style.width = ''; selected.style.height = '';
-      } else if (action === 'reset-all') {
-        localStorage.removeItem(storageKey);
-        window.location.reload();
-      } else if (action === 'copy') {
-        await navigator.clipboard.writeText(JSON.stringify(store, null, 2));
-      } else if (action === 'toggle-visible') {
-        hidden = !hidden;
-        document.body.classList.toggle('hitbox-editor-hidden', hidden);
-      } else if (action === 'toggle-lock') {
-        editingLocked = !editingLocked;
-      }
-      renderToolbar();
-    });
-    renderToolbar();
-  }
 
   function syncMobileCollapsibles() {
     const mobile = window.matchMedia('(max-width: 700px)').matches;
@@ -6992,8 +6871,8 @@
   window.addEventListener('resize', syncMobileCollapsibles);
 
     buildSetupChoices();
+    applyHitboxConfig();
     initDragDebugMode();
-    initHitboxEditorMode();
     syncMobileCollapsibles();
     renderAppScreen();
     resetTutorialScenario();
