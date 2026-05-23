@@ -2308,9 +2308,9 @@
       isolation: isolate;
       flex: 0 0 auto;
       --status-left: 13%;
-      --status-top: 29.2%;
+      --status-top: 27.35%;
       --status-width: 74%;
-      --status-height: 5.2%;
+      --status-height: 5.0%;
       --board-left: 18.81%;
       --board-top: 33.50%;
       --board-size: 66.84%;
@@ -2388,11 +2388,11 @@
       pointer-events: none;
     }
     .cell .marker { font-size: 0 !important; color: transparent !important; }
-    .status-overlay { position: absolute; left: var(--status-left); top: var(--status-top); width: var(--status-width); height: var(--status-height); z-index: 10; pointer-events: none; display: flex; align-items: center; justify-content: space-between; padding: 0 5%; box-sizing: border-box; }
-    .status-left { display: flex; flex-direction: column; justify-content: center; line-height: 1.05; min-width: 0; }
-    .status-turn { font-size: clamp(9px, 1.5vw, 13px); font-weight: 900; line-height: 1; color: var(--active-player-color, #fff); }
-    .status-main { font-size: clamp(10px, 1.8vw, 15px); font-weight: 900; line-height: 1.05; color: #fff; white-space: nowrap; }
-    .status-badge { font-size: clamp(8px, 2vw, 11px); font-weight: 900; color: white; padding: 3px 9px; border-radius: 999px; background: rgba(7, 55, 102, 0.72); border: 1px solid rgba(189, 239, 255, 0.85); }
+    .status-overlay { position: absolute; left: var(--status-left); top: var(--status-top); width: var(--status-width); height: var(--status-height); z-index: 20; pointer-events: none; display: flex; align-items: center; justify-content: space-between; padding: 0 5%; box-sizing: border-box; }
+    .status-copy { display: flex; flex-direction: column; justify-content: center; line-height: 1; min-width: 0; }
+    .status-turn { font-size: clamp(10px, 2.1vw, 14px); font-weight: 900; line-height: 1; color: var(--active-player-color, #fff); }
+    .status-main { font-size: clamp(10px, 2.1vw, 14px); font-weight: 900; line-height: 1.05; color: white; white-space: nowrap; }
+    .status-badge { font-size: clamp(7px, 1.6vw, 10px); font-weight: 900; padding: 2px 8px; border-radius: 999px; background: rgba(7, 55, 102, 0.72); border: 1px solid rgba(189, 239, 255, 0.8); color: white; }
     .dice-overlay {
       position: absolute;
       left: var(--dice-left);
@@ -2462,7 +2462,7 @@
         0 1px 2px rgba(0, 30, 80, 0.8),
         0 0 6px rgba(255,255,255,0.25);
     }
-    .game-hitbox-layer { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+    .game-hitbox-layer { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
     .game-hitbox { position: absolute; pointer-events: auto; background: transparent; border: 0; padding: 0; margin: 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .gamehitbox-mode .game-hitbox { background: rgba(255, 0, 0, 0.22); border: 2px solid rgba(255, 230, 0, 0.95); box-sizing: border-box; }
     .gamehitbox-mode .game-hitbox::after { content: attr(data-hitbox); position: absolute; left: 4px; top: 4px; font-size: 11px; color: white; background: rgba(0, 0, 0, 0.75); padding: 2px 5px; border-radius: 4px; }
@@ -2680,7 +2680,7 @@
           <div class="game-stage game-screen debug">
             <div class="game-overlay">
               <div class="status-overlay" aria-live="polite">
-                <div class="status-left">
+                <div class="status-copy">
                   <div id="statusPlayer" class="status-turn">Green Turn</div>
                   <div id="statusBar" class="status-main">Human · Roll dice</div>
                 </div>
@@ -3088,6 +3088,25 @@
       });
     }
 
+    const GAME_HITBOXES = {
+      rollDiceBtn: { left: '9.63%', top: '86.49%', width: '39.18%', height: '7.29%' },
+      endTurnBtn: { left: '50.31%', top: '86.98%', width: '39.77%', height: '7.07%' },
+      newGameBtn: { left: '29.59%', top: '94.51%', width: '39.21%', height: '5.35%' }
+    };
+
+    function applyGameHitboxes(boxes = GAME_HITBOXES) {
+      const keyMap = { rollBtn: 'rollDiceBtn', endTurnBtn: 'endTurnBtn', newGameBtn: 'newGameBtn' };
+      Object.entries(keyMap).forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        const b = boxes[key];
+        if (!el || !b) return;
+        ['left', 'top', 'width', 'height'].forEach((prop) => { el.style[prop] = b[prop]; });
+        el.dataset.hitbox = key;
+        el.dataset.hitboxKey = key;
+      });
+    }
+    applyGameHitboxes();
+
     const dragDebug = {
       enabled: HITBOX_EDITOR_MODE || BOARD_CAL_MODE || DICE_CAL_MODE,
       mode: null,
@@ -3107,11 +3126,6 @@
       const GAME_HITBOX_STORAGE_KEY = 'arctic_game_hitboxes';
       const BOARD_CAL_STORAGE_KEY = 'arctic_board_calibration_v2';
       const DICE_CAL_STORAGE_KEY = 'arctic_dice_calibration_v1';
-      const GAME_HITBOXES = {
-        rollDiceBtn: { left: '9.63%', top: '86.49%', width: '39.18%', height: '7.29%' },
-        endTurnBtn: { left: '50.31%', top: '86.98%', width: '39.77%', height: '7.07%' },
-        newGameBtn: { left: '29.59%', top: '94.51%', width: '39.21%', height: '5.35%' }
-      };
       const keyMap = { rollBtn: 'rollDiceBtn', endTurnBtn: 'endTurnBtn', newGameBtn: 'newGameBtn' };
       const stageRect = () => gameStage.getBoundingClientRect();
       const toPct = (px,total) => `${Math.max(0, Math.min(100, (px/total)*100)).toFixed(2)}%`;
@@ -3131,7 +3145,7 @@
         document.body.classList.add('gamehitbox-mode');
       }
       ui.dragDebugToolbar.classList.add('is-visible');
-      const calDefaults = {'--board-left':'18.81%','--board-top':'33.50%','--board-size':'66.84%','--piece-size':'84%','--dice-left':'24.80%','--dice-top':'70.71%','--dice-width':'50.04%','--dice-height':'18.58%','--dice-gap':'6.5%','--dice-piece-size':'62%','--status-left':'13%','--status-top':'29.2%','--status-width':'74%','--status-height':'5.2%'};
+      const calDefaults = {'--board-left':'18.81%','--board-top':'33.50%','--board-size':'66.84%','--piece-size':'84%','--dice-left':'24.80%','--dice-top':'70.71%','--dice-width':'50.04%','--dice-height':'18.58%','--dice-gap':'6.5%','--dice-piece-size':'62%','--status-left':'13%','--status-top':'27.35%','--status-width':'74%','--status-height':'5.0%'};
       if (BOARD_CAL_MODE) {
         document.body.classList.add('boardcal-mode');
         ui.dragDebugToolbar.classList.add('calibration-toolbar');
