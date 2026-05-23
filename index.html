@@ -2520,6 +2520,31 @@
     .is-calibrating-drag .calibration-grid-outline, .calibration-handle.is-active { box-shadow: 0 0 0 2px rgba(255,255,0,.8), 0 0 14px rgba(0,255,255,.85); }
     .drag-debug-active { touch-action: none; }
     .turn-copy,.selection-info,.player-summary,.dice-subtitle,.audio-subtitle,.audio-status { color: rgba(7,55,102,0.72); }
+    .hitbox-editor-mode .hotspot,
+    .hitbox-editor-mode .stage-hit-button,
+    .hitbox-editor-mode .hitbox-edit-target { background: rgba(255, 0, 0, 0.22) !important; border: 2px solid rgba(255, 255, 0, 0.9) !important; box-sizing: border-box; }
+    .hitbox-editor-hidden .hotspot,
+    .hitbox-editor-hidden .stage-hit-button,
+    .hitbox-editor-hidden .hitbox-edit-target { background: transparent !important; border-color: transparent !important; }
+    .hitbox-editor-mode .hotspot::after,
+    .hitbox-editor-mode .stage-hit-button::after,
+    .hitbox-editor-mode .hitbox-edit-target::after { content: attr(data-hitbox); position: absolute; left: 4px; top: 4px; color: #fff; background: rgba(0,0,0,.75); padding: 2px 5px; font-size: 11px; border-radius: 4px; pointer-events: none; z-index: 2; }
+    .hitbox-handle { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #000; border-radius: 50%; z-index: 3; pointer-events: auto; touch-action: none; }
+    .hitbox-handle.tl { left: -7px; top: -7px; cursor: nwse-resize; }
+    .hitbox-handle.tr { right: -7px; top: -7px; cursor: nesw-resize; }
+    .hitbox-handle.bl { left: -7px; bottom: -7px; cursor: nesw-resize; }
+    .hitbox-handle.br { right: -7px; bottom: -7px; cursor: nwse-resize; }
+    @media (pointer: coarse) {
+      .hitbox-handle { width: 28px; height: 28px; }
+      .hitbox-handle.tl { left: -14px; top: -14px; }
+      .hitbox-handle.tr { right: -14px; top: -14px; }
+      .hitbox-handle.bl { left: -14px; bottom: -14px; }
+      .hitbox-handle.br { right: -14px; bottom: -14px; }
+    }
+    .hitbox-editor-toolbar { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 100000; background: rgba(7, 18, 30, 0.92); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 12px; padding: 8px; display: none; gap: 6px; font-size: 12px; }
+    .hitbox-editor-toolbar.visible { display: grid; }
+    .hitbox-editor-toolbar .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .hitbox-editor-toolbar button { background: #164872; color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; padding: 4px 8px; }
 </style>
 </head>
 <body>
@@ -6853,6 +6878,110 @@
     OnlineMatchController,
     MultiplayerService
   };
+  function initHitboxEditorMode() {
+    const enabled = new URLSearchParams(window.location.search).get('hitbox') === '1';
+    if (!enabled) return;
+    const storageKey = 'arctic_hitbox_editor_values_v1';
+    const targets = Array.from(document.querySelectorAll('.hotspot, .stage-hit-button, #returnMenuBtn'));
+    const store = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const toolbar = document.createElement('div');
+    toolbar.className = 'hitbox-editor-toolbar visible';
+    let selected = null;
+    let editingLocked = false;
+    let hidden = false;
+    let dragState = null;
+    const fmt = (v) => `${Math.max(0, Math.min(100, v)).toFixed(2)}%`;
+    const nameOf = (el, idx) => el.dataset.hitbox || el.id || el.getAttribute('aria-label') || `hitbox-${idx}`;
+    const parsePct = (value, fallback) => {
+      const n = Number.parseFloat((value || '').toString().replace('%', ''));
+      return Number.isFinite(n) ? n : fallback;
+    };
+    const readRect = (el) => ({
+      left: parsePct(el.style.left, 0),
+      top: parsePct(el.style.top, 0),
+      width: parsePct(el.style.width, 10),
+      height: parsePct(el.style.height, 8)
+    });
+    const writeRect = (el, rect) => {
+      el.style.left = fmt(rect.left);
+      el.style.top = fmt(rect.top);
+      el.style.width = fmt(rect.width);
+      el.style.height = fmt(rect.height);
+      store[el.dataset.hitbox] = { left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
+      localStorage.setItem(storageKey, JSON.stringify(store));
+      renderToolbar();
+    };
+    const renderToolbar = () => {
+      const r = selected ? readRect(selected) : null;
+      toolbar.innerHTML = `<div class="row"><strong>Selected:</strong> ${selected ? selected.dataset.hitbox : 'none'} | x:${r ? r.left.toFixed(2) : '-'}% y:${r ? r.top.toFixed(2) : '-'}% w:${r ? r.width.toFixed(2) : '-'}% h:${r ? r.height.toFixed(2) : '-'}%</div><div class="row"><button data-act="reset-selected">Reset selected</button><button data-act="reset-all">Reset all</button><button data-act="copy">Copy Values</button><button data-act="toggle-visible">${hidden ? 'Show' : 'Hide'} hitboxes</button><button data-act="toggle-lock">${editingLocked ? 'Unlock' : 'Lock'} editing</button></div>`;
+    };
+    document.body.classList.add('hitbox-editor-mode');
+    document.body.appendChild(toolbar);
+    targets.forEach((el, idx) => {
+      el.dataset.hitbox = nameOf(el, idx + 1);
+      el.classList.add('hitbox-edit-target');
+      if (store[el.dataset.hitbox]) Object.assign(el.style, store[el.dataset.hitbox]);
+      ['tl', 'tr', 'bl', 'br'].forEach((corner) => {
+        const handle = document.createElement('span');
+        handle.className = `hitbox-handle ${corner}`;
+        handle.dataset.corner = corner;
+        el.appendChild(handle);
+      });
+      el.addEventListener('click', () => { selected = el; renderToolbar(); });
+      el.addEventListener('pointerdown', (event) => {
+        if (editingLocked) return;
+        event.preventDefault();
+        selected = el;
+        const parentRect = el.parentElement.getBoundingClientRect();
+        const startRect = readRect(el);
+        dragState = { el, parentRect, startX: event.clientX, startY: event.clientY, startRect, corner: event.target.dataset.corner || null };
+        el.setPointerCapture(event.pointerId);
+        renderToolbar();
+      });
+      el.addEventListener('pointermove', (event) => {
+        if (!dragState || dragState.el !== el) return;
+        event.preventDefault();
+        const dx = ((event.clientX - dragState.startX) / dragState.parentRect.width) * 100;
+        const dy = ((event.clientY - dragState.startY) / dragState.parentRect.height) * 100;
+        const next = { ...dragState.startRect };
+        if (dragState.corner) {
+          if (dragState.corner.includes('l')) { next.left += dx; next.width -= dx; }
+          if (dragState.corner.includes('r')) next.width += dx;
+          if (dragState.corner.includes('t')) { next.top += dy; next.height -= dy; }
+          if (dragState.corner.includes('b')) next.height += dy;
+        } else { next.left += dx; next.top += dy; }
+        next.width = Math.max(2, next.width);
+        next.height = Math.max(2, next.height);
+        next.left = Math.max(0, Math.min(100 - next.width, next.left));
+        next.top = Math.max(0, Math.min(100 - next.height, next.top));
+        writeRect(el, next);
+      });
+      const clearDrag = () => { dragState = null; };
+      el.addEventListener('pointerup', clearDrag);
+      el.addEventListener('pointercancel', clearDrag);
+    });
+    toolbar.addEventListener('click', async (event) => {
+      const action = event.target.dataset.act;
+      if (!action) return;
+      if (action === 'reset-selected' && selected) {
+        delete store[selected.dataset.hitbox];
+        localStorage.setItem(storageKey, JSON.stringify(store));
+        selected.style.left = ''; selected.style.top = ''; selected.style.width = ''; selected.style.height = '';
+      } else if (action === 'reset-all') {
+        localStorage.removeItem(storageKey);
+        window.location.reload();
+      } else if (action === 'copy') {
+        await navigator.clipboard.writeText(JSON.stringify(store, null, 2));
+      } else if (action === 'toggle-visible') {
+        hidden = !hidden;
+        document.body.classList.toggle('hitbox-editor-hidden', hidden);
+      } else if (action === 'toggle-lock') {
+        editingLocked = !editingLocked;
+      }
+      renderToolbar();
+    });
+    renderToolbar();
+  }
 
   function syncMobileCollapsibles() {
     const mobile = window.matchMedia('(max-width: 700px)').matches;
@@ -6864,6 +6993,7 @@
 
     buildSetupChoices();
     initDragDebugMode();
+    initHitboxEditorMode();
     syncMobileCollapsibles();
     renderAppScreen();
     resetTutorialScenario();
