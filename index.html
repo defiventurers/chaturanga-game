@@ -4203,10 +4203,10 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     function canonicalFromView(viewRow, viewCol, orientation = getBoardViewOrientation()) {
-      if (orientation === 'rotate-180') return { row: 7 - viewRow, col: 7 - viewCol };
-      if (orientation === 'rotate-cw') return { row: viewCol, col: 7 - viewRow };
-      if (orientation === 'rotate-ccw') return { row: 7 - viewCol, col: viewRow };
-      return { row: viewRow, col: viewCol };
+      if (orientation === 'rotate-180') return { row: viewRow, col: 7 - viewCol };
+      if (orientation === 'rotate-cw') return { row: viewCol, col: viewRow };
+      if (orientation === 'rotate-ccw') return { row: 7 - viewCol, col: 7 - viewRow };
+      return { row: 7 - viewRow, col: viewCol };
     }
 
     function buildBoardGrid() {
@@ -4215,7 +4215,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
         throw new Error('Board grid container missing. Cannot render match.');
       }
       setNodeHTML(ui.boardGrid, 'ui.boardGrid', '');
-      for (let viewRow = ROWS - 1; viewRow >= 0; viewRow--) {
+      for (let viewRow = 0; viewRow < ROWS; viewRow++) {
         for (let viewCol = 0; viewCol < COLS; viewCol++) {
           const cell = document.createElement('button');
           cell.type = 'button';
@@ -4223,6 +4223,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
           cell.className = 'board-cell cell';
           cell.dataset.row = canonical.row;
           cell.dataset.col = canonical.col;
+          cell.dataset.square = toCoord(canonical.row, canonical.col).toUpperCase();
           cell.setAttribute('aria-label', toCoord(canonical.row, canonical.col));
           cell.addEventListener('click', () => handleCellClick(canonical.row, canonical.col));
           appendSafeElement(ui.boardGrid, cell, '#boardGrid', true);
