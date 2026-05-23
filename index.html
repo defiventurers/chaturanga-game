@@ -3926,11 +3926,14 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     const ALLOWED_SCREEN_TRANSITIONS = {
       cover: ['mainMenu'],
       mainMenu: ['modeSelect', 'howToPlay'],
-      modeSelect: ['mainMenu', 'playerCount'],
+      modeSelect: ['mainMenu', 'playerCount', 'playMode', 'onlineSetup'],
       howToPlay: ['mainMenu'],
       playerCount: ['modeSelect', 'teamSelect'],
+      playMode: ['modeSelect', 'onlineSetup'],
+      onlineSetup: ['playMode', 'lobby', 'modeSelect'],
+      lobby: ['onlineSetup', 'game'],
       teamSelect: ['playerCount', 'game'],
-      game: ['mainMenu', 'playerCount']
+      game: ['mainMenu', 'playerCount', 'lobby']
     };
 
     function setScreen(nextScreen) {
@@ -5972,6 +5975,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   });
 
   const PRODUCTION_WS_URL = 'wss://chaturanga-game.onrender.com';
+  const ONLINE_SERVER_URL = localStorage.getItem('ONLINE_SERVER_URL') || '';
 
   function sanitizeServerUrl(raw) {
     const value = String(raw || '').trim();
@@ -5984,7 +5988,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   }
 
   const defaultServerUrl = (() => {
-    const saved = sanitizeServerUrl(localStorage.getItem('chaturanga_server_url'));
+    const saved = sanitizeServerUrl(localStorage.getItem('chaturanga_server_url') || ONLINE_SERVER_URL);
     if (saved) return saved;
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       return 'ws://localhost:8080';
@@ -6539,6 +6543,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       appState.online.serverUrl = serverUrl;
       ui.serverUrlInput.value = serverUrl;
       localStorage.setItem('chaturanga_server_url', serverUrl);
+      localStorage.setItem('ONLINE_SERVER_URL', serverUrl);
       if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) return true;
       try {
         this.socket = new WebSocket(serverUrl);
@@ -6837,11 +6842,36 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   }
   ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: offline tapped'); appState.playMode = 'offline'; selectedMode = 'offline'; renderModeSelectArt(); });
   ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: online tapped'); appState.playMode = 'online'; selectedMode = 'online'; renderModeSelectArt(); });
-  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode continue tapped'); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('playerCount'); renderDominionSelection(); });
+  ui.modeContinueBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    console.log('Mode continue tapped');
+    selectedPlayerCount = null;
+    appState.matchConfig.playerCount = null;
+    if (appState.playMode === 'online') {
+      setScreen('onlineSetup');
+      renderAppScreen();
+      return;
+    }
+    setScreen('playerCount');
+    renderDominionSelection();
+  });
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
   ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(4); });
+  ui.playModeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('modeSelect'); });
+  ui.playModeNextBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    if (appState.playMode === 'online') {
+      setScreen('onlineSetup');
+    } else {
+      selectedPlayerCount = null;
+      appState.matchConfig.playerCount = null;
+      setScreen('playerCount');
+    }
+    renderDominionSelection();
+    renderAppScreen();
+  });
   ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
   ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.createRoom(); });
   ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
