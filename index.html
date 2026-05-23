@@ -3101,7 +3101,8 @@
       modalText: document.getElementById('modalText'),
       modalConfirmBtn: document.getElementById('modalConfirmBtn'),
       modalCancelBtn: document.getElementById('modalCancelBtn'),
-      gameShell: document.getElementById('gameShell')
+      gameShell: document.getElementById('gameShell'),
+      gameScreen: document.querySelector('.game-screen')
     };
     const HITBOXES = {
       menuPlayBtn: { left: '13.16%', top: '75.33%', width: '74.41%', height: '12.92%' },
@@ -4123,6 +4124,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   };
   const STARTING_CORNER_SEQUENCE = PLAYERS.map(team => FIXED_TEAM_SETUP[team].startingCorner);
   const DOMINION_START_ZONES = DOMINION_TO_START_ZONE;
+  const TEAM_TURN_COLOR = {
+    red: '#ff6b6b',
+    green: '#70e39a',
+    blue: '#7db7ff',
+    yellow: '#ff7bd5'
+  };
   const STARTING_POSITIONS = {
     yellow: [
       { type: 'ship', square: 'A1' },
@@ -4136,8 +4143,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     ],
     red: [
       { type: 'ship', square: 'A8' },
-      { type: 'elephant', square: 'A7' },
-      { type: 'horse', square: 'A6' },
+      { type: 'horse', square: 'A7' },
+      { type: 'elephant', square: 'A6' },
       { type: 'king', square: 'A5' },
       { type: 'pawn', square: 'B8' },
       { type: 'pawn', square: 'B7' },
@@ -5487,9 +5494,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     function renderStatus() {
       if (isDominionSelectionScreenActive()) return;
       const team = getCurrentTeam();
+      const turnColor = TEAM_TURN_COLOR[team] || '#ffffff';
       if (ui.turnMark) ui.turnMark.className = `turn-mark ${TEAM_CLASS[team]}`;
       if (ui.statusPlayer) ui.statusPlayer.className = `status-player ${TEAM_CLASS[team]}`;
       if (ui.gameShell) ui.gameShell.className = `arctic-game-shell game-shell app-shell ${TEAM_CLASS[team]}`;
+      if (ui.statusPlayer) ui.statusPlayer.style.color = turnColor;
+      if (ui.gameScreen) ui.gameScreen.style.setProperty('--active-player-color', turnColor);
 
       if (state.gameOver) {
         setNodeText(ui.statusPlayer, 'ui.statusPlayer', `${TEAM_LABEL[state.winner]} Wins`);
