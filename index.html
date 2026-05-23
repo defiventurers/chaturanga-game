@@ -5267,11 +5267,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       if (!ui.boardGrid) {
         throw new Error('Board grid container missing. Cannot render match.');
       }
-      console.log('RENDER BOARD', {
-        boardExists: !!state.board,
-        tileCount: ui.boardGrid?.querySelectorAll('.cell')?.length ?? 0,
-        pieceCount: state.board?.flat?.().filter(Boolean).length ?? 0
-      });
       const currentTeam = getCurrentTeam();
       const cells = ui.boardGrid.querySelectorAll('.cell');
       cells.forEach(cell => {
@@ -5308,17 +5303,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           token.dataset.debugSquare = toCoord(row, col);
-          if (dragDebug.enabled) {
-            const savedDebug = JSON.parse(localStorage.getItem('arctic_drag_debug_offsets') || '{}');
-            const sqOffset = savedDebug.squareOffsets?.[token.dataset.debugSquare];
-            if (sqOffset) {
-              token.dataset.debugOffsetX = `${Number(sqOffset.x) || 0}`;
-              token.dataset.debugOffsetY = `${Number(sqOffset.y) || 0}`;
-              token.style.transform = `translate(${Number(sqOffset.x) || 0}px, ${Number(sqOffset.y) || 0}px)`;
-            }
-          }
-          console.log('PIECE DEBUG:', JSON.stringify(piece));
-          console.log('piece keys:', Object.keys(piece));
           renderPieceImage(piece, token);
           if (piece.isRoyal) token.innerHTML += '<div class="crest" aria-hidden="true">✦</div>';
           token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
