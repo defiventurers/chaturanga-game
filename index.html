@@ -2002,59 +2002,44 @@
       overflow: hidden;
       background: #061b3a;
     }
+    .screen-shell,
     .menu-screen {
-      position: fixed;
-      inset: 0;
-      width: 100%;
+      width: 100vw;
       min-height: 100dvh;
-      background: #061b3a;
-      overflow-x: hidden;
-      overflow-y: hidden;
-      z-index: 99999;
       display: flex;
-      align-items: flex-start;
       justify-content: center;
+      align-items: flex-start;
+      overflow: hidden;
+      background: #061b3a;
       touch-action: manipulation;
     }
-    .menu-bg-fill {
+    .screen-stage {
+      position: relative;
+      width: min(100vw, calc(100dvh * 9 / 16));
+      height: min(100dvh, calc(100vw * 16 / 9));
+      margin-inline: auto;
+      overflow: hidden;
+      aspect-ratio: 9 / 16;
+    }
+    .screen-art {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: fill;
       object-position: center center;
-      filter: blur(18px) brightness(0.65) saturate(1.2);
-      transform: scale(1.08);
-      z-index: 0;
-      pointer-events: none;
-      user-select: none;
-    }
-    .menu-stage {
-      position: relative;
-      width: min(100vw, 430px);
-      max-width: 430px;
-      aspect-ratio: 2 / 3;
-      margin-inline: auto;
-      z-index: 2;
-      overflow: hidden;
-    }
-    .menu-art {
       display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      object-position: center top;
       user-select: none;
       -webkit-user-drag: none;
       pointer-events: none;
     }
-    .menu-screen-shell { position: fixed; inset: 0; }
+     .menu-screen-shell { position: fixed; inset: 0; }
     .screen-container,
-    .menu-screen,
+    .screen-shell,
     .mode-screen,
     .player-count-screen,
     .team-select-screen { position: relative; }
-    .hitbox-layer { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
+    .hitbox-layer { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
     .hitbox { position: absolute; z-index: 100; pointer-events: auto; background: transparent; border: 0; padding: 0; margin: 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; appearance: none; -webkit-appearance: none; }
     .hitbox:focus, .hitbox:active, .hitbox:focus-visible { outline: none; border: 0; box-shadow: none; background: transparent; }
     .hitbox.disabled { cursor: not-allowed; }
@@ -2497,21 +2482,22 @@
 <body>
   <div id="appView" class="app-view">
     <section id="screenCover" class="screen active" aria-label="Cover screen">
-      <div id="coverContinueArea" class="menu-screen" role="button" tabindex="0" aria-label="Tap or click to continue">
-        <img class="menu-bg-fill" src="/assets/screens/cover.png" alt="" aria-hidden="true" />
-        <div class="menu-stage hitbox-layer">
-          <img class="menu-art" src="/assets/screens/cover.png" alt="Arctic Dominion Cover" />
+      <div id="coverContinueArea" class="screen-shell" role="button" tabindex="0" aria-label="Tap or click to continue">
+        <div class="screen-stage">
+          <img class="screen-art" src="/assets/screens/cover.png" alt="Arctic Dominion Cover" />
+          <div class="hitbox-layer"></div>
         </div>
       </div>
     </section>
 
     <section id="screenMenu" class="screen" aria-label="Main menu">
-      <div class="menu-screen-shell menu-screen">
-        <img class="menu-bg-fill" src="/assets/screens/main-menu.png" alt="" aria-hidden="true" />
-        <div class="menu-stage hitbox-layer menu-screen">
-          <img class="menu-art" src="/assets/screens/main-menu.png" alt="Arctic Dominion Main Menu" />
+      <div class="menu-screen-shell screen-shell">
+        <div class="screen-stage">
+          <img class="screen-art" src="/assets/screens/main-menu.png" alt="Arctic Dominion Main Menu" />
+          <div class="hitbox-layer">
           <button id="menuPlayBtn" class="hitbox" aria-label="Play Now"></button>
           <button id="menuHowBtn" class="hitbox" aria-label="How To Play"></button>
+          </div>
         </div>
       </div>
     </section>
@@ -2529,10 +2515,10 @@
     </section>
 
     <section id="screenModeSelect" class="screen" aria-label="Mode select">
-      <div id="modeSelectShell" class="menu-screen-shell menu-screen">
-        <img id="modeSelectBg" class="menu-bg-fill" src="/assets/screens/mode-offline-selected.png" alt="" aria-hidden="true" />
-        <div class="menu-stage hitbox-layer mode-screen">
-          <img id="modeSelectArt" class="menu-art" src="/assets/screens/mode-offline-selected.png" alt="Choose Play Mode" />
+      <div id="modeSelectShell" class="menu-screen-shell screen-shell">
+        <div class="screen-stage mode-screen">
+          <img id="modeSelectArt" class="screen-art" src="/assets/screens/mode-offline-selected.png" alt="Choose Play Mode" />
+          <div class="hitbox-layer">
           <button id="modeOfflineBtn" class="hitbox" aria-label="Offline Battle"></button>
           <button id="modeOnlineBtn" class="hitbox" aria-label="Online Room"></button>
           <button id="modeContinueBtn" class="hitbox" aria-label="Continue"></button>
@@ -2544,10 +2530,10 @@
     </section>
 
     <section id="screenPlayerCount" class="screen" aria-label="Player count selection">
-      <div class="menu-screen-shell menu-screen">
-        <img class="menu-bg-fill" src="/assets/screens/player-count.png" alt="" aria-hidden="true" />
-        <div class="menu-stage hitbox-layer player-count-screen">
-          <img class="menu-art" src="/assets/screens/player-count.png" alt="Choose Player Count" />
+      <div class="menu-screen-shell screen-shell">
+        <div class="screen-stage player-count-screen">
+          <img class="screen-art" src="/assets/screens/player-count.png" alt="Choose Player Count" />
+          <div class="hitbox-layer">
           <div id="playerCountOutline" class="selected-player-outline" aria-hidden="true"></div>
           <button id="playerCountOneBtn" class="hitbox" aria-label="1 Player"></button>
           <button id="playerCountTwoBtn" class="hitbox" aria-label="2 Player"></button>
@@ -2555,15 +2541,16 @@
           <button id="playerCountFourBtn" class="hitbox" aria-label="4 Player"></button>
           <button id="playerCountBackBtn" class="hitbox" aria-label="Back"></button>
           <button id="playerCountContinueBtn" class="hitbox" aria-label="Continue" type="button"></button>
+          </div>
         </div>
       </div>
     </section>
 
     <section id="screenTeamSelect" class="screen" aria-label="Team select">
-      <div class="menu-screen-shell menu-screen">
-        <img class="menu-bg-fill" src="/assets/screens/team-select.png" alt="" aria-hidden="true" />
-        <div class="menu-stage team-select-stage hitbox-layer team-select-screen">
-          <img class="menu-art" src="/assets/screens/team-select.png" alt="Choose Teams" />
+      <div class="menu-screen-shell screen-shell">
+        <div class="screen-stage team-select-stage team-select-screen">
+          <img class="screen-art" src="/assets/screens/team-select.png" alt="Choose Teams" />
+          <div class="hitbox-layer">
           <button id="hitRetsba" class="hitbox team-retsba-hotspot" aria-label="Select Retsba"></button>
           <button id="hitAbster" class="hitbox team-abster-hotspot" aria-label="Select Abster"></button>
           <button id="hitPolly" class="hitbox team-polly-hotspot" aria-label="Select Polly"></button>
@@ -2575,6 +2562,7 @@
           <div id="teamSelectHint" class="team-select-hint" aria-hidden="true"></div>
           <button id="teamSelectBackBtn" class="hitbox" aria-label="Back to Player Count"></button>
           <button id="teamContinueBtn" class="hitbox" aria-label="Start Game" type="button"></button>
+          </div>
         </div>
       </div>
     </section>
