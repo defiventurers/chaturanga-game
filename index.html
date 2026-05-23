@@ -2317,10 +2317,10 @@
       --piece-size: 84%;
       --board-tile-size: calc(var(--board-size) / 8);
       --action-button-offset: calc(var(--board-tile-size) * 0.75);
-      --dice-left: 24.80%;
-      --dice-top: 70.71%;
-      --dice-width: 50.04%;
-      --dice-height: 18.58%;
+      --dice-left: 24.4%;
+      --dice-top: 73.1%;
+      --dice-width: 51.2%;
+      --dice-height: 7.0%;
       --dice-gap: 6.5%;
       --dice-piece-size: 62%;
     }
@@ -2388,11 +2388,11 @@
       pointer-events: none;
     }
     .cell .marker { font-size: 0 !important; color: transparent !important; }
-    .status-overlay { position: absolute; left: var(--status-left); top: var(--status-top); width: var(--status-width); height: var(--status-height); z-index: 40; pointer-events: none; display: flex; align-items: center; justify-content: space-between; padding: 0 5.5%; box-sizing: border-box; }
-    .status-copy { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; line-height: 1; transform: translateY(-1px); }
-    .status-turn { font-size: clamp(9px, 1.75vw, 13px); font-weight: 900; line-height: 1; margin: 0; padding: 0; color: var(--active-player-color, #fff); }
-    .status-main { font-size: clamp(9px, 1.75vw, 13px); font-weight: 900; line-height: 1.05; margin: 0; padding: 0; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 15, 40, 0.75); white-space: nowrap; }
-    .status-badge { font-size: clamp(6px, 1.25vw, 9px); font-weight: 900; line-height: 1; padding: 2px 7px; border-radius: 999px; background: rgba(7, 55, 102, 0.72); border: 1px solid rgba(189, 239, 255, 0.85); color: white; transform: translateY(-1px); }
+    .status-overlay { position: absolute; left: var(--status-left); top: var(--status-top); width: var(--status-width); height: var(--status-height); z-index: 10; pointer-events: none; display: flex; align-items: center; justify-content: space-between; padding: 0 5%; box-sizing: border-box; }
+    .status-left { display: flex; flex-direction: column; justify-content: center; line-height: 1.05; min-width: 0; }
+    .status-turn { font-size: clamp(9px, 1.5vw, 13px); font-weight: 900; line-height: 1; color: var(--active-player-color, #fff); }
+    .status-main { font-size: clamp(10px, 1.8vw, 15px); font-weight: 900; line-height: 1.05; color: #fff; white-space: nowrap; }
+    .status-badge { font-size: clamp(8px, 2vw, 11px); font-weight: 900; color: white; padding: 3px 9px; border-radius: 999px; background: rgba(7, 55, 102, 0.72); border: 1px solid rgba(189, 239, 255, 0.85); }
     .dice-overlay {
       position: absolute;
       left: var(--dice-left);
@@ -2406,12 +2406,6 @@
       justify-items: center;
       z-index: 8;
       pointer-events: auto;
-    }
-     .dice-slot {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
     }
     .die-result {
       width: 100%;
@@ -2428,8 +2422,7 @@
     }
     .die-result img,
     .die-piece,
-    .dice-piece,
-    .dice-result-piece {
+    .dice-piece {
       display: block;
       width: var(--dice-piece-size);
       height: var(--dice-piece-size);
@@ -2462,7 +2455,7 @@
         0 1px 2px rgba(0, 30, 80, 0.8),
         0 0 6px rgba(255,255,255,0.25);
     }
-    .game-hitbox-layer { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
+    .game-hitbox-layer { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
     .game-hitbox { position: absolute; pointer-events: auto; background: transparent; border: 0; padding: 0; margin: 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .gamehitbox-mode .game-hitbox { background: rgba(255, 0, 0, 0.22); border: 2px solid rgba(255, 230, 0, 0.95); box-sizing: border-box; }
     .gamehitbox-mode .game-hitbox::after { content: attr(data-hitbox); position: absolute; left: 4px; top: 4px; font-size: 11px; color: white; background: rgba(0, 0, 0, 0.75); padding: 2px 5px; border-radius: 4px; }
@@ -2680,7 +2673,7 @@
           <div class="game-stage game-screen debug">
             <div class="game-overlay">
               <div class="status-overlay" aria-live="polite">
-                <div class="status-copy">
+                <div class="status-left">
                   <div id="statusPlayer" class="status-turn">Green Turn</div>
                   <div id="statusBar" class="status-main">Human · Roll dice</div>
                 </div>
@@ -2690,12 +2683,12 @@
                 <div id="boardGrid" class="board-grid board-hit-layer" aria-label="8 by 8 game board"></div>
               </div>
               <div class="dice-overlay">
-                <div id="dieCard0" class="dice-slot die-result" aria-live="polite">
+                <div id="dieCard0" class="die-result" aria-live="polite">
                   <div id="dieState0" class="hidden-required-dom">READY</div>
                   <div id="dieValue0" class="die-value ice-die-face" aria-hidden="true">?</div>
                   <div id="diePiece0" class="die-piece">Roll to activate</div>
                 </div>
-                <div id="dieCard1" class="dice-slot die-result" aria-live="polite">
+                <div id="dieCard1" class="die-result" aria-live="polite">
                   <div id="dieState1" class="hidden-required-dom">READY</div>
                   <div id="dieValue1" class="die-value ice-die-face" aria-hidden="true">?</div>
                   <div id="diePiece1" class="die-piece">Roll to activate</div>
@@ -3088,25 +3081,6 @@
       });
     }
 
-    const GAME_HITBOXES = {
-      rollDiceBtn: { left: '9.63%', top: '86.49%', width: '39.18%', height: '7.29%' },
-      endTurnBtn: { left: '50.31%', top: '86.98%', width: '39.77%', height: '7.07%' },
-      newGameBtn: { left: '29.59%', top: '94.51%', width: '39.21%', height: '5.35%' }
-    };
-
-    function applyGameHitboxes(boxes = GAME_HITBOXES) {
-      const keyMap = { rollBtn: 'rollDiceBtn', endTurnBtn: 'endTurnBtn', newGameBtn: 'newGameBtn' };
-      Object.entries(keyMap).forEach(([id, key]) => {
-        const el = document.getElementById(id);
-        const b = boxes[key];
-        if (!el || !b) return;
-        ['left', 'top', 'width', 'height'].forEach((prop) => { el.style[prop] = b[prop]; });
-        el.dataset.hitbox = key;
-        el.dataset.hitboxKey = key;
-      });
-    }
-    applyGameHitboxes();
-
     const dragDebug = {
       enabled: HITBOX_EDITOR_MODE || BOARD_CAL_MODE || DICE_CAL_MODE,
       mode: null,
@@ -3126,6 +3100,11 @@
       const GAME_HITBOX_STORAGE_KEY = 'arctic_game_hitboxes';
       const BOARD_CAL_STORAGE_KEY = 'arctic_board_calibration_v2';
       const DICE_CAL_STORAGE_KEY = 'arctic_dice_calibration_v1';
+      const GAME_HITBOXES = {
+        rollDiceBtn: { left: '9.63%', top: '86.49%', width: '39.18%', height: '7.29%' },
+        endTurnBtn: { left: '50.31%', top: '86.98%', width: '39.77%', height: '7.07%' },
+        newGameBtn: { left: '29.59%', top: '94.51%', width: '39.21%', height: '5.35%' }
+      };
       const keyMap = { rollBtn: 'rollDiceBtn', endTurnBtn: 'endTurnBtn', newGameBtn: 'newGameBtn' };
       const stageRect = () => gameStage.getBoundingClientRect();
       const toPct = (px,total) => `${Math.max(0, Math.min(100, (px/total)*100)).toFixed(2)}%`;
@@ -3145,7 +3124,7 @@
         document.body.classList.add('gamehitbox-mode');
       }
       ui.dragDebugToolbar.classList.add('is-visible');
-      const calDefaults = {'--board-left':'18.81%','--board-top':'33.50%','--board-size':'66.84%','--piece-size':'84%','--dice-left':'24.80%','--dice-top':'70.71%','--dice-width':'50.04%','--dice-height':'18.58%','--dice-gap':'6.5%','--dice-piece-size':'62%','--status-left':'14.5%','--status-top':'25.85%','--status-width':'71%','--status-height':'4.25%'};
+      const calDefaults = {'--board-left':'13.9%','--board-top':'34.2%','--board-size':'76.2%','--piece-size':'84%','--dice-left':'24.4%','--dice-top':'73.1%','--dice-width':'51.2%','--dice-height':'7.0%','--dice-gap':'6.5%','--dice-piece-size':'62%','--status-left':'13%','--status-top':'29.8%','--status-width':'74%','--status-height':'5.2%'};
       if (BOARD_CAL_MODE) {
         document.body.classList.add('boardcal-mode');
         ui.dragDebugToolbar.classList.add('calibration-toolbar');
@@ -3165,7 +3144,7 @@
         const setPct=(k,v)=>gameScreen.style.setProperty(k,`${Math.max(0,Math.min(100,v)).toFixed(2)}%`);
         const values=()=>({boardLeft:getComputedStyle(gameScreen).getPropertyValue('--board-left').trim(),boardTop:getComputedStyle(gameScreen).getPropertyValue('--board-top').trim(),boardSize:getComputedStyle(gameScreen).getPropertyValue('--board-size').trim(),pieceSize:getComputedStyle(gameScreen).getPropertyValue('--piece-size').trim()});
         const persist=()=>localStorage.setItem(BOARD_CAL_STORAGE_KEY, JSON.stringify({'--board-left':values().boardLeft,'--board-top':values().boardTop,'--board-size':values().boardSize,'--piece-size':values().pieceSize}));
-        const sync=()=>{const v=values(); const r=boardOverlay.getBoundingClientRect(), s=gameStage.getBoundingClientRect(); outline.style.left=`${r.left-s.left}px`; outline.style.top=`${r.top-s.top}px`; outline.style.width=`${r.width}px`; outline.style.height=`${r.height}px`; const pieceCount=boardOverlay.querySelectorAll('.piece,.board-piece,.game-piece,.piece-token').length; fieldsEl.textContent=`computed: left=${(r.left-s.left).toFixed(1)}px top=${(r.top-s.top).toFixed(1)}px width=${r.width.toFixed(1)}px\ncss vars: ${JSON.stringify(v)}\npieces in .board-overlay: ${pieceCount}`;};
+        const sync=()=>{const v=values(); const r=boardOverlay.getBoundingClientRect(), s=gameStage.getBoundingClientRect(); outline.style.left=`${r.left-s.left}px`; outline.style.top=`${r.top-s.top}px`; outline.style.width=`${r.width}px`; outline.style.height=`${r.height}px`; const pieceCount=boardOverlay.querySelectorAll('.piece,.board-piece,.game-piece,.piece-token,img').length; fieldsEl.textContent=`computed: left=${(r.left-s.left).toFixed(1)}px top=${(r.top-s.top).toFixed(1)}px width=${r.width.toFixed(1)}px\ncss vars: ${JSON.stringify(v)}\npieces in .board-overlay: ${pieceCount}`;};
         let drag=null;
         const down=(e,mode)=>{e.preventDefault();const sr=stageRect();drag={mode,x:e.clientX,y:e.clientY,w:sr.width,h:sr.height,left:num('--board-left'),top:num('--board-top'),size:num('--board-size')}; outline.setPointerCapture(e.pointerId);};
         outline.addEventListener('pointerdown',(e)=>{if(e.target===handle)return; down(e,'move');});
@@ -3190,7 +3169,7 @@
         const num=(k)=>parseFloat(getComputedStyle(gameScreen).getPropertyValue(k))||0; const setPct=(k,v)=>gameScreen.style.setProperty(k,`${Math.max(0,Math.min(100,v)).toFixed(2)}%`);
         const values=()=>({diceLeft:getComputedStyle(gameScreen).getPropertyValue('--dice-left').trim(),diceTop:getComputedStyle(gameScreen).getPropertyValue('--dice-top').trim(),diceWidth:getComputedStyle(gameScreen).getPropertyValue('--dice-width').trim(),diceHeight:getComputedStyle(gameScreen).getPropertyValue('--dice-height').trim(),diceGap:getComputedStyle(gameScreen).getPropertyValue('--dice-gap').trim(),dicePieceSize:getComputedStyle(gameScreen).getPropertyValue('--dice-piece-size').trim()});
         const persist=()=>localStorage.setItem(DICE_CAL_STORAGE_KEY, JSON.stringify({'--dice-left':values().diceLeft,'--dice-top':values().diceTop,'--dice-width':values().diceWidth,'--dice-height':values().diceHeight,'--dice-gap':values().diceGap,'--dice-piece-size':values().dicePieceSize}));
-        const sync=()=>{const v=values(); const r=diceOverlay.getBoundingClientRect(), s=gameStage.getBoundingClientRect(); outline.style.left=`${r.left-s.left}px`; outline.style.top=`${r.top-s.top}px`; outline.style.width=`${r.width}px`; outline.style.height=`${r.height}px`; const diceCount=diceOverlay.querySelectorAll('.dice-slot').length; fieldsEl.textContent=`computed: left=${(r.left-s.left).toFixed(1)}px top=${(r.top-s.top).toFixed(1)}px width=${r.width.toFixed(1)}px height=${r.height.toFixed(1)}px\ncss vars: ${JSON.stringify(v)}\ndice/result nodes in .dice-overlay: ${diceCount}`;};
+        const sync=()=>{const v=values(); const r=diceOverlay.getBoundingClientRect(), s=gameStage.getBoundingClientRect(); outline.style.left=`${r.left-s.left}px`; outline.style.top=`${r.top-s.top}px`; outline.style.width=`${r.width}px`; outline.style.height=`${r.height}px`; const diceCount=diceOverlay.querySelectorAll('.dice-slot,img,.dice-result-piece,.die-result,.die-piece,.dice-piece').length; fieldsEl.textContent=`computed: left=${(r.left-s.left).toFixed(1)}px top=${(r.top-s.top).toFixed(1)}px width=${r.width.toFixed(1)}px height=${r.height.toFixed(1)}px\ncss vars: ${JSON.stringify(v)}\ndice/result nodes in .dice-overlay: ${diceCount}`;};
         let drag=null; const down=(e,mode)=>{e.preventDefault();const sr=stageRect();drag={mode,x:e.clientX,y:e.clientY,w:sr.width,h:sr.height,left:num('--dice-left'),top:num('--dice-top'),dw:num('--dice-width'),dh:num('--dice-height')}; outline.setPointerCapture(e.pointerId);};
         outline.addEventListener('pointerdown',(e)=>{if(e.target===handle)return;down(e,'move');}); handle.addEventListener('pointerdown',(e)=>down(e,'resize'));
         outline.addEventListener('pointermove',(e)=>{if(!drag)return; e.preventDefault(); const dx=((e.clientX-drag.x)/drag.w)*100; const dy=((e.clientY-drag.y)/drag.h)*100; if(drag.mode==='move'){setPct('--dice-left',drag.left+dx); setPct('--dice-top',drag.top+dy);} else {setPct('--dice-width',drag.dw+dx); setPct('--dice-height',drag.dh+dy);} persist(); sync();});
