@@ -2925,6 +2925,18 @@
       6: ['ship']
     };
 
+
+    function getDieSignature(value) {
+      const types = DICE_ROLLS[value] || [];
+      return types.slice().sort().join("|");
+    }
+
+    function isSemanticDoubleAvailable(availableDiceEntries) {
+      if (availableDiceEntries.length < 2) return false;
+      const firstSignature = getDieSignature(availableDiceEntries[0].value);
+      return availableDiceEntries.every(die => getDieSignature(die.value) === firstSignature);
+    }
+
     const appState = {
       screen: 'cover',
       splashTimer: null,
@@ -4191,10 +4203,10 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     function canonicalFromView(viewRow, viewCol, orientation = getBoardViewOrientation()) {
-      if (orientation === 'rotate-180') return { row: 7 - viewRow, col: 7 - viewCol };
-      if (orientation === 'rotate-cw') return { row: viewCol, col: 7 - viewRow };
-      if (orientation === 'rotate-ccw') return { row: 7 - viewCol, col: viewRow };
-      return { row: viewRow, col: viewCol };
+      if (orientation === 'rotate-180') return { row: viewRow, col: 7 - viewCol };
+      if (orientation === 'rotate-cw') return { row: viewCol, col: viewRow };
+      if (orientation === 'rotate-ccw') return { row: 7 - viewCol, col: 7 - viewRow };
+      return { row: 7 - viewRow, col: viewCol };
     }
 
     function buildBoardGrid() {
@@ -4203,7 +4215,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
         throw new Error('Board grid container missing. Cannot render match.');
       }
       setNodeHTML(ui.boardGrid, 'ui.boardGrid', '');
-      for (let viewRow = ROWS - 1; viewRow >= 0; viewRow--) {
+      for (let viewRow = 0; viewRow < ROWS; viewRow++) {
         for (let viewCol = 0; viewCol < COLS; viewCol++) {
           const cell = document.createElement('button');
           cell.type = 'button';
@@ -4211,6 +4223,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
           cell.className = 'board-cell cell';
           cell.dataset.row = canonical.row;
           cell.dataset.col = canonical.col;
+          cell.dataset.square = toCoord(canonical.row, canonical.col).toUpperCase();
           cell.setAttribute('aria-label', toCoord(canonical.row, canonical.col));
           cell.addEventListener('click', () => handleCellClick(canonical.row, canonical.col));
           appendSafeElement(ui.boardGrid, cell, '#boardGrid', true);
@@ -4295,14 +4308,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       sound.playSelectSound();
 
       const availableDiceEntries = availableDice.map(index => ({ index, value: state.dice.values[index] }));
-      const isDoubleAvailable =
-        availableDiceEntries.length >= 2 &&
-        availableDiceEntries.every(die => die.value === availableDiceEntries[0].value);
+      const isSemanticDouble = isSemanticDoubleAvailable(availableDiceEntries);
 
       if (availableDice.length === 1) {
         chooseDieForSelection(availableDice[0]);
-      } else if (isDoubleAvailable) {
-        chooseMoveValueForSelection(availableDiceEntries[0].value);
+      } else if (isSemanticDouble) {
+        chooseDieForSelection(availableDice[0]);
       } else {
         render();
       }
@@ -4369,7 +4380,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       }
       if (availableDice.length === 0) return { isDouble: false, value: null, remainingUses: 0 };
       const firstValue = availableDice[0].value;
-      const isDouble = availableDice.every(die => die.value === firstValue);
+      const firstSignature = getDieSignature(firstValue);
+      const isDouble = availableDice.every(die => getDieSignature(die.value) === firstSignature);
       return {
         isDouble,
         value: isDouble ? firstValue : null,
@@ -5256,11 +5268,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       if (!ui.boardGrid) {
         throw new Error('Board grid container missing. Cannot render match.');
       }
-      console.log('RENDER BOARD', {
-        boardExists: !!state.board,
-        tileCount: ui.boardGrid?.querySelectorAll('.cell')?.length ?? 0,
-        pieceCount: state.board?.flat?.().filter(Boolean).length ?? 0
-      });
       const currentTeam = getCurrentTeam();
       const cells = ui.boardGrid.querySelectorAll('.cell');
       cells.forEach(cell => {
@@ -5297,17 +5304,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
           const token = document.createElement('div');
           token.className = `piece ${piece.team} ${piece.isRoyal ? 'royal' : ''}`.trim();
           token.dataset.debugSquare = toCoord(row, col);
-          if (dragDebug.enabled) {
-            const savedDebug = JSON.parse(localStorage.getItem('arctic_drag_debug_offsets') || '{}');
-            const sqOffset = savedDebug.squareOffsets?.[token.dataset.debugSquare];
-            if (sqOffset) {
-              token.dataset.debugOffsetX = `${Number(sqOffset.x) || 0}`;
-              token.dataset.debugOffsetY = `${Number(sqOffset.y) || 0}`;
-              token.style.transform = `translate(${Number(sqOffset.x) || 0}px, ${Number(sqOffset.y) || 0}px)`;
-            }
-          }
-          console.log('PIECE DEBUG:', JSON.stringify(piece));
-          console.log('piece keys:', Object.keys(piece));
           renderPieceImage(piece, token);
           if (piece.isRoyal) token.innerHTML += '<div class="crest" aria-hidden="true">✦</div>';
           token.title = `${TEAM_LABEL[piece.team]} ${PIECE_NAME[piece.type]}${piece.isRoyal ? ' (Royal)' : ''}`;
