@@ -3087,18 +3087,21 @@
       const GAME_HITBOX_STORAGE_KEY = 'arctic_game_hitboxes';
       const BOARD_CAL_STORAGE_KEY = 'arctic_board_calibration_v2';
       const DICE_CAL_STORAGE_KEY = 'arctic_dice_calibration_v1';
-      const GAME_BUTTON_HITBOXES = {
+      const GAME_HITBOXES = {
         rollDiceBtn: { left: '9.63%', top: '86.49%', width: '39.18%', height: '7.29%' },
-        endTurnBtn: { left: '51.0%', top: '86.49%', width: '39.18%', height: '7.29%' },
-        newGameBtn: { left: '30.0%', top: '94.1%', width: '40.0%', height: '4.7%' }
+        endTurnBtn: { left: '50.31%', top: '86.98%', width: '39.77%', height: '7.07%' },
+        newGameBtn: { left: '29.59%', top: '94.51%', width: '39.21%', height: '5.35%' }
       };
       const keyMap = { rollBtn: 'rollDiceBtn', endTurnBtn: 'endTurnBtn', newGameBtn: 'newGameBtn' };
       const stageRect = () => gameStage.getBoundingClientRect();
       const toPct = (px,total) => `${Math.max(0, Math.min(100, (px/total)*100)).toFixed(2)}%`;
-      const readBoxes = () => ({ ...GAME_BUTTON_HITBOXES, ...JSON.parse(localStorage.getItem(GAME_HITBOX_STORAGE_KEY) || '{}') });
+      const readBoxes = () => {
+        if (!HITBOX_EDITOR_MODE) return GAME_HITBOXES;
+        return { ...GAME_HITBOXES, ...JSON.parse(localStorage.getItem(GAME_HITBOX_STORAGE_KEY) || '{}') };
+      };
       const applyBoxes = (boxes) => Object.entries(keyMap).forEach(([id,key]) => {
         const el = document.getElementById(id); if (!el) return;
-        const b = boxes[key] || GAME_BUTTON_HITBOXES[key];
+        const b = boxes[key] || GAME_HITBOXES[key];
         ['left','top','width','height'].forEach((k)=>el.style[k]=b[k]);
         el.dataset.hitbox = key; el.dataset.hitboxKey = key;
       });
@@ -3153,7 +3156,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       const relayoutHandles=()=>document.querySelectorAll('.game-hitbox [data-resize]').forEach((h)=>{const mobile=window.matchMedia('(max-width: 700px)').matches; const sz=mobile?28:14; h.style.width=`${sz}px`; h.style.height=`${sz}px`; const o=-sz/2; if(h.dataset.resize==='tl'){h.style.left=`${o}px`;h.style.top=`${o}px`;} if(h.dataset.resize==='tr'){h.style.right=`${o}px`;h.style.top=`${o}px`;} if(h.dataset.resize==='bl'){h.style.left=`${o}px`;h.style.bottom=`${o}px`;} if(h.dataset.resize==='br'){h.style.right=`${o}px`;h.style.bottom=`${o}px`;}});
       relayoutHandles(); window.addEventListener('resize',relayoutHandles);
       document.addEventListener('pointerdown',pointerDown,{passive:false}); document.addEventListener('pointermove',pointerMove,{passive:false}); document.addEventListener('pointerup',pointerUp,{passive:false}); document.addEventListener('pointercancel',pointerUp,{passive:false});
-      ui.dragDebugToolbar.onclick=async(e)=>{const b=e.target.dataset.debugBtn; if(!b)return; if(b==='Copy Values') await copyText(JSON.stringify(save(),null,2)); if(b==='Reset All'){localStorage.removeItem(GAME_HITBOX_STORAGE_KEY); applyBoxes(GAME_BUTTON_HITBOXES); save();} if(b==='Reset Selected'){const id=Object.entries(keyMap).find(([,k])=>k===selected)?.[0]; const el=document.getElementById(id); Object.entries(GAME_BUTTON_HITBOXES[selected]).forEach(([k,v])=>el.style[k]=v); save();} if(b==='Hide/Show Hitboxes'){hidden=!hidden; document.querySelectorAll('.game-hitbox').forEach((el)=>el.style.opacity=hidden?'0':'1');} if(b==='Lock/Unlock Editing'){locked=!locked;}; };
+      ui.dragDebugToolbar.onclick=async(e)=>{const b=e.target.dataset.debugBtn; if(!b)return; if(b==='Copy Values') await copyText(JSON.stringify(save(),null,2)); if(b==='Reset All'){localStorage.removeItem(GAME_HITBOX_STORAGE_KEY); applyBoxes(GAME_HITBOXES); save();} if(b==='Reset Selected'){const id=Object.entries(keyMap).find(([,k])=>k===selected)?.[0]; const el=document.getElementById(id); Object.entries(GAME_HITBOXES[selected]).forEach(([k,v])=>el.style[k]=v); save();} if(b==='Hide/Show Hitboxes'){hidden=!hidden; document.querySelectorAll('.game-hitbox').forEach((el)=>el.style.opacity=hidden?'0':'1');} if(b==='Lock/Unlock Editing'){locked=!locked;}; };
       save();
     }
 
