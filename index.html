@@ -2308,19 +2308,19 @@
       isolation: isolate;
       flex: 0 0 auto;
       --status-left: 13%;
-      --status-top: 29.8%;
+      --status-top: 29.2%;
       --status-width: 74%;
       --status-height: 5.2%;
-      --board-left: 13.9%;
-      --board-top: 34.2%;
-      --board-size: 76.2%;
+      --board-left: 18.81%;
+      --board-top: 33.50%;
+      --board-size: 66.84%;
       --piece-size: 84%;
       --board-tile-size: calc(var(--board-size) / 8);
       --action-button-offset: calc(var(--board-tile-size) * 0.75);
-      --dice-left: 24.4%;
-      --dice-top: 73.1%;
-      --dice-width: 51.2%;
-      --dice-height: 7.0%;
+      --dice-left: 24.80%;
+      --dice-top: 70.71%;
+      --dice-width: 50.04%;
+      --dice-height: 18.58%;
       --dice-gap: 6.5%;
       --dice-piece-size: 62%;
     }
@@ -2407,6 +2407,12 @@
       z-index: 8;
       pointer-events: auto;
     }
+     .dice-slot {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
     .die-result {
       width: 100%;
       height: 100%;
@@ -2422,7 +2428,8 @@
     }
     .die-result img,
     .die-piece,
-    .dice-piece {
+    .dice-piece,
+    .dice-result-piece {
       display: block;
       width: var(--dice-piece-size);
       height: var(--dice-piece-size);
@@ -2683,12 +2690,12 @@
                 <div id="boardGrid" class="board-grid board-hit-layer" aria-label="8 by 8 game board"></div>
               </div>
               <div class="dice-overlay">
-                <div id="dieCard0" class="die-result" aria-live="polite">
+                <div id="dieCard0" class="dice-slot die-result" aria-live="polite">
                   <div id="dieState0" class="hidden-required-dom">READY</div>
                   <div id="dieValue0" class="die-value ice-die-face" aria-hidden="true">?</div>
                   <div id="diePiece0" class="die-piece">Roll to activate</div>
                 </div>
-                <div id="dieCard1" class="die-result" aria-live="polite">
+                <div id="dieCard1" class="dice-slot die-result" aria-live="polite">
                   <div id="dieState1" class="hidden-required-dom">READY</div>
                   <div id="dieValue1" class="die-value ice-die-face" aria-hidden="true">?</div>
                   <div id="diePiece1" class="die-piece">Roll to activate</div>
@@ -3124,7 +3131,7 @@
         document.body.classList.add('gamehitbox-mode');
       }
       ui.dragDebugToolbar.classList.add('is-visible');
-      const calDefaults = {'--board-left':'13.9%','--board-top':'34.2%','--board-size':'76.2%','--piece-size':'84%','--dice-left':'24.4%','--dice-top':'73.1%','--dice-width':'51.2%','--dice-height':'7.0%','--dice-gap':'6.5%','--dice-piece-size':'62%','--status-left':'13%','--status-top':'29.8%','--status-width':'74%','--status-height':'5.2%'};
+      const calDefaults = {'--board-left':'18.81%','--board-top':'33.50%','--board-size':'66.84%','--piece-size':'84%','--dice-left':'24.80%','--dice-top':'70.71%','--dice-width':'50.04%','--dice-height':'18.58%','--dice-gap':'6.5%','--dice-piece-size':'62%','--status-left':'13%','--status-top':'29.2%','--status-width':'74%','--status-height':'5.2%'};
       if (BOARD_CAL_MODE) {
         document.body.classList.add('boardcal-mode');
         ui.dragDebugToolbar.classList.add('calibration-toolbar');
@@ -3144,7 +3151,7 @@
         const setPct=(k,v)=>gameScreen.style.setProperty(k,`${Math.max(0,Math.min(100,v)).toFixed(2)}%`);
         const values=()=>({boardLeft:getComputedStyle(gameScreen).getPropertyValue('--board-left').trim(),boardTop:getComputedStyle(gameScreen).getPropertyValue('--board-top').trim(),boardSize:getComputedStyle(gameScreen).getPropertyValue('--board-size').trim(),pieceSize:getComputedStyle(gameScreen).getPropertyValue('--piece-size').trim()});
         const persist=()=>localStorage.setItem(BOARD_CAL_STORAGE_KEY, JSON.stringify({'--board-left':values().boardLeft,'--board-top':values().boardTop,'--board-size':values().boardSize,'--piece-size':values().pieceSize}));
-        const sync=()=>{const v=values(); const r=boardOverlay.getBoundingClientRect(), s=gameStage.getBoundingClientRect(); outline.style.left=`${r.left-s.left}px`; outline.style.top=`${r.top-s.top}px`; outline.style.width=`${r.width}px`; outline.style.height=`${r.height}px`; const pieceCount=boardOverlay.querySelectorAll('.piece,.board-piece,.game-piece,.piece-token,img').length; fieldsEl.textContent=`computed: left=${(r.left-s.left).toFixed(1)}px top=${(r.top-s.top).toFixed(1)}px width=${r.width.toFixed(1)}px\ncss vars: ${JSON.stringify(v)}\npieces in .board-overlay: ${pieceCount}`;};
+        const sync=()=>{const v=values(); const r=boardOverlay.getBoundingClientRect(), s=gameStage.getBoundingClientRect(); outline.style.left=`${r.left-s.left}px`; outline.style.top=`${r.top-s.top}px`; outline.style.width=`${r.width}px`; outline.style.height=`${r.height}px`; const pieceCount=boardOverlay.querySelectorAll('.piece,.board-piece,.game-piece,.piece-token').length; fieldsEl.textContent=`computed: left=${(r.left-s.left).toFixed(1)}px top=${(r.top-s.top).toFixed(1)}px width=${r.width.toFixed(1)}px\ncss vars: ${JSON.stringify(v)}\npieces in .board-overlay: ${pieceCount}`;};
         let drag=null;
         const down=(e,mode)=>{e.preventDefault();const sr=stageRect();drag={mode,x:e.clientX,y:e.clientY,w:sr.width,h:sr.height,left:num('--board-left'),top:num('--board-top'),size:num('--board-size')}; outline.setPointerCapture(e.pointerId);};
         outline.addEventListener('pointerdown',(e)=>{if(e.target===handle)return; down(e,'move');});
@@ -3169,7 +3176,7 @@
         const num=(k)=>parseFloat(getComputedStyle(gameScreen).getPropertyValue(k))||0; const setPct=(k,v)=>gameScreen.style.setProperty(k,`${Math.max(0,Math.min(100,v)).toFixed(2)}%`);
         const values=()=>({diceLeft:getComputedStyle(gameScreen).getPropertyValue('--dice-left').trim(),diceTop:getComputedStyle(gameScreen).getPropertyValue('--dice-top').trim(),diceWidth:getComputedStyle(gameScreen).getPropertyValue('--dice-width').trim(),diceHeight:getComputedStyle(gameScreen).getPropertyValue('--dice-height').trim(),diceGap:getComputedStyle(gameScreen).getPropertyValue('--dice-gap').trim(),dicePieceSize:getComputedStyle(gameScreen).getPropertyValue('--dice-piece-size').trim()});
         const persist=()=>localStorage.setItem(DICE_CAL_STORAGE_KEY, JSON.stringify({'--dice-left':values().diceLeft,'--dice-top':values().diceTop,'--dice-width':values().diceWidth,'--dice-height':values().diceHeight,'--dice-gap':values().diceGap,'--dice-piece-size':values().dicePieceSize}));
-        const sync=()=>{const v=values(); const r=diceOverlay.getBoundingClientRect(), s=gameStage.getBoundingClientRect(); outline.style.left=`${r.left-s.left}px`; outline.style.top=`${r.top-s.top}px`; outline.style.width=`${r.width}px`; outline.style.height=`${r.height}px`; const diceCount=diceOverlay.querySelectorAll('.dice-slot,img,.dice-result-piece,.die-result,.die-piece,.dice-piece').length; fieldsEl.textContent=`computed: left=${(r.left-s.left).toFixed(1)}px top=${(r.top-s.top).toFixed(1)}px width=${r.width.toFixed(1)}px height=${r.height.toFixed(1)}px\ncss vars: ${JSON.stringify(v)}\ndice/result nodes in .dice-overlay: ${diceCount}`;};
+        const sync=()=>{const v=values(); const r=diceOverlay.getBoundingClientRect(), s=gameStage.getBoundingClientRect(); outline.style.left=`${r.left-s.left}px`; outline.style.top=`${r.top-s.top}px`; outline.style.width=`${r.width}px`; outline.style.height=`${r.height}px`; const diceCount=diceOverlay.querySelectorAll('.dice-slot').length; fieldsEl.textContent=`computed: left=${(r.left-s.left).toFixed(1)}px top=${(r.top-s.top).toFixed(1)}px width=${r.width.toFixed(1)}px height=${r.height.toFixed(1)}px\ncss vars: ${JSON.stringify(v)}\ndice/result nodes in .dice-overlay: ${diceCount}`;};
         let drag=null; const down=(e,mode)=>{e.preventDefault();const sr=stageRect();drag={mode,x:e.clientX,y:e.clientY,w:sr.width,h:sr.height,left:num('--dice-left'),top:num('--dice-top'),dw:num('--dice-width'),dh:num('--dice-height')}; outline.setPointerCapture(e.pointerId);};
         outline.addEventListener('pointerdown',(e)=>{if(e.target===handle)return;down(e,'move');}); handle.addEventListener('pointerdown',(e)=>down(e,'resize'));
         outline.addEventListener('pointermove',(e)=>{if(!drag)return; e.preventDefault(); const dx=((e.clientX-drag.x)/drag.w)*100; const dy=((e.clientY-drag.y)/drag.h)*100; if(drag.mode==='move'){setPct('--dice-left',drag.left+dx); setPct('--dice-top',drag.top+dy);} else {setPct('--dice-width',drag.dw+dx); setPct('--dice-height',drag.dh+dy);} persist(); sync();});
