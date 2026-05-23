@@ -2107,11 +2107,58 @@
     .team-selected-outline {
       position: absolute;
       z-index: 8;
-      border: 3px solid rgba(255, 255, 255, 0.95);
-      box-shadow: 0 0 18px rgba(0, 220, 255, 0.95);
-      border-radius: 18px;
       pointer-events: none;
       display: none;
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      box-shadow:
+        0 0 10px rgba(255, 255, 255, 0.9),
+        0 0 18px rgba(0, 220, 255, 0.85),
+        inset 0 0 10px rgba(255, 255, 255, 0.35);
+      border-radius: 16px;
+      background: transparent;
+    }
+    .team-selected-outline.active,
+    .team-selected-outline.is-active,
+    .team-selected-outline.selected {
+      display: block;
+    }
+    .team-outline-editor-mode .team-selected-outline {
+      pointer-events: auto;
+      cursor: move;
+      display: block;
+      z-index: 120;
+    }
+    .team-outline-editor-mode .team-select-stage .hitbox {
+      pointer-events: none;
+    }
+    .team-outline-editor-mode .team-selected-outline .resize-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: rgba(0, 220, 255, 0.95);
+      border: 1px solid #fff;
+      border-radius: 50%;
+      pointer-events: auto;
+    }
+    .team-outline-editor-mode .team-selected-outline .resize-handle.nw { left: -6px; top: -6px; cursor: nwse-resize; }
+    .team-outline-editor-mode .team-selected-outline .resize-handle.ne { right: -6px; top: -6px; cursor: nesw-resize; }
+    .team-outline-editor-mode .team-selected-outline .resize-handle.sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+    .team-outline-editor-mode .team-selected-outline .resize-handle.se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+    .team-selected-outline.outline-selected { box-shadow: 0 0 0 2px rgba(255,255,255,.8), 0 0 14px rgba(0,220,255,.95), inset 0 0 10px rgba(255,255,255,.35); }
+    .team-outline-toolbar {
+      position: fixed;
+      left: 8px;
+      top: 80px;
+      width: 250px;
+      max-height: calc(100dvh - 100px);
+      overflow-y: auto;
+      z-index: 99999;
+      background: rgba(0, 22, 45, 0.94);
+      color: white;
+      border: 1px solid rgba(80, 220, 255, 0.8);
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 12px;
     }
     .team-select-hint {
       position: absolute;
@@ -2746,6 +2793,7 @@
     const HITBOX_EDITOR_MODE = urlParams.get('gamehitbox') === '1';
     const BOARD_CAL_MODE = urlParams.get('boardcal') === '1';
     const DICE_CAL_MODE = urlParams.get('dicecal') === '1';
+    const TEAM_OUTLINE_EDITOR_MODE = urlParams.get('teamoutline') === '1';
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch((error) => {
@@ -3076,6 +3124,12 @@
       teamSelectBackBtn: { left: '0%', top: '0%', width: '15.97%', height: '9.85%' },
       teamContinueBtn: { left: '34.72%', top: '16.12%', width: '31.53%', height: '5.41%' }
     };
+    const TEAM_OUTLINES = {
+      retsba: { left: '5.8%', top: '83.85%', width: '42.8%', height: '5.15%' },
+      abster: { left: '51.8%', top: '83.85%', width: '42.8%', height: '5.15%' },
+      polly: { left: '5.8%', top: '90.25%', width: '42.8%', height: '5.15%' },
+      pengu: { left: '51.8%', top: '90.25%', width: '42.8%', height: '5.15%' }
+    };
 
     function applyHitboxConfig() {
       Object.entries(HITBOXES).forEach(([id, rect]) => {
@@ -3212,6 +3266,117 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       document.addEventListener('pointerdown',pointerDown,{passive:false}); document.addEventListener('pointermove',pointerMove,{passive:false}); document.addEventListener('pointerup',pointerUp,{passive:false}); document.addEventListener('pointercancel',pointerUp,{passive:false});
       ui.dragDebugToolbar.onclick=async(e)=>{const b=e.target.dataset.debugBtn; if(!b)return; if(b==='Copy Values') await copyText(JSON.stringify(save(),null,2)); if(b==='Reset All'){localStorage.removeItem(GAME_HITBOX_STORAGE_KEY); applyBoxes(GAME_HITBOXES); save();} if(b==='Reset Selected'){const id=Object.entries(keyMap).find(([,k])=>k===selected)?.[0]; const el=document.getElementById(id); Object.entries(GAME_HITBOXES[selected]).forEach(([k,v])=>el.style[k]=v); save();} if(b==='Hide/Show Hitboxes'){hidden=!hidden; document.querySelectorAll('.game-hitbox').forEach((el)=>el.style.opacity=hidden?'0':'1');} if(b==='Lock/Unlock Editing'){locked=!locked;}; };
       save();
+    }
+
+    function initTeamOutlineEditorMode() {
+      if (!TEAM_OUTLINE_EDITOR_MODE) return;
+      const stage = document.querySelector('.team-select-stage');
+      if (!stage || !ui.dragDebugToolbar) return;
+      const STORAGE_KEY = 'arctic_team_outlines_v1';
+      const keys = ['retsba', 'abster', 'polly', 'pengu'];
+      const outlineEls = {
+        retsba: ui.teamOutlineRetsba,
+        abster: ui.teamOutlineAbster,
+        polly: ui.teamOutlinePolly,
+        pengu: ui.teamOutlinePengu
+      };
+      document.body.classList.add('team-outline-editor-mode');
+      ui.dragDebugToolbar.className = 'team-outline-toolbar is-visible';
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      keys.forEach((key) => { TEAM_OUTLINES[key] = { ...TEAM_OUTLINES[key], ...(saved[key] || {}) }; });
+      const toNum = (val) => Number(String(val || '0').replace('%', '')) || 0;
+      const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+      const asPct = (num) => `${num.toFixed(2)}%`;
+      let selected = 'retsba';
+      let editingLocked = false;
+      let hidden = false;
+      let pointer = null;
+      const modes = { move: 'move', nw: 'nw', ne: 'ne', sw: 'sw', se: 'se' };
+      let drag = null;
+
+      const persist = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(TEAM_OUTLINES));
+      const snapshot = () => keys.reduce((acc, key) => (acc[key] = { ...TEAM_OUTLINES[key] }, acc), {});
+      const applyToEl = (key) => {
+        const el = outlineEls[key]; if (!el) return;
+        const box = TEAM_OUTLINES[key];
+        ['left', 'top', 'width', 'height'].forEach((prop) => { el.style[prop] = box[prop]; });
+        el.classList.toggle('outline-selected', key === selected);
+        if (hidden) el.style.opacity = '0'; else el.style.opacity = '1';
+      };
+      const render = () => { keys.forEach(applyToEl); renderDominionSelection(); syncToolbar(); };
+      const syncToolbar = () => {
+        const v = TEAM_OUTLINES[selected];
+        ui.dragDebugToolbar.querySelector('#outlineValues').textContent = `selected: ${selected}\nleft: ${v.left}\ntop: ${v.top}\nwidth: ${v.width}\nheight: ${v.height}`;
+      };
+      ui.dragDebugToolbar.innerHTML = `<div><strong>Team Outline Calibration (?teamoutline=1)</strong></div><div class="debug-btn-row"><button data-outline-btn="Copy Values">Copy Values</button><button data-outline-btn="Reset Selected">Reset Selected</button><button data-outline-btn="Reset All">Reset All</button><button data-outline-btn="Hide/Show Outlines">Hide/Show Outlines</button><button data-outline-btn="Lock/Unlock Editing">Lock/Unlock Editing</button></div><pre id="outlineValues"></pre><textarea id="outlineCopyFallback" style="display:none;width:100%;min-height:90px;"></textarea>`;
+      keys.forEach((key) => {
+        const el = outlineEls[key];
+        if (!el) return;
+        el.dataset.teamOutlineKey = key;
+        ['nw', 'ne', 'sw', 'se'].forEach((corner) => {
+          const h = document.createElement('div');
+          h.className = `resize-handle ${corner}`;
+          h.dataset.resize = corner;
+          el.appendChild(h);
+        });
+      });
+      stage.addEventListener('pointerdown', (e) => {
+        const target = e.target.closest('.team-selected-outline');
+        if (!target) return;
+        selected = target.dataset.teamOutlineKey || selected;
+        if (editingLocked) return syncToolbar();
+        const mode = e.target.dataset.resize || modes.move;
+        const stageRect = stage.getBoundingClientRect();
+        const box = TEAM_OUTLINES[selected];
+        drag = { mode, x: e.clientX, y: e.clientY, left: toNum(box.left), top: toNum(box.top), width: toNum(box.width), height: toNum(box.height), stageW: stageRect.width, stageH: stageRect.height };
+        pointer = e.pointerId;
+        target.setPointerCapture(pointer);
+        e.preventDefault();
+        render();
+      });
+      stage.addEventListener('pointermove', (e) => {
+        if (!drag || pointer !== e.pointerId) return;
+        const dx = ((e.clientX - drag.x) / drag.stageW) * 100;
+        const dy = ((e.clientY - drag.y) / drag.stageH) * 100;
+        let { left, top, width, height } = drag;
+        if (drag.mode === modes.move) { left += dx; top += dy; }
+        if (drag.mode === modes.se) { width += dx; height += dy; }
+        if (drag.mode === modes.nw) { left += dx; top += dy; width -= dx; height -= dy; }
+        if (drag.mode === modes.ne) { top += dy; width += dx; height -= dy; }
+        if (drag.mode === modes.sw) { left += dx; width -= dx; height += dy; }
+        width = clamp(width, 1, 100); height = clamp(height, 1, 100);
+        left = clamp(left, 0, 100 - width); top = clamp(top, 0, 100 - height);
+        TEAM_OUTLINES[selected] = { left: asPct(left), top: asPct(top), width: asPct(width), height: asPct(height) };
+        persist(); render();
+      });
+      stage.addEventListener('pointerup', (e) => { if (pointer === e.pointerId) { drag = null; pointer = null; } });
+      stage.addEventListener('pointercancel', () => { drag = null; pointer = null; });
+      ui.dragDebugToolbar.onclick = async (e) => {
+        const btn = e.target.dataset.outlineBtn;
+        if (!btn) return;
+        const fallback = ui.dragDebugToolbar.querySelector('#outlineCopyFallback');
+        if (btn === 'Copy Values') {
+          const txt = JSON.stringify(snapshot(), null, 2);
+          try { await navigator.clipboard.writeText(txt); fallback.style.display = 'none'; }
+          catch (_err) { fallback.style.display = 'block'; fallback.value = txt; fallback.focus(); fallback.select(); }
+        }
+        if (btn === 'Reset Selected') TEAM_OUTLINES[selected] = { ...({
+          retsba: { left: '5.8%', top: '83.85%', width: '42.8%', height: '5.15%' },
+          abster: { left: '51.8%', top: '83.85%', width: '42.8%', height: '5.15%' },
+          polly: { left: '5.8%', top: '90.25%', width: '42.8%', height: '5.15%' },
+          pengu: { left: '51.8%', top: '90.25%', width: '42.8%', height: '5.15%' }
+        })[selected] };
+        if (btn === 'Reset All') { keys.forEach((k) => TEAM_OUTLINES[k] = { ...({
+          retsba: { left: '5.8%', top: '83.85%', width: '42.8%', height: '5.15%' },
+          abster: { left: '51.8%', top: '83.85%', width: '42.8%', height: '5.15%' },
+          polly: { left: '5.8%', top: '90.25%', width: '42.8%', height: '5.15%' },
+          pengu: { left: '51.8%', top: '90.25%', width: '42.8%', height: '5.15%' }
+        })[k] }); }
+        if (btn === 'Hide/Show Outlines') hidden = !hidden;
+        if (btn === 'Lock/Unlock Editing') editingLocked = !editingLocked;
+        persist(); render();
+      };
+      render();
     }
 
 
@@ -6133,19 +6298,21 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       }
     }
 
-    const teamBoxes = {
-      retsba: { el: ui.teamOutlineRetsba, left: '5%', top: '81.4%', width: '42%', height: '5%' },
-      abster: { el: ui.teamOutlineAbster, left: '53%', top: '81.4%', width: '42%', height: '5%' },
-      polly: { el: ui.teamOutlinePolly, left: '5%', top: '89%', width: '42%', height: '5%' },
-      pengu: { el: ui.teamOutlinePengu, left: '53%', top: '89%', width: '42%', height: '5%' }
+    const teamOutlineElements = {
+      retsba: ui.teamOutlineRetsba,
+      abster: ui.teamOutlineAbster,
+      polly: ui.teamOutlinePolly,
+      pengu: ui.teamOutlinePengu
     };
-    Object.entries(teamBoxes).forEach(([team, box]) => {
-      if (!box.el) return;
-      box.el.style.left = box.left;
-      box.el.style.top = box.top;
-      box.el.style.width = box.width;
-      box.el.style.height = box.height;
-      box.el.style.display = selectedTeams.has(team) ? 'block' : 'none';
+    Object.entries(teamOutlineElements).forEach(([team, el]) => {
+      if (!el) return;
+      const box = TEAM_OUTLINES[team];
+      el.style.left = box.left;
+      el.style.top = box.top;
+      el.style.width = box.width;
+      el.style.height = box.height;
+      el.classList.toggle('active', selectedTeams.has(team));
+      if (!TEAM_OUTLINE_EDITOR_MODE) el.style.display = selectedTeams.has(team) ? 'block' : 'none';
     });
     if (appState.screen === 'teamSelect') console.log('RENDER TEAM SELECT', getEffectivePlayerCount());
     if (ui.teamSelectHint) {
@@ -6791,6 +6958,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     buildSetupChoices();
     applyHitboxConfig();
     initDragDebugMode();
+    initTeamOutlineEditorMode();
     syncMobileCollapsibles();
     renderAppScreen();
     resetTutorialScenario();
