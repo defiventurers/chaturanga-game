@@ -2348,10 +2348,6 @@
       aspect-ratio: 9 / 16;
       margin-inline: auto;
       overflow: hidden;
-      background-image: url("/assets/screens/arctic-dominion-game-base.png");
-      background-size: 100% 100%;
-      background-repeat: no-repeat;
-      background-position: center;
       isolation: isolate;
       flex: 0 0 auto;
       --status-left: 14.5%;
@@ -2370,6 +2366,14 @@
       --dice-height: 18.58%;
       --dice-gap: 6.5%;
       --dice-piece-size: 62%;
+    }
+
+    #screenGame.active .game-stage,
+    #screenGame.active .game-screen {
+      background-image: url("/assets/screens/arctic-dominion-game-base.png");
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
     }
     .game-overlay { position: absolute; inset: 0; pointer-events: none; }
     .board-overlay {
