@@ -6970,15 +6970,20 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       return;
     }
 
-    setScreen('playerCount');
+    if (appState.playMode === 'offline') {
+      setScreen('playerCount');
+      return;
+    }
+
+    showModeToast('Choose Offline Battle or Online Room first.');
   };
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
   ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(4); });
   ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('modeSelect'); });
-  ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.createRoom(); });
-  ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
+  ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); setOnlineRoomMessage('Old server flow disabled in Phase 1. Use Create Room on Online Room screen.'); });
+  ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); setOnlineRoomMessage('Old server flow disabled in Phase 1. Use Join Room on Online Room screen.'); });
   ui.copyRoomLinkBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(ui.lobbyShareLinkInput.value); });
   ui.copyRoomCodeBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomId); });
   ui.shareRoomBtn.addEventListener('click', async () => { sound.playButtonSound(); const url = ui.lobbyShareLinkInput.value; if (navigator.share) { try { await navigator.share({ title: 'Arctic Dominion Room', url }); } catch (error) {} } else { copyText(url); } });
@@ -7121,7 +7126,16 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.returnMenuBtn.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode === 'online') { MultiplayerService.disconnect(); appState.online.roomState = null; appState.online.roomId = ''; appState.online.localTeam = null; } returnToMenu(); });
 
   const originalSetScreen = setScreen;
-  setScreen = function (nextScreen) { originalSetScreen(nextScreen); if (nextScreen === 'lobby') renderLobby(); };
+  setScreen = function(nextScreen) {
+    if (nextScreen === 'onlineSetup' || nextScreen === 'lobby' || nextScreen === 'playMode') {
+      console.warn('Old online screen blocked in Phase 1:', nextScreen);
+      nextScreen = 'onlineRoom';
+    }
+
+    originalSetScreen(nextScreen);
+
+    if (nextScreen === 'onlineLobby') renderOnlineLobby();
+  };
   const originalReturnToMenu = returnToMenu;
   returnToMenu = function () { hideCountdown(); originalReturnToMenu(); };
 
