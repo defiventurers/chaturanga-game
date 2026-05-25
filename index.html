@@ -3935,7 +3935,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       playerCount: ['modeSelect', 'teamSelect'],
       teamSelect: ['playerCount', 'onlineRoom', 'game'],
       onlineRoom: ['teamSelect', 'onlineLobby'],
-      onlineLobby: ['onlineRoom', 'game'],
+      onlineLobby: ['onlineRoom'],
       game: ['mainMenu', 'playerCount']
     };
 
@@ -6137,7 +6137,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     setNodeText(ui.onlineLobbyPlayerCount, 'ui.onlineLobbyPlayerCount', `Player Count: ${appState.online.requiredHumanCount || '-'}`);
     setNodeHTML(ui.onlineLobbyPlayerList, 'ui.onlineLobbyPlayerList', appState.online.players.map(p => `${p.name} · ${p.team ? displayTeamName(p.team) : 'Unassigned'} · ${p.ready ? 'Ready' : 'Not Ready'}${p.isHost ? ' (Host)' : ''}`).join('<br/>'));
     setNodeHTML(ui.onlineLobbyTeamList, 'ui.onlineLobbyTeamList', `Humans: ${appState.online.selectedHumanTeams.map(displayTeamName).join(', ')}<br/>Bots: ${appState.online.botTeams.map(displayTeamName).join(', ')}`);
-    if (appState.online.requiredHumanCount > 1 && !appState.online.serverConnected) setOnlineLobbyMessage('Waiting for more players. Server join is not connected yet.');
+    setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
   }
   function startOnlineGameFromLobby() {
     appState.matchConfig.humanTeams = appState.online.selectedHumanTeams.slice();
@@ -7037,9 +7037,9 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     primeAudioAndPlayButton();
     const me = appState.online.players.find(p => p.playerId === appState.online.playerId);
     if (!me) return;
-    me.ready = true;
+    me.ready = !me.ready;
     renderOnlineLobby();
-    startOnlineCountdown();
+    setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
   });
   ui.onlineLobbyBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); });
   ui.copyOnlineRoomCodeBtn?.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomCode || ''); });
@@ -7100,6 +7100,18 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   });
   ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
 
+
+  function saveOnlineTeamSelection() {
+    if (!appState.online) appState.online = {};
+    appState.online.selectedHumanTeams = selectedHumanTeams.slice();
+    appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
+    appState.online.requiredHumanCount = getEffectivePlayerCount();
+    appState.matchConfig.playerCount = getEffectivePlayerCount();
+    appState.online.players = Array.isArray(appState.online.players) ? appState.online.players : [];
+    const hostPlayer = appState.online.players.find(p => p.playerId === appState.online.playerId);
+    if (hostPlayer && !hostPlayer.team) hostPlayer.team = selectedHumanTeams[0];
+  }
+
   function continueFromTeamSelect(event) {
     event?.preventDefault?.();
     event?.stopPropagation?.();
@@ -7118,15 +7130,9 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       selectedHumanTeams
     });
     if (appState.playMode === 'online') {
-      appState.online.selectedHumanTeams = selectedHumanTeams.slice();
-      appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
-      appState.online.requiredHumanCount = getEffectivePlayerCount();
-      appState.matchConfig.playerCount = getEffectivePlayerCount();
-      appState.online.players = Array.isArray(appState.online.players) ? appState.online.players : [];
-      const hostPlayer = appState.online.players.find(p => p.playerId === appState.online.playerId);
-      if (hostPlayer) hostPlayer.team = selectedHumanTeams[0];
-      setScreen('onlineRoom');
+      saveOnlineTeamSelection();
       renderOnlineRoom();
+      setScreen('onlineRoom');
       setOnlineRoomMessage('Create a room or join with a code.');
       return;
     }
@@ -7166,7 +7172,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   setScreen = function(nextScreen) {
     if (nextScreen === 'onlineSetup' || nextScreen === 'lobby' || nextScreen === 'playMode') {
       console.warn('Old online screen blocked in Phase 1:', nextScreen);
-      nextScreen = 'onlineRoom';
+      return;
     }
 
     originalSetScreen(nextScreen);
