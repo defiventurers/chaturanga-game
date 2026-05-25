@@ -6915,8 +6915,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.menuPlayBtn = replaceButtonWithoutListeners(ui.menuPlayBtn);
   ui.menuPlayBtn.addEventListener('click', () => {
     primeAudioAndPlayButton();
-    appState.playMode = appState.playMode || 'offline';
-    selectedMode = appState.playMode;
+    appState.playMode = null;
+    selectedMode = null;
     selectedPlayerCount = null;
     appState.matchConfig.playerCount = null;
     renderModeSelectArt();
@@ -6939,18 +6939,31 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.modeOfflineBtn.onclick = (event) => {
     event.preventDefault();
     event.stopPropagation();
+
     appState.playMode = 'offline';
+    selectedMode = 'offline';
+    renderModeSelectArt();
+    showModeToast('Offline Battle selected. Press Continue.');
   };
   ui.modeOnlineBtn = replaceButtonWithoutListeners(ui.modeOnlineBtn);
   ui.modeOnlineBtn.onclick = (event) => {
     event.preventDefault();
     event.stopPropagation();
+
     appState.playMode = 'online';
+    selectedMode = 'online';
+    renderModeSelectArt();
+    showModeToast('Online Room selected. Press Continue.');
   };
   ui.modeContinueBtn = replaceButtonWithoutListeners(ui.modeContinueBtn);
   ui.modeContinueBtn.onclick = (event) => {
     event.preventDefault();
     event.stopPropagation();
+
+    if (appState.playMode !== 'offline' && appState.playMode !== 'online') {
+      showModeToast('Choose Offline Battle or Online Room first.');
+      return;
+    }
 
     if (appState.playMode === 'online') {
       setScreen('onlineRoom');
