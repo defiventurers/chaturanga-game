@@ -3925,10 +3925,13 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
     const ALLOWED_SCREEN_TRANSITIONS = {
       cover: ['mainMenu'],
-      mainMenu: ['playerCount', 'howToPlay'],
+      mainMenu: ['modeSelect', 'howToPlay'],
+      modeSelect: ['mainMenu', 'playerCount', 'onlineRoom'],
       howToPlay: ['mainMenu'],
-      playerCount: ['mainMenu', 'teamSelect'],
-      teamSelect: ['playerCount', 'game'],
+      onlineRoom: ['modeSelect', 'playerCount', 'onlineLobby'],
+      playerCount: ['modeSelect', 'teamSelect'],
+      teamSelect: ['playerCount', 'onlineLobby', 'game'],
+      onlineLobby: ['onlineRoom', 'modeSelect', 'game'],
       game: ['mainMenu', 'playerCount']
     };
 
@@ -6060,6 +6063,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       serverConnected: false
     }
   });
+  appState.playMode = appState.playMode || 'offline';
 
   const bootSelectedTeams = getSelectedInternalTeamsFromStorage();
   if (bootSelectedTeams.length > 0) {
@@ -6906,13 +6910,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.menuPlayBtn = replaceButtonWithoutListeners(ui.menuPlayBtn);
   ui.menuPlayBtn.addEventListener('click', () => {
     primeAudioAndPlayButton();
-    appState.playMode = 'offline';
-    selectedMode = 'offline';
+    appState.playMode = appState.playMode || 'offline';
+    selectedMode = appState.playMode;
     selectedPlayerCount = null;
     appState.matchConfig.playerCount = null;
     renderModeSelectArt();
-    setScreen('playerCount');
-    renderDominionSelection();
+    setScreen('modeSelect');
   });
   ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
   ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('howToPlay'); });
@@ -6929,12 +6932,27 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   }
   ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: offline tapped'); appState.playMode = 'offline'; selectedMode = 'offline'; renderModeSelectArt(); });
   ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: online tapped'); appState.playMode = 'online'; selectedMode = 'online'; renderModeSelectArt(); });
-  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode continue tapped'); selectedPlayerCount = null; appState.matchConfig.playerCount = null; if (appState.playMode === 'online') { setScreen('onlineRoom'); setOnlineRoomMessage(''); return; } setScreen('playerCount'); renderDominionSelection(); });
+  ui.modeContinueBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    console.log('Mode continue tapped');
+    selectedPlayerCount = null;
+    appState.matchConfig.playerCount = null;
+    if (appState.playMode === 'online') {
+      setScreen('onlineRoom');
+      setOnlineRoomMessage('');
+      return;
+    }
+    if (appState.playMode === 'offline') {
+      setScreen('playerCount');
+      renderDominionSelection();
+      return;
+    }
+  });
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
   ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(4); });
-  ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playMode'); });
+  ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('modeSelect'); });
   ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.createRoom(); });
   ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.joinRoom((ui.joinRoomCodeInput.value || '').trim().toUpperCase()); });
   ui.copyRoomLinkBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(ui.lobbyShareLinkInput.value); });
