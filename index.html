@@ -6931,35 +6931,28 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     modeToastTimer = setTimeout(() => { ui.modeToast?.classList.remove('show'); }, 1600);
   }
   ui.modeOfflineBtn = replaceButtonWithoutListeners(ui.modeOfflineBtn);
-  ui.modeOfflineBtn.onclick = () => {
-    primeAudioAndPlayButton();
-    console.log('Mode Select: offline tapped');
+  ui.modeOfflineBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     appState.playMode = 'offline';
-    selectedMode = 'offline';
-    renderModeSelectArt();
   };
   ui.modeOnlineBtn = replaceButtonWithoutListeners(ui.modeOnlineBtn);
-  ui.modeOnlineBtn.onclick = () => {
-    primeAudioAndPlayButton();
-    console.log('Mode Select: online tapped');
+  ui.modeOnlineBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     appState.playMode = 'online';
-    selectedMode = 'online';
-    renderModeSelectArt();
   };
   ui.modeContinueBtn = replaceButtonWithoutListeners(ui.modeContinueBtn);
-  ui.modeContinueBtn.onclick = () => {
-    primeAudioAndPlayButton();
-    console.log('Mode continue tapped');
-    selectedPlayerCount = null;
-    appState.matchConfig.playerCount = null;
+  ui.modeContinueBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     if (appState.playMode === 'online') {
       setScreen('onlineRoom');
-      setOnlineRoomMessage('');
       return;
     }
 
     setScreen('playerCount');
-    renderDominionSelection();
   };
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
