@@ -7122,11 +7122,21 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
       appState.online.requiredHumanCount = getEffectivePlayerCount();
       appState.matchConfig.playerCount = getEffectivePlayerCount();
+      appState.online.players = Array.isArray(appState.online.players) ? appState.online.players : [];
       const hostPlayer = appState.online.players.find(p => p.playerId === appState.online.playerId);
       if (hostPlayer) hostPlayer.team = selectedHumanTeams[0];
       setScreen('onlineRoom');
       renderOnlineRoom();
       setOnlineRoomMessage('Create a room or join with a code.');
+      return;
+    }
+
+    if (appState.playMode !== 'offline') {
+      console.warn('Blocked team select continue because play mode is invalid for this step.', {
+        playMode: appState.playMode,
+        selectedMode
+      });
+      alert('Please go back and choose Offline Battle or Online Room again.');
       return;
     }
     const allTeams = ['retsba', 'abster', 'polly', 'pengu'];
