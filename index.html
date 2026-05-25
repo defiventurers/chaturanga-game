@@ -3989,7 +3989,10 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
         console.error('SCREEN TRANSITION BLOCKED', {
           currentScreen,
           nextScreen,
-          allowed: ALLOWED_SCREEN_TRANSITIONS[currentScreen]
+          allowed: ALLOWED_SCREEN_TRANSITIONS[currentScreen],
+          playMode: appState.playMode,
+          flowMode: appState.flowMode,
+          matchFlowMode: appState.matchConfig?.flowMode
         });
         console.warn('Blocked invalid screen transition', {
           currentScreen,
@@ -7187,31 +7190,54 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
   ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
-  ui.playerCountContinueBtn?.addEventListener('click', (event) => {
+  ui.playerCountContinueBtn = replaceButtonWithoutListeners(ui.playerCountContinueBtn);
+  ui.playerCountContinueBtn.onclick = (event) => {
     event.preventDefault();
     event.stopPropagation();
     primeAudioAndPlayButton();
 
-    if (!appState.matchConfig.playerCount) {
+    const selectedCount = appState.matchConfig.playerCount;
+    console.log('PLAYER COUNT CONTINUE DEBUG', {
+      selectedCount,
+      playMode: appState.playMode,
+      flowMode: appState.flowMode,
+      matchFlowMode: appState.matchConfig?.flowMode,
+      isOnlineFlow: isOnlineFlowActive(),
+      onlineRoomExists: Boolean(document.getElementById('screenOnlineRoom')),
+      transitionAllowsOnlineRoom: ALLOWED_SCREEN_TRANSITIONS.playerCount?.includes('onlineRoom')
+    });
+
+    if (!selectedCount) {
       showModeToast?.('Choose player count first.');
       return;
     }
 
     if (isOnlineFlowActive()) {
-      ensureOnlineState();
       appState.playMode = 'online';
       appState.flowMode = 'online';
       appState.matchConfig.flowMode = 'online';
-      appState.online.requiredHumanCount = appState.matchConfig.playerCount;
+
+      ensureOnlineState();
+      appState.online.requiredHumanCount = selectedCount;
       appState.online.selectedHumanTeams = [];
-      appState.online.botTeams = PLAYERS.slice();
+      appState.online.players = [];
+
+      if (!document.getElementById('screenOnlineRoom')) {
+        const roomSection = document.createElement('section');
+        roomSection.id = 'screenOnlineRoom';
+        roomSection.className = 'screen';
+        roomSection.setAttribute('aria-label', 'Online room');
+        appendSafeElement(ui.appView, roomSection, '#appView screenOnlineRoom');
+      }
+      ui.screens.onlineRoom = document.getElementById('screenOnlineRoom');
+
       renderOnlineRoom();
       setScreen('onlineRoom');
       return;
     }
 
     setScreen('teamSelect');
-  });
+  };
   ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
 
 
