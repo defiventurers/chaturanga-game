@@ -6930,24 +6930,30 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     clearTimeout(modeToastTimer);
     modeToastTimer = setTimeout(() => { ui.modeToast?.classList.remove('show'); }, 1600);
   }
-  ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: offline tapped'); appState.playMode = 'offline'; selectedMode = 'offline'; renderModeSelectArt(); });
-  ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: online tapped'); appState.playMode = 'online'; selectedMode = 'online'; renderModeSelectArt(); });
-  ui.modeContinueBtn?.addEventListener('click', () => {
-    primeAudioAndPlayButton();
-    console.log('Mode continue tapped');
-    selectedPlayerCount = null;
-    appState.matchConfig.playerCount = null;
+  ui.modeOfflineBtn = replaceButtonWithoutListeners(ui.modeOfflineBtn);
+  ui.modeOfflineBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    appState.playMode = 'offline';
+  };
+  ui.modeOnlineBtn = replaceButtonWithoutListeners(ui.modeOnlineBtn);
+  ui.modeOnlineBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    appState.playMode = 'online';
+  };
+  ui.modeContinueBtn = replaceButtonWithoutListeners(ui.modeContinueBtn);
+  ui.modeContinueBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     if (appState.playMode === 'online') {
       setScreen('onlineRoom');
-      setOnlineRoomMessage('');
       return;
     }
-    if (appState.playMode === 'offline') {
-      setScreen('playerCount');
-      renderDominionSelection();
-      return;
-    }
-  });
+
+    setScreen('playerCount');
+  };
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
