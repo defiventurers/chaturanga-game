@@ -5933,7 +5933,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     <section id="screenOnlineRoom" class="screen" aria-label="Online room">
       <div class="screen-panel online-room-panel">
         <h1>Online Room</h1>
-        <p>Create a room or join with a code.</p>
+        <p id="onlineRoomPlayerCountSummary">Player Count: -</p>
+        <p id="onlineRoomTeamsSummary">Teams: -</p>
         <button id="createRoomPreviewBtn" type="button" class="primary">Create Room</button>
         <div class="join-room-row" style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:12px;">
           <input id="roomCodeInput" placeholder="Enter room code" autocomplete="off" />
@@ -5946,8 +5947,9 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
     <section id="screenOnlineLobby" class="screen" aria-label="Online lobby">
       <div class="screen-panel online-lobby-panel">
-        <h1>Room Lobby</h1>
+        <h1>Online Lobby</h1>
         <div class="room-code-box">Room Code: <strong id="onlineLobbyRoomCode"></strong> <button id="copyOnlineRoomCodeBtn" type="button">Copy Code</button></div>
+        <div id="onlineLobbyPlayerCount"></div>
         <div class="online-lobby-section"><h3>Players</h3><div id="onlineLobbyPlayerList"></div></div>
         <div class="online-lobby-section"><h3>Teams</h3><div id="onlineLobbyTeamList"></div></div>
         <div id="onlineLobbyMessage" aria-live="polite"></div>
@@ -6006,7 +6008,10 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     roomCodeInput: document.getElementById('roomCodeInput'),
     onlineRoomMessage: document.getElementById('onlineRoomMessage'),
     onlineRoomBackBtn: document.getElementById('onlineRoomBackBtn'),
+    onlineRoomPlayerCountSummary: document.getElementById('onlineRoomPlayerCountSummary'),
+    onlineRoomTeamsSummary: document.getElementById('onlineRoomTeamsSummary'),
     onlineLobbyRoomCode: document.getElementById('onlineLobbyRoomCode'),
+    onlineLobbyPlayerCount: document.getElementById('onlineLobbyPlayerCount'),
     copyOnlineRoomCodeBtn: document.getElementById('copyOnlineRoomCodeBtn'),
     onlineLobbyPlayerList: document.getElementById('onlineLobbyPlayerList'),
     onlineLobbyTeamList: document.getElementById('onlineLobbyTeamList'),
@@ -6110,12 +6115,21 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   function displayTeamName(team) { return team === 'yellow' ? 'Pink' : TEAM_LABEL[team]; }
   function setOnlineRoomMessage(msg) { if (ui.onlineRoomMessage) setNodeText(ui.onlineRoomMessage, 'ui.onlineRoomMessage', msg || ''); }
   function setOnlineLobbyMessage(msg) { if (ui.onlineLobbyMessage) setNodeText(ui.onlineLobbyMessage, 'ui.onlineLobbyMessage', msg || ''); }
+  function renderOnlineRoom() {
+    const selectedCount = appState.online.requiredHumanCount || getEffectivePlayerCount() || '-';
+    setNodeText(ui.onlineRoomPlayerCountSummary, 'ui.onlineRoomPlayerCountSummary', `Player Count: ${selectedCount}`);
+    const humans = (appState.online.selectedHumanTeams || []).map(displayTeamName);
+    const bots = (appState.online.botTeams || []).map(displayTeamName);
+    const teamsSummary = `Teams: Humans - ${humans.join(', ') || '-'} | Bots - ${bots.join(', ') || '-'}`;
+    setNodeText(ui.onlineRoomTeamsSummary, 'ui.onlineRoomTeamsSummary', teamsSummary);
+  }
   function areAllOnlineHumansReady() {
     const humanPlayers = appState.online.players.filter(p => appState.online.selectedHumanTeams.includes(p.team));
     return humanPlayers.length === appState.online.requiredHumanCount && humanPlayers.every(p => p.ready);
   }
   function renderOnlineLobby() {
     setNodeText(ui.onlineLobbyRoomCode, 'ui.onlineLobbyRoomCode', appState.online.roomCode || '-');
+    setNodeText(ui.onlineLobbyPlayerCount, 'ui.onlineLobbyPlayerCount', `Player Count: ${appState.online.requiredHumanCount || '-'}`);
     setNodeHTML(ui.onlineLobbyPlayerList, 'ui.onlineLobbyPlayerList', appState.online.players.map(p => `${p.name} · ${p.team ? displayTeamName(p.team) : 'Unassigned'} · ${p.ready ? 'Ready' : 'Not Ready'}${p.isHost ? ' (Host)' : ''}`).join('<br/>'));
     setNodeHTML(ui.onlineLobbyTeamList, 'ui.onlineLobbyTeamList', `Humans: ${appState.online.selectedHumanTeams.map(displayTeamName).join(', ')}<br/>Bots: ${appState.online.botTeams.map(displayTeamName).join(', ')}`);
     if (appState.online.requiredHumanCount > 1 && !appState.online.serverConnected) setOnlineLobbyMessage('Waiting for more players. Server join is not connected yet.');
@@ -6983,12 +6997,13 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.createRoomPreviewBtn?.addEventListener('click', () => {
     primeAudioAndPlayButton();
     appState.playMode = 'online';
+    if (!appState.online) appState.online = {};
     if (!appState.online.roomCode) appState.online.roomCode = generateRoomCode();
     if (!appState.online.playerId) appState.online.playerId = generatePlayerId();
     appState.online.isHost = true;
     appState.online.roomStatus = 'lobby';
-    appState.online.requiredHumanCount = getEffectivePlayerCount();
-    appState.online.selectedHumanTeams = selectedHumanTeams.slice();
+    appState.online.requiredHumanCount = appState.matchConfig.playerCount || getEffectivePlayerCount();
+    appState.online.selectedHumanTeams = appState.online.selectedHumanTeams || selectedHumanTeams.slice();
     appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
     appState.online.players = [{ playerId: appState.online.playerId, name: 'Host', team: null, ready: false, connected: true, isHost: true }];
     appState.online.countdownActive = false;
@@ -6999,22 +7014,27 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     primeAudioAndPlayButton();
     const code = (ui.roomCodeInput?.value || '').trim().toUpperCase();
     if (!code) return setOnlineRoomMessage('Enter a room code.');
+    appState.playMode = 'online';
+    if (!appState.online) appState.online = {};
     appState.online.roomCode = code;
     if (!appState.online.playerId) appState.online.playerId = generatePlayerId();
     appState.online.isHost = false;
     appState.online.roomStatus = 'lobby';
+    appState.online.requiredHumanCount = appState.online.requiredHumanCount || appState.matchConfig.playerCount || getEffectivePlayerCount();
+    appState.online.selectedHumanTeams = appState.online.selectedHumanTeams || selectedHumanTeams.slice();
+    appState.online.botTeams = appState.online.botTeams || PLAYERS.filter(team => !appState.online.selectedHumanTeams.includes(team));
     appState.online.players = [{ playerId: appState.online.playerId, name: 'You', team: null, ready: false, connected: true, isHost: false }];
     setScreen('onlineLobby');
     renderOnlineLobby();
-    setOnlineLobbyMessage('Phase 1 preview: real server join is not connected yet.');
+    setOnlineLobbyMessage('Server join is not connected yet. Phase 1 lobby preview loaded.');
   });
   ui.onlineReadyBtn?.addEventListener('click', () => {
     primeAudioAndPlayButton();
     const me = appState.online.players.find(p => p.playerId === appState.online.playerId);
     if (!me) return;
-    me.ready = !me.ready;
+    me.ready = true;
     renderOnlineLobby();
-    if (areAllOnlineHumansReady()) startOnlineCountdown();
+    startOnlineCountdown();
   });
   ui.onlineLobbyBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); });
   ui.copyOnlineRoomCodeBtn?.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomCode || ''); });
@@ -7095,9 +7115,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     if (appState.playMode === 'online') {
       appState.online.selectedHumanTeams = selectedHumanTeams.slice();
       appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
+      appState.online.requiredHumanCount = getEffectivePlayerCount();
+      appState.matchConfig.playerCount = getEffectivePlayerCount();
       const hostPlayer = appState.online.players.find(p => p.playerId === appState.online.playerId);
       if (hostPlayer) hostPlayer.team = selectedHumanTeams[0];
       setScreen('onlineRoom');
+      renderOnlineRoom();
       setOnlineRoomMessage('Create a room or join with a code.');
       return;
     }
@@ -7132,7 +7155,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     originalSetScreen(nextScreen);
-
+    if (nextScreen === 'onlineRoom') renderOnlineRoom();
     if (nextScreen === 'onlineLobby') renderOnlineLobby();
   };
   const originalReturnToMenu = returnToMenu;
