@@ -3965,7 +3965,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     function setScreen(nextScreen) {
-      if (isOnlineFlowActive() && (nextScreen === 'game' || nextScreen === 'loading' || nextScreen === 'teamSelect')) {
+      if (isOnlineFlowActive() && (nextScreen === 'game' || nextScreen === 'loading')) {
         console.warn('BLOCKED ONLINE GAME/LOADING ROUTE', {
           currentScreen: appState.screen,
           requestedScreen: nextScreen,
@@ -3974,7 +3974,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
           matchFlowMode: appState.matchConfig?.flowMode
         });
 
-        nextScreen = nextScreen === 'teamSelect' ? 'onlineRoom' : 'onlineLobby';
+        nextScreen = 'onlineLobby';
       }
       hideGameScreenForOnlineFlow('setScreen guard');
       const currentScreen = appState.screen;
@@ -7221,19 +7221,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       appState.online.requiredHumanCount = selectedCount;
       appState.online.selectedHumanTeams = [];
       appState.online.players = [];
-
-      if (!document.getElementById('screenOnlineRoom')) {
-        const roomSection = document.createElement('section');
-        roomSection.id = 'screenOnlineRoom';
-        roomSection.className = 'screen';
-        roomSection.setAttribute('aria-label', 'Online room');
-        appendSafeElement(ui.appView, roomSection, '#appView screenOnlineRoom');
-      }
-      ui.screens.onlineRoom = document.getElementById('screenOnlineRoom');
-
-      renderOnlineRoom();
-      setScreen('onlineRoom');
-      return;
     }
 
     setScreen('teamSelect');
@@ -7255,69 +7242,49 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     appState.matchConfig.controlMap = getControlMapForHumanTeams(selectedTeams);
   }
 
-  function continueFromTeamSelect(event) {
+  function handleTeamContinue(event) {
     event?.preventDefault?.();
     event?.stopPropagation?.();
     primeAudioAndPlayButton();
-    console.log('TEAM SELECT CONTINUE', {
-      selectedPlayerCount: getEffectivePlayerCount(),
-      selectedHumanTeams
+
+    console.log('Continue clicked', {
+      gameMode: appState.playMode,
+      selectedTeams: selectedHumanTeams
     });
+
+    if (!selectedHumanTeams || selectedHumanTeams.length < 1) {
+      console.warn('Select at least one team before continuing');
+      return;
+    }
+
     if (selectedHumanTeams.length !== getEffectivePlayerCount()) {
       console.warn('Select exactly', getEffectivePlayerCount(), 'teams');
       if (appState.playMode === 'online') alert(`Select exactly ${getEffectivePlayerCount()} human teams.`);
       return;
     }
-    console.log('STARTING GAME WITH', {
-      selectedMode,
-      selectedHumanTeams
-    });
+
+    localStorage.setItem('selectedTeams', JSON.stringify(selectedHumanTeams));
+
     if (appState.playMode === 'online') {
       saveOnlineTeamSelection();
-      renderOnlineRoom();
-      setScreen('onlineRoom');
-      setOnlineRoomMessage('Create a room or join with a code.');
+      renderOnlineLobby();
+      setOnlineLobbyMessage('Waiting for players to ready up.');
+      setScreen('onlineLobby');
       return;
     }
 
-    if (appState.playMode !== 'offline') {
-      console.warn('Blocked team select continue because play mode is invalid for this step.', {
-        playMode: appState.playMode,
-        selectedMode
-      });
-      alert('Please go back and choose Offline Battle or Online Room again.');
+    if (appState.playMode === 'offline') {
+      allowGameScreenDisplay();
+      continueFromDominionSelection();
+      setScreen('game');
       return;
     }
-    const allTeams = ['retsba', 'abster', 'polly', 'pengu'];
-    const matchTeams = allTeams.map(teamId => ({
-      teamId,
-      controlType: selectedHumanTeams.includes(teamId) ? 'human' : 'bot'
-    }));
-    console.log('MATCH TEAMS', matchTeams);
-    continueFromDominionSelection();
+
+    console.error('Unknown gameMode:', appState.playMode);
   }
 
   ui.teamContinueBtn = replaceButtonWithoutListeners(ui.teamContinueBtn);
-  ui.teamContinueBtn.onclick = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    console.log('TEAM CONTINUE CLICK', {
-      playMode: appState.playMode,
-      flowMode: appState.flowMode,
-      matchFlowMode: appState.matchConfig?.flowMode,
-      isOnlineFlow: isOnlineFlowActive()
-    });
-
-    if (isOnlineFlowActive()) {
-      renderOnlineRoom();
-      setScreen('onlineRoom');
-      return;
-    }
-
-    allowGameScreenDisplay();
-    continueFromDominionSelection();
-  };
+  ui.teamContinueBtn.addEventListener('click', handleTeamContinue);
   ui.difficultyNextBtn = replaceButtonWithoutListeners(ui.difficultyNextBtn);
   ui.difficultyNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.tutorialEntry = 'flow'; setScreen('tutorial'); });
   ui.tutorialSkipBtn = replaceButtonWithoutListeners(ui.tutorialSkipBtn);
