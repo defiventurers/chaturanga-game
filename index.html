@@ -3965,7 +3965,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     function setScreen(nextScreen) {
-      if (isOnlineFlowActive() && (nextScreen === 'game' || nextScreen === 'loading' || nextScreen === 'teamSelect')) {
+      if (isOnlineFlowActive() && (nextScreen === 'game' || nextScreen === 'loading')) {
         console.warn('BLOCKED ONLINE GAME/LOADING ROUTE', {
           currentScreen: appState.screen,
           requestedScreen: nextScreen,
@@ -3974,7 +3974,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
           matchFlowMode: appState.matchConfig?.flowMode
         });
 
-        nextScreen = nextScreen === 'teamSelect' ? 'onlineRoom' : 'onlineLobby';
+        nextScreen = 'onlineLobby';
       }
       hideGameScreenForOnlineFlow('setScreen guard');
       const currentScreen = appState.screen;
@@ -7221,19 +7221,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       appState.online.requiredHumanCount = selectedCount;
       appState.online.selectedHumanTeams = [];
       appState.online.players = [];
-
-      if (!document.getElementById('screenOnlineRoom')) {
-        const roomSection = document.createElement('section');
-        roomSection.id = 'screenOnlineRoom';
-        roomSection.className = 'screen';
-        roomSection.setAttribute('aria-label', 'Online room');
-        appendSafeElement(ui.appView, roomSection, '#appView screenOnlineRoom');
-      }
-      ui.screens.onlineRoom = document.getElementById('screenOnlineRoom');
-
-      renderOnlineRoom();
-      setScreen('onlineRoom');
-      return;
     }
 
     setScreen('teamSelect');
