@@ -3930,12 +3930,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     const ALLOWED_SCREEN_TRANSITIONS = {
       cover: ['mainMenu'],
       mainMenu: ['modeSelect', 'howToPlay'],
-      modeSelect: ['mainMenu', 'playerCount', 'onlineRoom'],
+      modeSelect: ['mainMenu', 'playerCount'],
       howToPlay: ['mainMenu'],
-      onlineRoom: ['modeSelect', 'playerCount', 'onlineLobby'],
       playerCount: ['modeSelect', 'teamSelect'],
-      teamSelect: ['playerCount', 'onlineLobby', 'game'],
-      onlineLobby: ['onlineRoom', 'modeSelect', 'game'],
+      teamSelect: ['playerCount', 'onlineRoom', 'game'],
+      onlineRoom: ['teamSelect', 'onlineLobby'],
+      onlineLobby: ['onlineRoom', 'game'],
       game: ['mainMenu', 'playerCount']
     };
 
@@ -5659,7 +5659,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
     ui.menuPlayBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('playerCount');
+      setScreen('onlineLobby');
     });
 
     ui.menuHowBtn.addEventListener('click', () => {
@@ -5970,9 +5970,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   Object.assign(ui, {
     screens: {
       ...ui.screens,
-      playMode: document.getElementById('screenPlayMode'),
-      onlineSetup: document.getElementById('screenOnlineSetup'),
-      lobby: document.getElementById('screenLobby'),
       onlineRoom: document.getElementById('screenOnlineRoom'),
       onlineLobby: document.getElementById('screenOnlineLobby')
     },
@@ -6923,8 +6920,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     setScreen('modeSelect');
   });
   ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
-  ui.menuHowBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('howToPlay'); });
-  ui.howToPlayBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('mainMenu'); });
+  ui.menuHowBtn?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); primeAudioAndPlayButton(); setScreen('howToPlay'); });
+  ui.howToPlayBackBtn?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); primeAudioAndPlayButton(); setScreen('mainMenu'); });
   ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode back tapped'); setScreen('mainMenu'); });
   ui.modeTopBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode back tapped'); setScreen('mainMenu'); });
   let modeToastTimer = null;
@@ -6966,7 +6963,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     if (appState.playMode === 'online') {
-      setScreen('onlineRoom');
+      setScreen('playerCount');
       return;
     }
 
@@ -6981,32 +6978,35 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
   ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(4); });
-  ui.onlineSetupBackBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('modeSelect'); });
-  ui.createRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); setOnlineRoomMessage('Old server flow disabled in Phase 1. Use Create Room on Online Room screen.'); });
-  ui.joinRoomBtn.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); setOnlineRoomMessage('Old server flow disabled in Phase 1. Use Join Room on Online Room screen.'); });
-  ui.copyRoomLinkBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(ui.lobbyShareLinkInput.value); });
-  ui.copyRoomCodeBtn.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomId); });
-  ui.shareRoomBtn.addEventListener('click', async () => { sound.playButtonSound(); const url = ui.lobbyShareLinkInput.value; if (navigator.share) { try { await navigator.share({ title: 'Arctic Dominion Room', url }); } catch (error) {} } else { copyText(url); } });
-  ui.toggleReadyBtn.addEventListener('click', () => { sound.playButtonSound(); const localPlayer = appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId); if (localPlayer) OnlineLobbyController.setReady(!localPlayer.ready); });
-  ui.leaveLobbyBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.leaveRoom(); });
 
-  ui.onlineRoomBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('modeSelect'); });
+  ui.onlineRoomBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('teamSelect'); });
   ui.createRoomPreviewBtn?.addEventListener('click', () => {
     primeAudioAndPlayButton();
     appState.playMode = 'online';
-    appState.online.roomCode = generateRoomCode();
-    appState.online.playerId = generatePlayerId();
+    if (!appState.online.roomCode) appState.online.roomCode = generateRoomCode();
+    if (!appState.online.playerId) appState.online.playerId = generatePlayerId();
     appState.online.isHost = true;
-    appState.online.roomStatus = 'setup';
+    appState.online.roomStatus = 'lobby';
+    appState.online.requiredHumanCount = getEffectivePlayerCount();
+    appState.online.selectedHumanTeams = selectedHumanTeams.slice();
+    appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
     appState.online.players = [{ playerId: appState.online.playerId, name: 'Host', team: null, ready: false, connected: true, isHost: true }];
     appState.online.countdownActive = false;
-    setScreen('playerCount');
+    setScreen('onlineLobby');
+    renderOnlineLobby();
   });
   ui.joinRoomPreviewBtn?.addEventListener('click', () => {
     primeAudioAndPlayButton();
     const code = (ui.roomCodeInput?.value || '').trim().toUpperCase();
     if (!code) return setOnlineRoomMessage('Enter a room code.');
-    if (!appState.online.serverConnected) return setOnlineRoomMessage('Server join is not connected yet. Phase 1 create-room preview is available.');
+    appState.online.roomCode = code;
+    if (!appState.online.playerId) appState.online.playerId = generatePlayerId();
+    appState.online.isHost = false;
+    appState.online.roomStatus = 'lobby';
+    appState.online.players = [{ playerId: appState.online.playerId, name: 'You', team: null, ready: false, connected: true, isHost: false }];
+    setScreen('onlineLobby');
+    renderOnlineLobby();
+    setOnlineLobbyMessage('Phase 1 preview: real server join is not connected yet.');
   });
   ui.onlineReadyBtn?.addEventListener('click', () => {
     primeAudioAndPlayButton();
@@ -7044,7 +7044,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.hitRetsba?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('retsba'); });
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
-  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen(appState.playMode === 'online' ? 'onlineRoom' : 'mainMenu'); renderDominionSelection(); });
+  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
   ui.playerCountContinueBtn?.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -7097,9 +7097,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
       const hostPlayer = appState.online.players.find(p => p.playerId === appState.online.playerId);
       if (hostPlayer) hostPlayer.team = selectedHumanTeams[0];
-      appState.online.roomStatus = 'lobby';
-      setScreen('onlineLobby');
-      renderOnlineLobby();
+      setScreen('onlineRoom');
+      setOnlineRoomMessage('Create a room or join with a code.');
       return;
     }
     const allTeams = ['retsba', 'abster', 'polly', 'pengu'];
