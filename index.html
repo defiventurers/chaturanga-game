@@ -5922,6 +5922,33 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       </div>
     </section>
 
+    <section id="screenOnlineRoom" class="screen" aria-label="Online room">
+      <div class="screen-panel online-room-panel">
+        <h1>Online Room</h1>
+        <p>Create a room or join with a code.</p>
+        <button id="createRoomPreviewBtn" type="button" class="primary">Create Room</button>
+        <div class="join-room-row" style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:12px;">
+          <input id="roomCodeInput" placeholder="Enter room code" autocomplete="off" />
+          <button id="joinRoomPreviewBtn" type="button" class="secondary">Join Room</button>
+        </div>
+        <div id="onlineRoomMessage" aria-live="polite" class="muted-note" style="margin-top:10px;"></div>
+        <button id="onlineRoomBackBtn" type="button" class="ghost" style="margin-top:16px;">Back</button>
+      </div>
+    </section>
+
+    <section id="screenOnlineLobby" class="screen" aria-label="Online lobby">
+      <div class="screen-panel online-lobby-panel">
+        <h1>Room Lobby</h1>
+        <div class="room-code-box">Room Code: <strong id="onlineLobbyRoomCode"></strong> <button id="copyOnlineRoomCodeBtn" type="button">Copy Code</button></div>
+        <div class="online-lobby-section"><h3>Players</h3><div id="onlineLobbyPlayerList"></div></div>
+        <div class="online-lobby-section"><h3>Teams</h3><div id="onlineLobbyTeamList"></div></div>
+        <div id="onlineLobbyMessage" aria-live="polite"></div>
+        <button id="onlineReadyBtn" type="button">Ready</button>
+        <button id="onlineLobbyBackBtn" type="button">Leave Room</button>
+        <div id="onlineCountdown" hidden></div>
+      </div>
+    </section>
+
     <div id="countdownOverlay" class="countdown-screen" aria-hidden="true">
       <div class="countdown-card">
         <div class="eyebrow">Match Start</div>
@@ -5937,7 +5964,9 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       ...ui.screens,
       playMode: document.getElementById('screenPlayMode'),
       onlineSetup: document.getElementById('screenOnlineSetup'),
-      lobby: document.getElementById('screenLobby')
+      lobby: document.getElementById('screenLobby'),
+      onlineRoom: document.getElementById('screenOnlineRoom'),
+      onlineLobby: document.getElementById('screenOnlineLobby')
     },
     playModeChoices: document.getElementById('playModeChoices'),
     playModeBackBtn: document.getElementById('playModeBackBtn'),
@@ -5966,7 +5995,20 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     lobbyConnectionPill: document.getElementById('lobbyConnectionPill'),
     countdownOverlay: document.getElementById('countdownOverlay'),
     countdownValue: document.getElementById('countdownValue'),
-    countdownLabel: document.getElementById('countdownLabel')
+    countdownLabel: document.getElementById('countdownLabel'),
+    createRoomPreviewBtn: document.getElementById('createRoomPreviewBtn'),
+    joinRoomPreviewBtn: document.getElementById('joinRoomPreviewBtn'),
+    roomCodeInput: document.getElementById('roomCodeInput'),
+    onlineRoomMessage: document.getElementById('onlineRoomMessage'),
+    onlineRoomBackBtn: document.getElementById('onlineRoomBackBtn'),
+    onlineLobbyRoomCode: document.getElementById('onlineLobbyRoomCode'),
+    copyOnlineRoomCodeBtn: document.getElementById('copyOnlineRoomCodeBtn'),
+    onlineLobbyPlayerList: document.getElementById('onlineLobbyPlayerList'),
+    onlineLobbyTeamList: document.getElementById('onlineLobbyTeamList'),
+    onlineLobbyMessage: document.getElementById('onlineLobbyMessage'),
+    onlineReadyBtn: document.getElementById('onlineReadyBtn'),
+    onlineLobbyBackBtn: document.getElementById('onlineLobbyBackBtn'),
+    onlineCountdown: document.getElementById('onlineCountdown')
   });
 
   const PRODUCTION_WS_URL = 'wss://chaturanga-game.onrender.com';
@@ -6004,7 +6046,18 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       preferredTeam: 'green',
       localTeam: null,
       roomState: null,
-      errorText: ''
+      errorText: '',
+      roomCode: null,
+      playerId: null,
+      playerName: null,
+      requiredHumanCount: 1,
+      selectedHumanTeams: [],
+      botTeams: [],
+      players: [],
+      readyPlayers: {},
+      countdownActive: false,
+      roomStatus: 'idle',
+      serverConnected: false
     }
   });
 
@@ -6043,6 +6096,48 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       });
       appendSafeElement(container, btn, 'onlinePreferredTeam container');
     });
+  }
+
+
+  function generateRoomCode() { return Math.random().toString(36).slice(2, 7).toUpperCase(); }
+  function generatePlayerId() { return crypto.randomUUID?.() || Math.random().toString(36).slice(2); }
+  function displayTeamName(team) { return team === 'yellow' ? 'Pink' : TEAM_LABEL[team]; }
+  function setOnlineRoomMessage(msg) { if (ui.onlineRoomMessage) setNodeText(ui.onlineRoomMessage, 'ui.onlineRoomMessage', msg || ''); }
+  function setOnlineLobbyMessage(msg) { if (ui.onlineLobbyMessage) setNodeText(ui.onlineLobbyMessage, 'ui.onlineLobbyMessage', msg || ''); }
+  function areAllOnlineHumansReady() {
+    const humanPlayers = appState.online.players.filter(p => appState.online.selectedHumanTeams.includes(p.team));
+    return humanPlayers.length === appState.online.requiredHumanCount && humanPlayers.every(p => p.ready);
+  }
+  function renderOnlineLobby() {
+    setNodeText(ui.onlineLobbyRoomCode, 'ui.onlineLobbyRoomCode', appState.online.roomCode || '-');
+    setNodeHTML(ui.onlineLobbyPlayerList, 'ui.onlineLobbyPlayerList', appState.online.players.map(p => `${p.name} · ${p.team ? displayTeamName(p.team) : 'Unassigned'} · ${p.ready ? 'Ready' : 'Not Ready'}${p.isHost ? ' (Host)' : ''}`).join('<br/>'));
+    setNodeHTML(ui.onlineLobbyTeamList, 'ui.onlineLobbyTeamList', `Humans: ${appState.online.selectedHumanTeams.map(displayTeamName).join(', ')}<br/>Bots: ${appState.online.botTeams.map(displayTeamName).join(', ')}`);
+    if (appState.online.requiredHumanCount > 1 && !appState.online.serverConnected) setOnlineLobbyMessage('Waiting for more players. Server join is not connected yet.');
+  }
+  function startOnlineGameFromLobby() {
+    appState.matchConfig.humanTeams = appState.online.selectedHumanTeams.slice();
+    appState.matchConfig.playerCount = appState.online.requiredHumanCount;
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.online.selectedHumanTeams);
+    startNewMatch();
+  }
+  function startOnlineCountdown() {
+    if (appState.online.countdownActive) return;
+    appState.online.countdownActive = true;
+    appState.online.roomStatus = 'countdown';
+    let value = 5;
+    ui.onlineCountdown.hidden = false;
+    setNodeText(ui.onlineCountdown, 'ui.onlineCountdown', String(value));
+    const timer = setInterval(() => {
+      value -= 1;
+      if (value <= 0) {
+        clearInterval(timer);
+        ui.onlineCountdown.hidden = true;
+        appState.online.countdownActive = false;
+        startOnlineGameFromLobby();
+        return;
+      }
+      setNodeText(ui.onlineCountdown, 'ui.onlineCountdown', String(value));
+    }, 1000);
   }
 
   const TEAM_START_ZONES = DOMINION_START_ZONES;
@@ -6834,7 +6929,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   }
   ui.modeOfflineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: offline tapped'); appState.playMode = 'offline'; selectedMode = 'offline'; renderModeSelectArt(); });
   ui.modeOnlineBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode Select: online tapped'); appState.playMode = 'online'; selectedMode = 'online'; renderModeSelectArt(); });
-  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode continue tapped'); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('playerCount'); renderDominionSelection(); });
+  ui.modeContinueBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode continue tapped'); selectedPlayerCount = null; appState.matchConfig.playerCount = null; if (appState.playMode === 'online') { setScreen('onlineRoom'); setOnlineRoomMessage(''); return; } setScreen('playerCount'); renderDominionSelection(); });
   ui.playerCountOneBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(1); });
   ui.playerCountTwoBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(2); });
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
@@ -6847,6 +6942,36 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.shareRoomBtn.addEventListener('click', async () => { sound.playButtonSound(); const url = ui.lobbyShareLinkInput.value; if (navigator.share) { try { await navigator.share({ title: 'Arctic Dominion Room', url }); } catch (error) {} } else { copyText(url); } });
   ui.toggleReadyBtn.addEventListener('click', () => { sound.playButtonSound(); const localPlayer = appState.online.roomState?.players?.find(player => player.id === appState.online.localPlayerId); if (localPlayer) OnlineLobbyController.setReady(!localPlayer.ready); });
   ui.leaveLobbyBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OnlineLobbyController.leaveRoom(); });
+
+  ui.onlineRoomBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('modeSelect'); });
+  ui.createRoomPreviewBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    appState.playMode = 'online';
+    appState.online.roomCode = generateRoomCode();
+    appState.online.playerId = generatePlayerId();
+    appState.online.isHost = true;
+    appState.online.roomStatus = 'setup';
+    appState.online.players = [{ playerId: appState.online.playerId, name: 'Host', team: null, ready: false, connected: true, isHost: true }];
+    appState.online.countdownActive = false;
+    setScreen('playerCount');
+  });
+  ui.joinRoomPreviewBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    const code = (ui.roomCodeInput?.value || '').trim().toUpperCase();
+    if (!code) return setOnlineRoomMessage('Enter a room code.');
+    if (!appState.online.serverConnected) return setOnlineRoomMessage('Server join is not connected yet. Phase 1 create-room preview is available.');
+  });
+  ui.onlineReadyBtn?.addEventListener('click', () => {
+    primeAudioAndPlayButton();
+    const me = appState.online.players.find(p => p.playerId === appState.online.playerId);
+    if (!me) return;
+    me.ready = !me.ready;
+    renderOnlineLobby();
+    if (areAllOnlineHumansReady()) startOnlineCountdown();
+  });
+  ui.onlineLobbyBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); });
+  ui.copyOnlineRoomCodeBtn?.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomCode || ''); });
+
 
   function toggleOfflineTeam(team) {
     if (selectedTeams.has(team)) selectedTeams.delete(team);
@@ -6872,7 +6997,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.hitRetsba?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('retsba'); });
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
-  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('mainMenu'); renderDominionSelection(); });
+  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen(appState.playMode === 'online' ? 'onlineRoom' : 'mainMenu'); renderDominionSelection(); });
   ui.playerCountContinueBtn?.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -6894,6 +7019,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       return;
     }
     appState.matchConfig.playerCount = effectivePlayerCount;
+    if (appState.playMode === 'online') appState.online.requiredHumanCount = effectivePlayerCount;
     selectedPlayerCount = effectivePlayerCount;
     selectedHumanTeams = [];
     console.log('SETTING SCREEN TO teamSelect');
@@ -6912,12 +7038,23 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     });
     if (selectedHumanTeams.length !== getEffectivePlayerCount()) {
       console.warn('Select exactly', getEffectivePlayerCount(), 'teams');
+      if (appState.playMode === 'online') alert(`Select exactly ${getEffectivePlayerCount()} human teams.`);
       return;
     }
     console.log('STARTING GAME WITH', {
       selectedMode,
       selectedHumanTeams
     });
+    if (appState.playMode === 'online') {
+      appState.online.selectedHumanTeams = selectedHumanTeams.slice();
+      appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
+      const hostPlayer = appState.online.players.find(p => p.playerId === appState.online.playerId);
+      if (hostPlayer) hostPlayer.team = selectedHumanTeams[0];
+      appState.online.roomStatus = 'lobby';
+      setScreen('onlineLobby');
+      renderOnlineLobby();
+      return;
+    }
     const allTeams = ['retsba', 'abster', 'polly', 'pengu'];
     const matchTeams = allTeams.map(teamId => ({
       teamId,
