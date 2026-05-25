@@ -3925,10 +3925,9 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
     const ALLOWED_SCREEN_TRANSITIONS = {
       cover: ['mainMenu'],
-      mainMenu: ['modeSelect', 'howToPlay'],
-      modeSelect: ['mainMenu', 'playerCount'],
+      mainMenu: ['playerCount', 'howToPlay'],
       howToPlay: ['mainMenu'],
-      playerCount: ['modeSelect', 'teamSelect'],
+      playerCount: ['mainMenu', 'teamSelect'],
       teamSelect: ['playerCount', 'game'],
       game: ['mainMenu', 'playerCount']
     };
@@ -3981,8 +3980,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       });
 
       setNodeText(ui.tutorialBackBtn, 'ui.tutorialBackBtn', appState.tutorialEntry === 'menu' ? 'Back to Menu' : 'Back');
-      const isDominionOfflineMode = localStorage.getItem('offlineMode') === 'true';
-      if (isDominionOfflineMode && appState.playMode === 'offline') {
+      if (appState.playMode === 'offline') {
         setNodeText(ui.loadingText, 'ui.loadingText', `Preparing a ${appState.matchConfig.playerCount}-team offline match.`);
       } else {
         setNodeText(ui.loadingText, 'ui.loadingText', `Preparing a ${appState.matchConfig.playerCount}-player match with ${capitalize(appState.matchConfig.botDifficulty)} bots where needed.`);
@@ -6229,8 +6227,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     localStorage.setItem('selectedTeamStartZones', JSON.stringify(selectedTeamStartZones));
     localStorage.setItem('teamStartZonesByInternal', JSON.stringify(teamStartZonesByInternal));
     localStorage.setItem('offlinePlayers', JSON.stringify(offlinePlayers));
-    localStorage.setItem('offlineMode', 'true');
-    localStorage.setItem('playerCount', String(selectedInternalTeams.length));
+        localStorage.setItem('playerCount', String(selectedInternalTeams.length));
     localStorage.setItem('offlinePlayerCount', String(selectedInternalTeams.length));
 
     console.log('Mappings check:', { DOMINION_TO_INTERNAL_TEAM, COLOR_TO_INTERNAL_TEAM, DOMINION_TO_START_ZONE });
@@ -6819,7 +6816,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     selectedPlayerCount = null;
     appState.matchConfig.playerCount = null;
     renderModeSelectArt();
-    setScreen('modeSelect');
+    setScreen('playerCount');
     renderDominionSelection();
   });
   ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
@@ -6875,7 +6872,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.hitRetsba?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('retsba'); });
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
-  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
+  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('mainMenu'); renderDominionSelection(); });
   ui.playerCountContinueBtn?.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -6972,7 +6969,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     syncMobileCollapsibles();
     renderAppScreen();
     resetTutorialScenario();
-  if (autoRoomId) { appState.playMode = 'online'; setScreen('onlineSetup'); renderAppScreen(); }
+
 })();
 </script>
 
