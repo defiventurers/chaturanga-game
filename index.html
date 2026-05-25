@@ -3932,11 +3932,11 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     const ALLOWED_SCREEN_TRANSITIONS = {
       cover: ['mainMenu'],
       mainMenu: ['modeSelect', 'howToPlay'],
-      modeSelect: ['mainMenu', 'playerCount'],
       howToPlay: ['mainMenu'],
-      playerCount: ['modeSelect', 'teamSelect'],
-      teamSelect: ['playerCount', 'onlineRoom', 'game'],
-      onlineRoom: ['teamSelect', 'onlineLobby'],
+      modeSelect: ['mainMenu', 'playerCount'],
+      playerCount: ['modeSelect', 'teamSelect', 'onlineRoom'],
+      teamSelect: ['playerCount', 'game'],
+      onlineRoom: ['playerCount', 'onlineLobby'],
       onlineLobby: ['onlineRoom'],
       game: ['mainMenu', 'playerCount']
     };
@@ -3965,7 +3965,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     function setScreen(nextScreen) {
-      if (isOnlineFlowActive() && (nextScreen === 'game' || nextScreen === 'loading')) {
+      if (isOnlineFlowActive() && (nextScreen === 'game' || nextScreen === 'loading' || nextScreen === 'teamSelect')) {
         console.warn('BLOCKED ONLINE GAME/LOADING ROUTE', {
           currentScreen: appState.screen,
           requestedScreen: nextScreen,
@@ -3974,7 +3974,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
           matchFlowMode: appState.matchConfig?.flowMode
         });
 
-        nextScreen = appState.screen === 'teamSelect' ? 'onlineRoom' : 'onlineLobby';
+        nextScreen = nextScreen === 'teamSelect' ? 'onlineRoom' : 'onlineLobby';
       }
       hideGameScreenForOnlineFlow('setScreen guard');
       const currentScreen = appState.screen;
@@ -6209,10 +6209,18 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   function renderOnlineLobby() {
     hideGameScreenForOnlineFlow('renderOnlineLobby');
     setNodeText(ui.onlineLobbyRoomCode, 'ui.onlineLobbyRoomCode', appState.online.roomCode || '-');
-    setNodeText(ui.onlineLobbyPlayerCount, 'ui.onlineLobbyPlayerCount', `Player Count: ${appState.online.requiredHumanCount || '-'}`);
+    setNodeText(ui.onlineLobbyPlayerCount, 'ui.onlineLobbyPlayerCount', `Player Count: ${appState.online.players.length}/${appState.online.requiredHumanCount || '-'}`);
     setNodeHTML(ui.onlineLobbyPlayerList, 'ui.onlineLobbyPlayerList', appState.online.players.map(p => `${p.name} · ${p.team ? displayTeamName(p.team) : 'Unassigned'} · ${p.ready ? 'Ready' : 'Not Ready'}${p.isHost ? ' (Host)' : ''}`).join('<br/>'));
-    setNodeHTML(ui.onlineLobbyTeamList, 'ui.onlineLobbyTeamList', `Humans: ${appState.online.selectedHumanTeams.map(displayTeamName).join(', ')}<br/>Bots: ${appState.online.botTeams.map(displayTeamName).join(', ')}`);
-    setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
+    const me = appState.online.players.find(p => p.id === appState.online.playerId);
+    const teamCards = TEAM_ORDER.map((team) => {
+      const takenByOther = appState.online.players.some(p => p.id !== me?.id && p.team === team);
+      const selected = me?.team === team;
+      const disabledAttr = takenByOther ? 'disabled' : '';
+      const selectedClass = selected ? ' selected' : '';
+      const takenLabel = takenByOther ? ' (Taken)' : '';
+      return `<button type="button" class="choice-card${selectedClass}" data-online-team="${team}" ${disabledAttr}>${displayTeamName(team)}${takenLabel}</button>`;
+    }).join('');
+    setNodeHTML(ui.onlineLobbyTeamList, 'ui.onlineLobbyTeamList', teamCards);
   }
   function startOnlineGameFromLobby() {
     appState.online.countdownActive = false;
@@ -7079,7 +7087,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
   ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(4); });
 
-  ui.onlineRoomBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('teamSelect'); });
+  ui.onlineRoomBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
   ui.createRoomPreviewBtn?.addEventListener('click', () => {
     primeAudioAndPlayButton();
     appState.playMode = 'online';
@@ -7089,9 +7097,9 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     appState.online.isHost = true;
     appState.online.roomStatus = 'lobby';
     appState.online.requiredHumanCount = appState.matchConfig.playerCount || getEffectivePlayerCount();
-    appState.online.selectedHumanTeams = appState.online.selectedHumanTeams || selectedHumanTeams.slice();
+    appState.online.selectedHumanTeams = [];
     appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
-    appState.online.players = [{ playerId: appState.online.playerId, name: 'Host', team: null, ready: false, connected: true, isHost: true }];
+    appState.online.players = [{ id: appState.online.playerId, name: 'Host', team: null, ready: false, connected: true, isHost: true }];
     appState.online.countdownActive = false;
     setScreen('onlineLobby');
     renderOnlineLobby();
@@ -7107,20 +7115,48 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     appState.online.isHost = false;
     appState.online.roomStatus = 'lobby';
     appState.online.requiredHumanCount = appState.online.requiredHumanCount || appState.matchConfig.playerCount || getEffectivePlayerCount();
-    appState.online.selectedHumanTeams = appState.online.selectedHumanTeams || selectedHumanTeams.slice();
+    appState.online.selectedHumanTeams = [];
     appState.online.botTeams = appState.online.botTeams || PLAYERS.filter(team => !appState.online.selectedHumanTeams.includes(team));
-    appState.online.players = [{ playerId: appState.online.playerId, name: 'You', team: null, ready: false, connected: true, isHost: false }];
+    appState.online.players = [{ id: appState.online.playerId, name: 'You', team: null, ready: false, connected: true, isHost: false }];
     setScreen('onlineLobby');
     renderOnlineLobby();
     setOnlineLobbyMessage('Server join is not connected yet. Phase 1 lobby preview loaded.');
   });
+  function selectOnlineLobbyTeam(team) {
+    ensureOnlineState();
+    const currentPlayer = appState.online.players.find(player => player.id === appState.online.playerId);
+    if (!currentPlayer) return;
+    const takenByOther = appState.online.players.some(player => player.id !== currentPlayer.id && player.team === team);
+    if (takenByOther) {
+      setOnlineLobbyMessage('That team is already taken.');
+      return;
+    }
+    currentPlayer.team = team;
+    appState.online.selectedHumanTeams = appState.online.players.map(player => player.team).filter(Boolean);
+    appState.matchConfig.humanTeams = appState.online.selectedHumanTeams;
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.online.selectedHumanTeams);
+    setOnlineLobbyMessage(`${TEAM_LABEL[team]} selected.`);
+    renderOnlineLobby();
+  }
+
   ui.onlineReadyBtn?.addEventListener('click', () => {
     primeAudioAndPlayButton();
-    const me = appState.online.players.find(p => p.playerId === appState.online.playerId);
+    const me = appState.online.players.find(p => p.id === appState.online.playerId);
     if (!me) return;
+    if (!me.team) {
+      setOnlineLobbyMessage('Choose a team before readying up.');
+      return;
+    }
     me.ready = !me.ready;
+    if (ui.onlineReadyBtn) ui.onlineReadyBtn.textContent = me.ready ? 'Unready' : 'Ready';
     renderOnlineLobby();
     setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
+  });
+  ui.onlineLobbyTeamList?.addEventListener('click', (event) => {
+    const target = event.target.closest('[data-online-team]');
+    if (!target || target.disabled) return;
+    primeAudioAndPlayButton();
+    selectOnlineLobbyTeam(target.getAttribute('data-online-team'));
   });
   ui.onlineLobbyBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); setOnlineLobbyMessage(''); });
   ui.copyOnlineRoomCodeBtn?.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomCode || ''); });
@@ -7155,35 +7191,26 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     event.preventDefault();
     event.stopPropagation();
     primeAudioAndPlayButton();
-    const effectivePlayerCount = getEffectivePlayerCount() ?? (isValidPlayerCount(selectedPlayerCount) ? Number(selectedPlayerCount) : null);
-    console.log('PLAYER COUNT CONTINUE CLICKED', {
-      selectedPlayerCount: effectivePlayerCount,
-      type: typeof effectivePlayerCount,
-      currentScreen: appState.screen
-    });
-    console.log('PLAYER COUNT CONTINUE CLICKED', effectivePlayerCount);
 
-    if (!isValidPlayerCount(effectivePlayerCount)) {
-      console.warn('Invalid player count for team select:', {
-        canonicalPlayerCount: appState.matchConfig.playerCount,
-        legacySelectedPlayerCount: selectedPlayerCount,
-        effectivePlayerCount
-      });
+    if (!appState.matchConfig.playerCount) {
+      showModeToast?.('Choose player count first.');
       return;
     }
-    appState.matchConfig.playerCount = effectivePlayerCount;
+
     if (isOnlineFlowActive()) {
+      ensureOnlineState();
+      appState.playMode = 'online';
       appState.flowMode = 'online';
       appState.matchConfig.flowMode = 'online';
-      appState.playMode = 'online';
-      appState.online.requiredHumanCount = effectivePlayerCount;
-      console.log('FLOW MODE STILL online');
+      appState.online.requiredHumanCount = appState.matchConfig.playerCount;
+      appState.online.selectedHumanTeams = [];
+      appState.online.botTeams = PLAYERS.slice();
+      renderOnlineRoom();
+      setScreen('onlineRoom');
+      return;
     }
-    selectedPlayerCount = effectivePlayerCount;
-    selectedHumanTeams = [];
-    console.log('SETTING SCREEN TO teamSelect');
+
     setScreen('teamSelect');
-    renderDominionSelection();
   });
   ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
 
@@ -7257,27 +7284,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     });
 
     if (isOnlineFlowActive()) {
-      appState.playMode = 'online';
-      appState.flowMode = 'online';
-      appState.matchConfig.flowMode = 'online';
-
-      const expected = getEffectivePlayerCount();
-      if (selectedHumanTeams.length !== expected) {
-        alert(`Select exactly ${expected} human teams.`);
-        return;
-      }
-
-      saveOnlineTeamSelection();
       renderOnlineRoom();
-      hideGameScreenForOnlineFlow('online team continue');
       setScreen('onlineRoom');
-      console.log('SCREEN ACTIVE CHECK', {
-        appScreen: appState.screen,
-        screenGameActive: document.getElementById('screenGame')?.classList.contains('active'),
-        screenGameDisplay: document.getElementById('screenGame')?.style.display,
-        onlineRoomActive: document.getElementById('screenOnlineRoom')?.classList.contains('active'),
-        onlineLobbyActive: document.getElementById('screenOnlineLobby')?.classList.contains('active')
-      });
       return;
     }
 
