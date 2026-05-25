@@ -3949,9 +3949,24 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       );
     }
 
+    function hideGameScreenForOnlineFlow(reason = '') {
+      if (!isOnlineFlowActive()) return;
+      const gameScreen = document.getElementById('screenGame');
+      if (gameScreen) {
+        gameScreen.classList.remove('active');
+        gameScreen.style.display = 'none';
+      }
+      console.warn('Forced #screenGame hidden during online flow:', reason);
+    }
+
+    function allowGameScreenDisplay() {
+      const gameScreen = document.getElementById('screenGame');
+      if (gameScreen) gameScreen.style.display = '';
+    }
+
     function setScreen(nextScreen) {
       if (isOnlineFlowActive() && (nextScreen === 'game' || nextScreen === 'loading')) {
-        console.warn('Blocked online flow from opening game/loading screen.', {
+        console.warn('BLOCKED ONLINE GAME/LOADING ROUTE', {
           currentScreen: appState.screen,
           requestedScreen: nextScreen,
           playMode: appState.playMode,
@@ -3961,6 +3976,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
         nextScreen = appState.screen === 'teamSelect' ? 'onlineRoom' : 'onlineLobby';
       }
+      hideGameScreenForOnlineFlow('setScreen guard');
       const currentScreen = appState.screen;
       if (currentScreen === nextScreen) return;
       console.log('SCREEN TRANSITION REQUEST', {
@@ -3984,9 +4000,15 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       }
       appState.screen = nextScreen;
       console.log('CURRENT SCREEN:', appState.screen);
-      Object.entries(ui.screens).forEach(([key, element]) => {
-        element.classList.toggle('active', key === nextScreen);
+      document.querySelectorAll('.screen').forEach((screenEl) => {
+        screenEl.classList.remove('active');
       });
+      const nextScreenEl = ui.screens[nextScreen];
+      if (!nextScreenEl) {
+        console.error('Missing screen element for:', nextScreen);
+        return;
+      }
+      nextScreenEl.classList.add('active');
       renderAppScreen();
       if (nextScreen === 'game') {
         requestAnimationFrame(() => {
@@ -5963,13 +5985,13 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
     <section id="screenOnlineRoom" class="screen" aria-label="Online room">
       <div class="screen-panel online-room-panel">
-        <h1>Online Room</h1>
+        <h1 style="font-size:3rem;">ONLINE ROOM</h1>
         <p id="onlineRoomPlayerCountSummary">Player Count: -</p>
         <p id="onlineRoomTeamsSummary">Teams: -</p>
-        <button id="createRoomPreviewBtn" type="button" class="primary">Create Room</button>
+        <button id="createRoomPreviewBtn" type="button" class="primary" style="font-size:1.5rem;">Create Room</button>
         <div class="join-room-row" style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:12px;">
           <input id="roomCodeInput" placeholder="Enter room code" autocomplete="off" />
-          <button id="joinRoomPreviewBtn" type="button" class="secondary">Join Room</button>
+          <button id="joinRoomPreviewBtn" type="button" class="secondary" style="font-size:1.5rem;">Join Room</button>
         </div>
         <div id="onlineRoomMessage" aria-live="polite" class="muted-note" style="margin-top:10px;"></div>
         <button id="onlineRoomBackBtn" type="button" class="ghost" style="margin-top:16px;">Back</button>
@@ -5978,7 +6000,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
     <section id="screenOnlineLobby" class="screen" aria-label="Online lobby">
       <div class="screen-panel online-lobby-panel">
-        <h1>Online Lobby</h1>
+        <h1 style="font-size:3rem;">ONLINE LOBBY</h1>
         <div class="room-code-box">Room Code: <strong id="onlineLobbyRoomCode"></strong> <button id="copyOnlineRoomCodeBtn" type="button">Copy Code</button></div>
         <div id="onlineLobbyPlayerCount"></div>
         <div class="online-lobby-section"><h3>Players</h3><div id="onlineLobbyPlayerList"></div></div>
@@ -5999,6 +6021,31 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     </div>
   `;
   appendSafeElement(ui.appView, injectedMarkup, '#appView', true);
+
+  if (!document.getElementById('screenOnlineRoom')) {
+    const roomSection = document.createElement('section');
+    roomSection.id = 'screenOnlineRoom';
+    roomSection.className = 'screen';
+    roomSection.setAttribute('aria-label', 'Online room');
+    roomSection.innerHTML = '<div class="screen-panel online-room-panel"><h1 style="font-size:3rem;">ONLINE ROOM</h1><p style="font-size:1.4rem;">Create Room</p><p style="font-size:1.4rem;">Join Room</p></div>';
+    appendSafeElement(ui.appView, roomSection, '#appView screenOnlineRoom');
+  }
+  if (!document.getElementById('screenOnlineLobby')) {
+    const lobbySection = document.createElement('section');
+    lobbySection.id = 'screenOnlineLobby';
+    lobbySection.className = 'screen';
+    lobbySection.setAttribute('aria-label', 'Online lobby');
+    lobbySection.innerHTML = '<div class="screen-panel online-lobby-panel"><h1 style="font-size:3rem;">ONLINE LOBBY</h1></div>';
+    appendSafeElement(ui.appView, lobbySection, '#appView screenOnlineLobby');
+  }
+
+  ui.screens.onlineRoom = document.getElementById('screenOnlineRoom');
+  ui.screens.onlineLobby = document.getElementById('screenOnlineLobby');
+  console.log('ONLINE SCREEN CHECK', {
+    onlineRoom: Boolean(ui.screens.onlineRoom),
+    onlineLobby: Boolean(ui.screens.onlineLobby),
+    game: Boolean(ui.screens.game)
+  });
 
   Object.assign(ui, {
     screens: {
@@ -6147,6 +6194,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   function setOnlineRoomMessage(msg) { if (ui.onlineRoomMessage) setNodeText(ui.onlineRoomMessage, 'ui.onlineRoomMessage', msg || ''); }
   function setOnlineLobbyMessage(msg) { if (ui.onlineLobbyMessage) setNodeText(ui.onlineLobbyMessage, 'ui.onlineLobbyMessage', msg || ''); }
   function renderOnlineRoom() {
+    hideGameScreenForOnlineFlow('renderOnlineRoom');
     const selectedCount = appState.online.requiredHumanCount || getEffectivePlayerCount() || '-';
     setNodeText(ui.onlineRoomPlayerCountSummary, 'ui.onlineRoomPlayerCountSummary', `Player Count: ${selectedCount}`);
     const humans = (appState.online.selectedHumanTeams || []).map(displayTeamName);
@@ -6159,6 +6207,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     return humanPlayers.length === appState.online.requiredHumanCount && humanPlayers.every(p => p.ready);
   }
   function renderOnlineLobby() {
+    hideGameScreenForOnlineFlow('renderOnlineLobby');
     setNodeText(ui.onlineLobbyRoomCode, 'ui.onlineLobbyRoomCode', appState.online.roomCode || '-');
     setNodeText(ui.onlineLobbyPlayerCount, 'ui.onlineLobbyPlayerCount', `Player Count: ${appState.online.requiredHumanCount || '-'}`);
     setNodeHTML(ui.onlineLobbyPlayerList, 'ui.onlineLobbyPlayerList', appState.online.players.map(p => `${p.name} · ${p.team ? displayTeamName(p.team) : 'Unassigned'} · ${p.ready ? 'Ready' : 'Not Ready'}${p.isHost ? ' (Host)' : ''}`).join('<br/>'));
@@ -6327,6 +6376,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       setScreen('onlineRoom');
       return;
     }
+    allowGameScreenDisplay();
     console.log('Continue clicked');
     const selectedDominions = Array.from(selectedTeams).filter((team) => DOMINION_ORDER.includes(team));
     if (selectedDominions.length !== getEffectivePlayerCount()) {
@@ -7199,19 +7249,14 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     event.preventDefault();
     event.stopPropagation();
 
-    const isOnlineFlow =
-      appState.flowMode === 'online' ||
-      appState.matchConfig?.flowMode === 'online' ||
-      appState.playMode === 'online';
-
-    console.log('TEAM CONTINUE FLOW CHECK', {
+    console.log('TEAM CONTINUE CLICK', {
       playMode: appState.playMode,
       flowMode: appState.flowMode,
       matchFlowMode: appState.matchConfig?.flowMode,
-      isOnlineFlow
+      isOnlineFlow: isOnlineFlowActive()
     });
 
-    if (isOnlineFlow) {
+    if (isOnlineFlowActive()) {
       appState.playMode = 'online';
       appState.flowMode = 'online';
       appState.matchConfig.flowMode = 'online';
@@ -7222,13 +7267,21 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
         return;
       }
 
-      localStorage.setItem('selectedTeams', JSON.stringify(selectedHumanTeams));
       saveOnlineTeamSelection();
       renderOnlineRoom();
+      hideGameScreenForOnlineFlow('online team continue');
       setScreen('onlineRoom');
+      console.log('SCREEN ACTIVE CHECK', {
+        appScreen: appState.screen,
+        screenGameActive: document.getElementById('screenGame')?.classList.contains('active'),
+        screenGameDisplay: document.getElementById('screenGame')?.style.display,
+        onlineRoomActive: document.getElementById('screenOnlineRoom')?.classList.contains('active'),
+        onlineLobbyActive: document.getElementById('screenOnlineLobby')?.classList.contains('active')
+      });
       return;
     }
 
+    allowGameScreenDisplay();
     continueFromDominionSelection();
   };
   ui.difficultyNextBtn = replaceButtonWithoutListeners(ui.difficultyNextBtn);
