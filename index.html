@@ -5842,7 +5842,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
   const injectedMarkup = document.createElement('div');
   injectedMarkup.innerHTML = `
-    <section id="screenPlayMode" class="screen" aria-label="Play mode selection">
+    <section id="screenPlayMode" class="screen" aria-label="Play mode selection" hidden data-disabled-path="legacy-online">
       <div class="screen-panel">
         <div class="eyebrow">Setup</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Choose Play Mode</h1>
@@ -5855,7 +5855,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       </div>
     </section>
 
-    <section id="screenOnlineSetup" class="screen" aria-label="Online room setup">
+    <section id="screenOnlineSetup" class="screen" aria-label="Online room setup" hidden data-disabled-path="legacy-online">
       <div class="screen-panel">
         <div class="eyebrow">Online Play</div>
         <h1 style="font-size:2.1rem; line-height:1.08;">Create or Join a Frost Room</h1>
@@ -5894,7 +5894,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       </div>
     </section>
 
-    <section id="screenLobby" class="screen" aria-label="Online lobby">
+    <section id="screenLobby" class="screen" aria-label="Online lobby" hidden data-disabled-path="legacy-online">
       <div class="screen-panel">
         <div class="eyebrow">Lobby</div>
         <div class="lobby-headline">
@@ -6140,29 +6140,15 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
   }
   function startOnlineGameFromLobby() {
-    appState.matchConfig.humanTeams = appState.online.selectedHumanTeams.slice();
-    appState.matchConfig.playerCount = appState.online.requiredHumanCount;
-    appState.matchConfig.controlMap = getControlMapForHumanTeams(appState.online.selectedHumanTeams);
-    startNewMatch();
+    appState.online.countdownActive = false;
+    setScreen('onlineLobby');
+    renderOnlineLobby();
+    setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
   }
   function startOnlineCountdown() {
-    if (appState.online.countdownActive) return;
-    appState.online.countdownActive = true;
-    appState.online.roomStatus = 'countdown';
-    let value = 5;
-    ui.onlineCountdown.hidden = false;
-    setNodeText(ui.onlineCountdown, 'ui.onlineCountdown', String(value));
-    const timer = setInterval(() => {
-      value -= 1;
-      if (value <= 0) {
-        clearInterval(timer);
-        ui.onlineCountdown.hidden = true;
-        appState.online.countdownActive = false;
-        startOnlineGameFromLobby();
-        return;
-      }
-      setNodeText(ui.onlineCountdown, 'ui.onlineCountdown', String(value));
-    }, 1000);
+    appState.online.countdownActive = false;
+    if (ui.onlineCountdown) ui.onlineCountdown.hidden = true;
+    setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
   }
 
   const TEAM_START_ZONES = DOMINION_START_ZONES;
@@ -6830,8 +6816,9 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
         appState.online.isHost = !!me?.isHost;
         appState.online.roomState = data.roomState || appState.online.roomState;
         if (appState.online.roomState) setControlMapForOnline(appState.online.roomState);
-        resetGame();
-        setScreen('game');
+        setScreen('onlineLobby');
+        renderOnlineLobby();
+        setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
         renderAppScreen();
       }
       if (payload.type === 'match_state') {
@@ -7041,7 +7028,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     renderOnlineLobby();
     setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
   });
-  ui.onlineLobbyBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); });
+  ui.onlineLobbyBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); setOnlineLobbyMessage(''); });
   ui.copyOnlineRoomCodeBtn?.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomCode || ''); });
 
 
@@ -7166,12 +7153,19 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.restartMatchBtn = replaceButtonWithoutListeners(ui.restartMatchBtn);
   ui.restartMatchBtn.addEventListener('click', () => { if (appState.playMode === 'online') return; primeAudioAndPlayButton(); setScreen('loading'); clearTimeout(appState.loadingTimer); appState.loadingTimer = setTimeout(() => { originalStartNewMatch(); }, 650); });
   ui.returnMenuBtn = replaceButtonWithoutListeners(ui.returnMenuBtn);
-  ui.returnMenuBtn.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode === 'online') { MultiplayerService.disconnect(); appState.online.roomState = null; appState.online.roomId = ''; appState.online.localTeam = null; } returnToMenu(); });
+  ui.returnMenuBtn.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode === 'online') { MultiplayerService.disconnect(); appState.online.roomState = null; appState.online.roomId = ''; appState.online.localTeam = null; appState.online.countdownActive = false; } returnToMenu(); });
 
   const originalSetScreen = setScreen;
   setScreen = function(nextScreen) {
     if (nextScreen === 'onlineSetup' || nextScreen === 'lobby' || nextScreen === 'playMode') {
       console.warn('Old online screen blocked in Phase 1:', nextScreen);
+      return;
+    }
+    if (appState.playMode === 'online' && (nextScreen === 'game' || nextScreen === 'loading')) {
+      console.warn('Online preview blocks game/loading transition:', nextScreen);
+      setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
+      originalSetScreen('onlineLobby');
+      renderOnlineLobby();
       return;
     }
 
