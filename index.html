@@ -3972,6 +3972,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
   function renderAppScreen() {
       console.log('Current menu screen:', appState.screen);
+      if (appState.screen === 'modeSelect') renderModeSelectArt();
       if (ui.menuSummaryPlayers) setNodeText(ui.menuSummaryPlayers, 'ui.menuSummaryPlayers', `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`);
       if (ui.menuSummaryDifficulty) setNodeText(ui.menuSummaryDifficulty, 'ui.menuSummaryDifficulty', capitalize(appState.matchConfig.botDifficulty));
       if (ui.menuSummaryControl) setNodeText(ui.menuSummaryControl, 'ui.menuSummaryControl', getControlSummaryText(appState.matchConfig.controlMap));
@@ -6179,7 +6180,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
   function renderModeSelectArt() {
     if (!ui.modeSelectArt) return;
-    ui.modeSelectArt.src = selectedMode === 'online'
+    ui.modeSelectArt.src = appState.playMode === 'online'
       ? '/assets/screens/mode-online-selected.png'
       : '/assets/screens/mode-offline-selected.png';
     if (ui.modeSelectBg) ui.modeSelectBg.src = ui.modeSelectArt.src;
