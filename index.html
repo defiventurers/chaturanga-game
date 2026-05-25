@@ -2323,7 +2323,7 @@
       flex-direction: column;
       overflow-x: hidden;
       overflow: hidden;
-      background: #c9f3ff;
+      background: transparent;
     }
     #screenGame .arctic-game-shell {
       width: 100%;
@@ -3967,7 +3967,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
         element.classList.toggle('active', key === nextScreen);
       });
       renderAppScreen();
-      if (nextScreen === 'game') render();
+      if (nextScreen === 'game') {
+        requestAnimationFrame(() => {
+          render();
+          applyGameHitboxes();
+        });
+      }
     }
 
   function renderAppScreen() {
