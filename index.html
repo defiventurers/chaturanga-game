@@ -2631,6 +2631,7 @@
       </div>
     </section>
 
+    <!-- LEGACY UNUSED: remove after gameplay verification -->
     <section id="screenDifficulty" class="screen" aria-label="Difficulty selection">
       <div class="screen-panel">
         <div class="eyebrow">Setup</div>
@@ -2644,6 +2645,7 @@
       </div>
     </section>
 
+    <!-- LEGACY UNUSED: remove after gameplay verification -->
     <section id="screenTutorial" class="screen" aria-label="Tutorial screen">
       <div class="screen-panel">
         <div class="eyebrow">How To Play</div>
@@ -2697,6 +2699,7 @@
       </div>
     </section>
 
+    <!-- LEGACY UNUSED: remove after gameplay verification -->
     <section id="screenLoading" class="screen" aria-label="Loading screen">
       <div class="screen-panel loading-card">
         <div class="loading-wrap">
@@ -3929,20 +3932,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       sound.playButtonSound();
     }
 
-    const ALLOWED_SCREEN_TRANSITIONS = {
-      cover: ['mainMenu'],
-      mainMenu: ['modeSelect', 'howToPlay'],
-      howToPlay: ['mainMenu'],
-      modeSelect: ['mainMenu', 'playerCount'],
-      playerCount: ['modeSelect', 'teamSelect'],
-      teamSelect: ['playerCount', 'loading', 'onlineRoom'],
-      loading: ['game', 'playerCount', 'mainMenu'],
-      onlineRoom: ['teamSelect', 'onlineLobby', 'playerCount'],
-      onlineLobby: ['onlineRoom', 'playerCount'],
-      game: ['mainMenu', 'playerCount']
-    };
 
-    function isOnlineFlowActive() {
+function isOnlineFlowActive() {
       return (
         appState.flowMode === 'online' ||
         appState.matchConfig?.flowMode === 'online' ||
@@ -3950,63 +3941,10 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       );
     }
 
-    function hideGameScreenForOnlineFlow(reason = '') {
-      if (!isOnlineFlowActive()) return;
-      const gameScreen = document.getElementById('screenGame');
-      if (gameScreen) {
-        gameScreen.classList.remove('active');
-        gameScreen.style.display = 'none';
-      }
-      console.warn('Forced #screenGame hidden during online flow:', reason);
-    }
 
-    function allowGameScreenDisplay() {
-      const gameScreen = document.getElementById('screenGame');
-      if (gameScreen) gameScreen.style.display = '';
-    }
 
-    function setScreen(nextScreen) {
-      const currentScreen = appState.screen;
-      if (currentScreen === nextScreen) return;
-      const nextScreenEl = ui.screens[nextScreen];
-      if (!nextScreenEl) {
-        console.error('Missing screen element for:', nextScreen);
-        return;
-      }
-      console.log('Screen transition', { from: currentScreen, to: nextScreen });
-      const allowed = ALLOWED_SCREEN_TRANSITIONS[currentScreen] || [];
-      if (!allowed.includes(nextScreen)) {
-        console.error('SCREEN TRANSITION BLOCKED', {
-          currentScreen,
-          nextScreen,
-          allowed: ALLOWED_SCREEN_TRANSITIONS[currentScreen],
-          playMode: appState.playMode,
-          flowMode: appState.flowMode,
-          matchFlowMode: appState.matchConfig?.flowMode
-        });
-        console.warn('Blocked invalid screen transition', {
-          currentScreen,
-          nextScreen,
-          allowed
-        });
-        return;
-      }
-      appState.screen = nextScreen;
-      console.log('CURRENT SCREEN:', appState.screen);
-      document.querySelectorAll('.screen').forEach((screenEl) => {
-        screenEl.classList.remove('active');
-      });
-      nextScreenEl.classList.add('active');
-      renderAppScreen();
-      if (nextScreen === 'game') {
-        requestAnimationFrame(() => {
-          render();
-          applyGameHitboxes();
-        });
-      }
-    }
 
-  function renderAppScreen() {
+function renderAppScreen() {
       console.log('Current menu screen:', appState.screen);
       if (appState.screen === 'modeSelect') renderModeSelectArt();
       if (ui.menuSummaryPlayers) setNodeText(ui.menuSummaryPlayers, 'ui.menuSummaryPlayers', `${appState.matchConfig.playerCount} Player${appState.matchConfig.playerCount > 1 ? 's' : ''}`);
@@ -4124,12 +4062,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     function scheduleSplashAdvance() {
       clearTimeout(appState.splashTimer);
       appState.splashTimer = setTimeout(() => {
-        if (appState.screen === 'cover') setScreen('mainMenu');
+        if (appState.screen === 'cover') showScreen('mainMenu');
       }, 1400);
     }
 
     function beginMatchFlowFromTutorial() {
-      setScreen('loading');
+      showScreen('gameplay');
       clearTimeout(appState.loadingTimer);
       appState.loadingTimer = setTimeout(() => {
         startNewMatch();
@@ -4139,13 +4077,13 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     function startNewMatch() {
       if (isOnlineFlowActive()) {
         console.warn('Blocked startNewMatch during online flow.');
-        setScreen('onlineLobby');
+        showScreen('lobby');
         return;
       }
       resetGame();
       appState.botTurnPending = false;
       appState.botStatusText = '';
-      setScreen('game');
+      showScreen('gameplay');
       maybeRunBotTurn();
     }
 
@@ -4153,7 +4091,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       clearTimeout(appState.loadingTimer);
       appState.botTurnPending = false;
       appState.botStatusText = '';
-      setScreen('mainMenu');
+      showScreen('mainMenu');
     }
 
   const DOMINION_ORDER = ['polly', 'abster', 'retsba', 'pengu'];
@@ -5688,51 +5626,51 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
     ui.splashContinueArea.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('mainMenu');
+      showScreen('mainMenu');
     });
     ui.splashContinueArea.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         primeAudioAndPlayButton();
-        setScreen('mainMenu');
+        showScreen('mainMenu');
       }
     });
 
     ui.menuPlayBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('onlineLobby');
+      showScreen('lobby');
     });
 
     ui.menuHowBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
       appState.tutorialEntry = 'menu';
-      setScreen('tutorial');
+      showScreen('howToPlay');
     });
 
     ui.playerCountBackBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('modeSelect');
+      showScreen('modeSelect');
     });
 
     ui.playerCountNextBtn?.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('difficulty');
+      showScreen('playerSelect');
     });
 
     ui.difficultyBackBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('playerCount');
+      showScreen('playerSelect');
     });
 
     ui.difficultyNextBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
       appState.tutorialEntry = 'flow';
-      setScreen('tutorial');
+      showScreen('howToPlay');
     });
 
     ui.tutorialBackBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen(appState.tutorialEntry === 'menu' ? 'menu' : 'difficulty');
+      showScreen(appState.tutorialEntry === 'menu' ? 'mainMenu' : 'playerSelect');
     });
 
     ui.tutorialSkipBtn.addEventListener('click', () => {
@@ -5752,7 +5690,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
     ui.restartMatchBtn.addEventListener('click', () => {
       primeAudioAndPlayButton();
-      setScreen('loading');
+      showScreen('gameplay');
       clearTimeout(appState.loadingTimer);
       appState.loadingTimer = setTimeout(() => {
         startNewMatch();
@@ -5893,6 +5831,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       </div>
     </section>
 
+    <!-- LEGACY UNUSED: remove after gameplay verification -->
     <section id="screenOnlineSetup" class="screen" aria-label="Online room setup" hidden data-disabled-path="legacy-online">
       <div class="screen-panel">
         <div class="eyebrow">Online Play</div>
@@ -5973,6 +5912,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       </div>
     </section>
 
+    <!-- LEGACY UNUSED: remove after gameplay verification -->
     <section id="screenOnlineRoom" class="screen" aria-label="Online room">
       <div class="screen-panel online-room-panel">
         <h1 style="font-size:3rem;">ONLINE ROOM</h1>
@@ -5988,6 +5928,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       </div>
     </section>
 
+    <!-- LEGACY UNUSED: remove after gameplay verification -->
     <section id="screenOnlineLobby" class="screen" aria-label="Online lobby">
       <div class="screen-panel online-lobby-panel">
         <h1 style="font-size:3rem;">ONLINE LOBBY</h1>
@@ -6184,7 +6125,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   function setOnlineRoomMessage(msg) { if (ui.onlineRoomMessage) setNodeText(ui.onlineRoomMessage, 'ui.onlineRoomMessage', msg || ''); }
   function setOnlineLobbyMessage(msg) { if (ui.onlineLobbyMessage) setNodeText(ui.onlineLobbyMessage, 'ui.onlineLobbyMessage', msg || ''); }
   function renderOnlineRoom() {
-    hideGameScreenForOnlineFlow('renderOnlineRoom');
     const selectedCount = appState.online.requiredHumanCount || getEffectivePlayerCount() || '-';
     setNodeText(ui.onlineRoomPlayerCountSummary, 'ui.onlineRoomPlayerCountSummary', `Player Count: ${selectedCount}`);
     const humans = (appState.online.selectedHumanTeams || []).map(displayTeamName);
@@ -6197,7 +6137,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     return humanPlayers.length === appState.online.requiredHumanCount && humanPlayers.every(p => p.ready);
   }
   function renderOnlineLobby() {
-    hideGameScreenForOnlineFlow('renderOnlineLobby');
     setNodeText(ui.onlineLobbyRoomCode, 'ui.onlineLobbyRoomCode', appState.online.roomCode || '-');
     setNodeText(ui.onlineLobbyPlayerCount, 'ui.onlineLobbyPlayerCount', `Player Count: ${appState.online.players.length}/${appState.online.requiredHumanCount || '-'}`);
     setNodeHTML(ui.onlineLobbyPlayerList, 'ui.onlineLobbyPlayerList', appState.online.players.map(p => `${p.name} · ${p.team ? displayTeamName(p.team) : 'Unassigned'} · ${p.ready ? 'Ready' : 'Not Ready'}${p.isHost ? ' (Host)' : ''}`).join('<br/>'));
@@ -6214,7 +6153,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   }
   function startOnlineGameFromLobby() {
     appState.online.countdownActive = false;
-    setScreen('onlineLobby');
+    showScreen('lobby');
     renderOnlineLobby();
     setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
   }
@@ -6263,7 +6202,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
 
   function goToTeamSelect(count) {
     if (!setPlayerCount(count)) return;
-    setScreen('teamSelect');
+    showScreen('teamSelect');
   }
 
   function normalizeTeams(teams) {
@@ -6282,17 +6221,17 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   function showLoadingScreenForOfflineMatch(teamCount) {
     const subtitle = document.querySelector('[data-loading-subtitle]');
     if (subtitle) subtitle.textContent = `Preparing a ${teamCount}-team offline match.`;
-    setScreen('loading');
+    showScreen('gameplay');
   }
 
   function showGameScreen() {
     console.log('Switching to game screen');
-    setScreen('game');
+    showScreen('gameplay');
     maybeRunBotTurn();
   }
 
   function showDominionSelectionScreen() {
-    setScreen('playerCount');
+    showScreen('playerSelect');
   }
 
   function initializeOfflineMatchFromSelectedTeams(config) {
@@ -6322,7 +6261,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     if (isOnlineFlowActive()) {
       console.warn('Blocked startOfflineMatchFromDominions during online flow.');
       renderOnlineRoom();
-      setScreen('onlineRoom');
+      showScreen('lobby');
       return;
     }
     try {
@@ -6436,7 +6375,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     if (appState.playMode === 'online' || isOnlineFlowActive()) {
       saveOnlineTeamSelection();
       renderOnlineRoom();
-      setScreen('onlineRoom');
+      showScreen('lobby');
       return;
     }
 
@@ -6803,7 +6742,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       } catch (error) {
         console.error('Offline match initialization failed:', error);
         alert('Offline match failed: ' + (error?.message || error));
-        setScreen('playerCount');
+        showScreen('playerSelect');
       }
     }
   };
@@ -6841,13 +6780,13 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       appState.online.localTeam = null;
       appState.online.roomId = '';
       hideCountdown();
-      setScreen('onlineSetup');
+      showScreen('lobby');
       renderAppScreen();
     },
     handleMessage(payload) {
       if (payload.type === 'room_joined') {
         appState.online.roomId = (payload.payload?.roomId || '').toUpperCase();
-        setScreen('lobby');
+        showScreen('lobby');
       }
       if (payload.type === 'room_state') {
         const data = payload.payload || {};
@@ -6864,7 +6803,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
         appState.online.isHost = !!me?.isHost;
         updateShareLink(data.room.roomId);
         renderLobby();
-        if (!data.room.matchStarted && appState.screen !== 'lobby') setScreen('lobby');
+        if (!data.room.matchStarted && appState.screen !== 'lobby') showScreen('lobby');
       }
       if (payload.type === 'countdown') showCountdown(payload.payload?.seconds ?? 0);
       if (payload.type === 'error_notice') {
@@ -6911,7 +6850,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
         appState.online.isHost = !!me?.isHost;
         appState.online.roomState = data.roomState || appState.online.roomState;
         if (appState.online.roomState) setControlMapForOnline(appState.online.roomState);
-        setScreen('onlineLobby');
+        showScreen('lobby');
         renderOnlineLobby();
         setOnlineLobbyMessage('Ready. Waiting for other players. Game start is disabled in this preview.');
         renderAppScreen();
@@ -7018,13 +6957,13 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     selectedPlayerCount = null;
     appState.matchConfig.playerCount = null;
     renderModeSelectArt();
-    setScreen('modeSelect');
+    showScreen('modeSelect');
   });
   ui.menuHowBtn = replaceButtonWithoutListeners(ui.menuHowBtn);
-  ui.menuHowBtn?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); primeAudioAndPlayButton(); setScreen('howToPlay'); });
-  ui.howToPlayBackBtn?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); primeAudioAndPlayButton(); setScreen('mainMenu'); });
-  ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode back tapped'); setScreen('mainMenu'); });
-  ui.modeTopBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode back tapped'); setScreen('mainMenu'); });
+  ui.menuHowBtn?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); primeAudioAndPlayButton(); showScreen('howToPlay'); });
+  ui.howToPlayBackBtn?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); primeAudioAndPlayButton(); showScreen('mainMenu'); });
+  ui.modeBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode back tapped'); showScreen('mainMenu'); });
+  ui.modeTopBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); console.log('Mode back tapped'); showScreen('mainMenu'); });
   let modeToastTimer = null;
   function showModeToast(message) {
     if (!ui.modeToast) return;
@@ -7070,12 +7009,12 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     if (appState.playMode === 'online') {
-      setScreen('playerCount');
+      showScreen('playerSelect');
       return;
     }
 
     if (appState.playMode === 'offline') {
-      setScreen('playerCount');
+      showScreen('playerSelect');
       return;
     }
 
@@ -7086,7 +7025,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.playerCountThreeBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(3); });
   ui.playerCountFourBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); handlePlayerCountTap(4); });
 
-  ui.onlineRoomBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
+  ui.onlineRoomBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); showScreen('playerSelect'); });
   ui.createRoomPreviewBtn?.addEventListener('click', () => {
     primeAudioAndPlayButton();
     appState.playMode = 'online';
@@ -7100,7 +7039,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     appState.online.botTeams = PLAYERS.filter(team => !selectedHumanTeams.includes(team));
     appState.online.players = [{ id: appState.online.playerId, name: 'Host', team: null, ready: false, connected: true, isHost: true }];
     appState.online.countdownActive = false;
-    setScreen('onlineLobby');
+    showScreen('lobby');
     renderOnlineLobby();
   });
   ui.joinRoomPreviewBtn?.addEventListener('click', () => {
@@ -7117,7 +7056,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     appState.online.selectedHumanTeams = [];
     appState.online.botTeams = appState.online.botTeams || PLAYERS.filter(team => !appState.online.selectedHumanTeams.includes(team));
     appState.online.players = [{ id: appState.online.playerId, name: 'You', team: null, ready: false, connected: true, isHost: false }];
-    setScreen('onlineLobby');
+    showScreen('lobby');
     renderOnlineLobby();
     setOnlineLobbyMessage('Server join is not connected yet. Phase 1 lobby preview loaded.');
   });
@@ -7157,7 +7096,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     primeAudioAndPlayButton();
     selectOnlineLobbyTeam(target.getAttribute('data-online-team'));
   });
-  ui.onlineLobbyBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('onlineRoom'); setOnlineLobbyMessage(''); });
+  ui.onlineLobbyBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); showScreen('lobby'); setOnlineLobbyMessage(''); });
   ui.copyOnlineRoomCodeBtn?.addEventListener('click', () => { sound.playButtonSound(); copyText(appState.online.roomCode || ''); });
 
 
@@ -7185,7 +7124,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.hitRetsba?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('retsba'); });
   ui.hitPengu?.addEventListener('click', () => { primeAudioAndPlayButton(); handleTeamClick('pengu'); });
 
-  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; setScreen('modeSelect'); renderDominionSelection(); });
+  ui.playerCountBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); selectedPlayerCount = null; appState.matchConfig.playerCount = null; showScreen('modeSelect'); renderDominionSelection(); });
   ui.playerCountContinueBtn = replaceButtonWithoutListeners(ui.playerCountContinueBtn);
   ui.playerCountContinueBtn.onclick = (event) => {
     event.preventDefault();
@@ -7200,7 +7139,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       matchFlowMode: appState.matchConfig?.flowMode,
       isOnlineFlow: isOnlineFlowActive(),
       onlineRoomExists: Boolean(document.getElementById('screenOnlineRoom')),
-      transitionAllowsOnlineRoom: ALLOWED_SCREEN_TRANSITIONS.playerCount?.includes('onlineRoom')
     });
 
     if (!selectedCount) {
@@ -7219,9 +7157,9 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       appState.online.players = [];
     }
 
-    setScreen('teamSelect');
+    showScreen('teamSelect');
   };
-  ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); setScreen('playerCount'); });
+  ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); showScreen('playerSelect'); });
 
 
   function saveOnlineTeamSelection() {
@@ -7249,14 +7187,14 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   ui.teamContinueBtn = replaceButtonWithoutListeners(ui.teamContinueBtn);
   ui.teamContinueBtn.addEventListener('click', handleTeamContinue);
   ui.difficultyNextBtn = replaceButtonWithoutListeners(ui.difficultyNextBtn);
-  ui.difficultyNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.tutorialEntry = 'flow'; setScreen('tutorial'); });
+  ui.difficultyNextBtn.addEventListener('click', () => { primeAudioAndPlayButton(); appState.tutorialEntry = 'flow'; showScreen('howToPlay'); });
   ui.tutorialSkipBtn = replaceButtonWithoutListeners(ui.tutorialSkipBtn);
   ui.tutorialStartBtn = replaceButtonWithoutListeners(ui.tutorialStartBtn);
   ui.tutorialSkipBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OfflineController.start(); });
   ui.tutorialStartBtn.addEventListener('click', () => { primeAudioAndPlayButton(); OfflineController.start(); });
 
   ui.restartMatchBtn = replaceButtonWithoutListeners(ui.restartMatchBtn);
-  ui.restartMatchBtn.addEventListener('click', () => { if (appState.playMode === 'online') return; primeAudioAndPlayButton(); setScreen('loading'); clearTimeout(appState.loadingTimer); appState.loadingTimer = setTimeout(() => { originalStartNewMatch(); }, 650); });
+  ui.restartMatchBtn.addEventListener('click', () => { if (appState.playMode === 'online') return; primeAudioAndPlayButton(); showScreen('gameplay'); clearTimeout(appState.loadingTimer); appState.loadingTimer = setTimeout(() => { originalStartNewMatch(); }, 650); });
   ui.returnMenuBtn = replaceButtonWithoutListeners(ui.returnMenuBtn);
   ui.returnMenuBtn.addEventListener('click', () => { primeAudioAndPlayButton(); if (appState.playMode === 'online') { MultiplayerService.disconnect(); appState.online.roomState = null; appState.online.roomId = ''; appState.online.localTeam = null; appState.online.countdownActive = false; } returnToMenu(); });
 
@@ -7347,6 +7285,22 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     console.log('TRANSITION:', fromScreen, '->', screenName);
   }
 
+
+  function assertCanonicalFlowIntegrity() {
+    const allowed = new Set(Object.values(SCREENS));
+    Object.keys(FLOW).forEach(from => {
+      if (!allowed.has(from)) throw new Error(`FLOW has invalid from-screen: ${from}`);
+      FLOW[from].forEach(to => {
+        if (!allowed.has(to)) throw new Error(`FLOW has invalid to-screen: ${from} -> ${to}`);
+      });
+    });
+    document.querySelectorAll('[data-screen]').forEach(el => {
+      const name = el.dataset.screen;
+      if (!allowed.has(name)) throw new Error(`DOM has invalid data-screen: ${name}`);
+    });
+    console.log('Canonical flow integrity OK');
+  }
+
   function rebindButton(id, handler) {
     const oldBtn = document.getElementById(id);
     if (!oldBtn) return;
@@ -7368,6 +7322,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       showScreen(SCREENS.MAIN_MENU);
     });
   }
+
+  assertCanonicalFlowIntegrity();
 
   rebindButton('menuPlayBtn', () => showScreen(SCREENS.MODE_SELECT));
   rebindButton('menuHowBtn', () => showScreen(SCREENS.HOW_TO_PLAY));
