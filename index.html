@@ -6183,6 +6183,7 @@ function renderAppScreen() {
   function setPlayerCount(count) {
     const normalized = Number(count);
     if (!isValidPlayerCount(normalized)) return false;
+    appState.playerCount = normalized;
     appState.matchConfig.playerCount = normalized;
     selectedPlayerCount = normalized; // legacy mirror for compatibility while migrating.
     selectedHumanTeams = selectedHumanTeams.slice(0, normalized);
@@ -6472,7 +6473,7 @@ function renderAppScreen() {
   function handlePlayerCountTap(count) {
     if (!setPlayerCount(count)) return;
     console.log('Selected player count', {
-      canonicalPlayerCount: appState.matchConfig.playerCount,
+      canonicalPlayerCount: appState.playerCount,
       legacySelectedPlayerCount: selectedPlayerCount
     });
   }
@@ -7130,34 +7131,7 @@ function renderAppScreen() {
     event.preventDefault();
     event.stopPropagation();
     primeAudioAndPlayButton();
-
-    const selectedCount = appState.matchConfig.playerCount;
-    console.log('PLAYER COUNT CONTINUE DEBUG', {
-      selectedCount,
-      playMode: appState.playMode,
-      flowMode: appState.flowMode,
-      matchFlowMode: appState.matchConfig?.flowMode,
-      isOnlineFlow: isOnlineFlowActive(),
-      onlineRoomExists: Boolean(document.getElementById('screenOnlineRoom')),
-    });
-
-    if (!selectedCount) {
-      showModeToast?.('Choose player count first.');
-      return;
-    }
-
-    if (isOnlineFlowActive()) {
-      appState.playMode = 'online';
-      appState.flowMode = 'online';
-      appState.matchConfig.flowMode = 'online';
-
-      ensureOnlineState();
-      appState.online.requiredHumanCount = selectedCount;
-      appState.online.selectedHumanTeams = [];
-      appState.online.players = [];
-    }
-
-    showScreen('teamSelect');
+    handlePlayerSelectContinue();
   };
   ui.teamSelectBackBtn?.addEventListener('click', () => { primeAudioAndPlayButton(); showScreen('playerSelect'); });
 
@@ -7268,6 +7242,12 @@ function renderAppScreen() {
     }
     const fromScreen = appState.screen;
     const allowedTargets = FLOW[fromScreen] || [];
+    console.log("TRANSITION CHECK", {
+      from: appState.screen,
+      to: screenName,
+      allowed: FLOW[appState.screen],
+      isAllowed: FLOW[appState.screen]?.includes(screenName)
+    });
     if (fromScreen && fromScreen !== screenName && !allowedTargets.includes(screenName)) {
       throw new Error(`Blocked transition: ${fromScreen} -> ${screenName}`);
     }
@@ -7299,6 +7279,36 @@ function renderAppScreen() {
       if (!allowed.has(name)) throw new Error(`DOM has invalid data-screen: ${name}`);
     });
     console.log('Canonical flow integrity OK');
+  }
+
+  function handlePlayerSelectContinue() {
+    console.log("PLAYER SELECT CONTINUE", {
+      screen: appState.screen,
+      mode: appState.mode,
+      playerCount: appState.playerCount,
+      legacyPlayerCount: appState.matchConfig?.playerCount,
+      selectedPlayerCount: typeof selectedPlayerCount !== "undefined" ? selectedPlayerCount : null,
+      flowAllowed: FLOW[appState.screen]
+    });
+
+    const count = Number(appState.playerCount || appState.matchConfig?.playerCount || selectedPlayerCount);
+
+    if (![1, 2, 3, 4].includes(count)) {
+      return flowError("Select player count before continuing");
+    }
+
+    appState.playerCount = count;
+    appState.matchConfig.playerCount = count;
+
+    if (appState.mode === "offline") {
+      return showScreen("teamSelect");
+    }
+
+    if (appState.mode === "online") {
+      return showScreen("lobby");
+    }
+
+    return flowError("Select offline or online mode first");
   }
 
   function rebindButton(id, handler) {
@@ -7338,9 +7348,7 @@ function renderAppScreen() {
   });
   rebindButton('playerCountBackBtn', () => showScreen(SCREENS.MODE_SELECT));
   rebindButton('playerCountContinueBtn', () => {
-    if (!appState.playerCount) return flowError('Select player count');
-    if (appState.mode === 'offline') showScreen(SCREENS.TEAM_SELECT);
-    if (appState.mode === 'online') showScreen(SCREENS.LOBBY);
+    handlePlayerSelectContinue();
   });
   rebindButton('teamSelectBackBtn', () => showScreen(SCREENS.PLAYER_SELECT));
   rebindButton('teamContinueBtn', () => {
