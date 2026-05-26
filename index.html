@@ -3935,10 +3935,10 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       howToPlay: ['mainMenu'],
       modeSelect: ['mainMenu', 'playerCount'],
       playerCount: ['modeSelect', 'teamSelect'],
-      teamSelect: ['playerCount', 'loading', 'onlineRoom', 'onlineLobby'],
-      loading: ['game', 'teamSelect', 'playerCount', 'mainMenu'],
-      onlineRoom: ['playerCount', 'onlineLobby', 'teamSelect'],
-      onlineLobby: ['onlineRoom', 'teamSelect'],
+      teamSelect: ['playerCount', 'loading', 'onlineRoom'],
+      loading: ['game', 'playerCount', 'mainMenu'],
+      onlineRoom: ['teamSelect', 'onlineLobby', 'playerCount'],
+      onlineLobby: ['onlineRoom', 'playerCount'],
       game: ['mainMenu', 'playerCount']
     };
 
@@ -3966,14 +3966,14 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     }
 
     function setScreen(nextScreen) {
-      hideGameScreenForOnlineFlow('setScreen guard');
       const currentScreen = appState.screen;
       if (currentScreen === nextScreen) return;
-      console.log('Screen transition', { from: currentScreen, to: nextScreen });
-      if (!ui.screens[nextScreen]) {
+      const nextScreenEl = ui.screens[nextScreen];
+      if (!nextScreenEl) {
         console.error('Missing screen element for:', nextScreen);
         return;
       }
+      console.log('Screen transition', { from: currentScreen, to: nextScreen });
       const allowed = ALLOWED_SCREEN_TRANSITIONS[currentScreen] || [];
       if (!allowed.includes(nextScreen)) {
         console.error('SCREEN TRANSITION BLOCKED', {
@@ -3996,11 +3996,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       document.querySelectorAll('.screen').forEach((screenEl) => {
         screenEl.classList.remove('active');
       });
-      const nextScreenEl = ui.screens[nextScreen];
-      if (!nextScreenEl) {
-        console.error('Missing screen element for:', nextScreen);
-        return;
-      }
       nextScreenEl.classList.add('active');
       renderAppScreen();
       if (nextScreen === 'game') {
@@ -6371,7 +6366,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   }
 
   function continueFromDominionSelection() {
-    console.log("Continue clicked", {
+    console.log('Continue clicked', {
       screen: appState.screen,
       playMode: appState.playMode,
       flowMode: appState.flowMode,
@@ -6433,24 +6428,20 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     console.log('Selected UI colors:', selectedUiColors);
     console.log('Selected internal teams:', selectedInternalTeams);
     console.log('Offline players:', offlinePlayers);
-    if (appState.playMode === 'online') {
+    appState.matchConfig.humanTeams = selectedInternalTeams.slice();
+    appState.matchConfig.controlMap = getControlMapForHumanTeams(selectedInternalTeams);
+
+    if (appState.playMode === 'online' || isOnlineFlowActive()) {
       saveOnlineTeamSelection();
       renderOnlineRoom();
-      setOnlineRoomMessage('Online mode not ready yet. Create or join a room to continue.');
       setScreen('onlineRoom');
       return;
     }
 
-    if (appState.playMode === 'offline') {
-      allowGameScreenDisplay();
-      console.log('Calling old offline start function...');
-      console.log('Starting offline match with selectedTeams:', selectedInternalTeams);
-      startOfflineMatchFromDominions(selectedInternalTeams, selectedUiColors, selectedTeamStartZones, offlinePlayers);
-      console.log('Game screen should now load');
-      return;
-    }
-
-    console.error('Unknown playMode in continueFromDominionSelection:', appState.playMode);
+    console.log('Calling old offline start function...');
+    console.log('Starting offline match with selectedTeams:', selectedInternalTeams);
+    startOfflineMatchFromDominions(selectedInternalTeams, selectedUiColors, selectedTeamStartZones, offlinePlayers);
+    console.log('Game screen should now load');
   }
 
   function renderOnlinePreferredTeamChoices() {
@@ -7250,29 +7241,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     event?.stopPropagation?.();
     primeAudioAndPlayButton();
 
-    console.log("Continue clicked", {
-      screen: appState.screen,
-      playMode: appState.playMode,
-      flowMode: appState.flowMode,
-      selectedTeams: Array.from(selectedTeams),
-      playerCount: appState.matchConfig.playerCount
-    });
-
-    if (!selectedHumanTeams || selectedHumanTeams.length < 1) {
-      console.warn('Select at least one team before continuing');
-      return;
-    }
-
-    if (selectedHumanTeams.length !== getEffectivePlayerCount()) {
-      console.warn('Select exactly', getEffectivePlayerCount(), 'teams');
-      if (appState.playMode === 'online') alert(`Select exactly ${getEffectivePlayerCount()} human teams.`);
-      return;
-    }
-
-    localStorage.setItem('selectedTeams', JSON.stringify(selectedHumanTeams));
-
     continueFromDominionSelection();
-    return;
   }
 
   ui.teamContinueBtn = replaceButtonWithoutListeners(ui.teamContinueBtn);
