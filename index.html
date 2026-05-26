@@ -5799,6 +5799,8 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
       if (e.target === ui.modalBackdrop) declinePromotion();
     });
 
+    window.setScreen = function () { throw new Error('Legacy setScreen is removed. Use showScreen(screenName).'); };
+
     buildSetupChoices();
     buildBoardGrid();
     renderAppScreen();
@@ -7298,34 +7300,42 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     gameplay: ['mainMenu']
   });
 
-  function showError(message) {
+  function flowError(message) {
     console.warn('FLOW ERROR:', message);
+    return null;
   }
   function roomIsReady() {
     const room = appState.online?.roomState;
     return !!room && !!room.matchStarted;
   }
-  function getLobbyTeams() {
+  function getLobbySelectedTeams() {
     return (appState.online?.players || []).map(player => player.team).filter(Boolean);
   }
-  function normalizeFlowState() {
-    appState.mode = appState.playMode || appState.mode || null;
-    appState.playerCount = appState.matchConfig?.playerCount || appState.playerCount || null;
-    appState.selectedTeams = getSelectedInternalTeamsFromStorage();
-    appState.room = appState.online?.roomId || appState.room || null;
+  function syncGameplayConfigFromFlowState() {
+    if (!appState.matchConfig) appState.matchConfig = {};
+    appState.playMode = appState.mode;
+    appState.matchConfig.playerCount = appState.playerCount;
+    appState.matchConfig.humanTeams = [...(appState.selectedTeams || [])];
+  }
+  function startGameplay(config) {
+    if (config.mode === 'offline') {
+      startOfflineMatchFromDominions(config.selectedTeams);
+      return;
+    }
+    startNewMatch();
   }
   function showScreen(screenName) {
-    normalizeFlowState();
+    if (!Object.values(SCREENS).includes(screenName)) {
+      throw new Error(`Invalid screen: ${screenName}`);
+    }
     const fromScreen = appState.screen;
     const allowedTargets = FLOW[fromScreen] || [];
     if (fromScreen && fromScreen !== screenName && !allowedTargets.includes(screenName)) {
-      console.warn('Blocked transition:', fromScreen, '->', screenName);
-      return;
+      throw new Error(`Blocked transition: ${fromScreen} -> ${screenName}`);
     }
     const screen = document.querySelector(`[data-screen="${screenName}"]`);
     if (!screen) {
-      console.error('Missing screen:', screenName);
-      return;
+      throw new Error(`Missing screen: ${screenName}`);
     }
     document.querySelectorAll('[data-screen]').forEach(el => {
       el.classList.remove('active');
@@ -7335,29 +7345,7 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     screen.classList.add('active');
     appState.screen = screenName;
     console.log('TRANSITION:', fromScreen, '->', screenName);
-    console.log('SCREEN:', screenName, { mode: appState.mode, playerCount: appState.playerCount, selectedTeams: appState.selectedTeams });
   }
-
-  const legacySetScreen = setScreen;
-  setScreen = function patchedSetScreen(name) {
-    const map = {
-      cover: SCREENS.COVER,
-      mainMenu: SCREENS.MAIN_MENU,
-      howToPlay: SCREENS.HOW_TO_PLAY,
-      modeSelect: SCREENS.MODE_SELECT,
-      playerCount: SCREENS.PLAYER_SELECT,
-      playerSelect: SCREENS.PLAYER_SELECT,
-      teamSelect: SCREENS.TEAM_SELECT,
-      lobby: SCREENS.LOBBY,
-      onlineRoom: SCREENS.LOBBY,
-      onlineLobby: SCREENS.LOBBY,
-      game: SCREENS.GAMEPLAY,
-      gameplay: SCREENS.GAMEPLAY
-    };
-    const next = map[name];
-    if (!next) return legacySetScreen(name);
-    showScreen(next);
-  };
 
   function rebindButton(id, handler) {
     const oldBtn = document.getElementById(id);
@@ -7367,7 +7355,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     btn.addEventListener('click', (event) => {
       event.preventDefault();
       const buttonId = id;
-      normalizeFlowState();
       console.log('CLICK:', buttonId, { screen: appState.screen, mode: appState.mode, playerCount: appState.playerCount, selectedTeams: appState.selectedTeams });
       handler();
     });
@@ -7377,7 +7364,6 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
     const coverClone = coverArea.cloneNode(true);
     coverArea.parentNode.replaceChild(coverClone, coverArea);
     coverClone.addEventListener('click', () => {
-      normalizeFlowState();
       console.log('CLICK:', 'coverContinue', { screen: appState.screen, mode: appState.mode, playerCount: appState.playerCount, selectedTeams: appState.selectedTeams });
       showScreen(SCREENS.MAIN_MENU);
     });
@@ -7391,28 +7377,33 @@ ${JSON.stringify(payload,null,2)}`; return payload;};
   rebindButton('modeOfflineBtn', () => { appState.mode = 'offline'; appState.playMode = 'offline'; renderModeSelectArt(); });
   rebindButton('modeOnlineBtn', () => { appState.mode = 'online'; appState.playMode = 'online'; renderModeSelectArt(); });
   rebindButton('modeContinueBtn', () => {
-    if (!appState.mode) return showError('Choose mode first');
+    if (!appState.mode) return flowError('Choose mode first');
     showScreen(SCREENS.PLAYER_SELECT);
   });
   rebindButton('playerCountBackBtn', () => showScreen(SCREENS.MODE_SELECT));
   rebindButton('playerCountContinueBtn', () => {
-    normalizeFlowState();
-    if (!appState.playerCount) return showError('Select player count');
+    if (!appState.playerCount) return flowError('Select player count');
     if (appState.mode === 'offline') showScreen(SCREENS.TEAM_SELECT);
     if (appState.mode === 'online') showScreen(SCREENS.LOBBY);
   });
   rebindButton('teamSelectBackBtn', () => showScreen(SCREENS.PLAYER_SELECT));
   rebindButton('teamContinueBtn', () => {
-    normalizeFlowState();
-    if ((appState.selectedTeams || []).length !== appState.playerCount) return showError('Select required teams');
-    startOfflineMatchFromDominions(appState.selectedTeams);
+    if (appState.mode !== 'offline') return flowError('Offline team continue called outside offline mode');
+    if ((appState.selectedTeams || []).length !== appState.playerCount) return flowError('Select required teams first');
+    syncGameplayConfigFromFlowState();
+    startGameplay({ mode: 'offline', playerCount: appState.playerCount, selectedTeams: appState.selectedTeams });
     showScreen(SCREENS.GAMEPLAY);
   });
   rebindButton('onlineReadyBtn', () => {
-    if (!roomIsReady()) return showError('Room not ready');
-    startNewMatch();
+    if (appState.mode !== 'online') return flowError('Lobby start called outside online mode');
+    if (!roomIsReady()) return flowError('Room is not ready');
+    appState.selectedTeams = getLobbySelectedTeams();
+    syncGameplayConfigFromFlowState();
+    startGameplay({ mode: 'online', playerCount: appState.playerCount, selectedTeams: getLobbySelectedTeams(), room: appState.room });
     showScreen(SCREENS.GAMEPLAY);
   });
+
+    window.setScreen = function () { throw new Error('Legacy setScreen is removed. Use showScreen(screenName).'); };
 
     buildSetupChoices();
     applyHitboxConfig();
