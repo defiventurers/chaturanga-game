@@ -773,8 +773,14 @@
       playerCount: 1,
       selectedTeams: ["green"],
       roomCode: "ABCD",
-      ready: false
+      ready: false,
+      clientId: null,
+      roomError: ""
     };
+    const ROOM_PREFIX = "arctic_room_";
+    const ROOM_CHANNEL = "arctic_room_channel_v1";
+    const roomChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(ROOM_CHANNEL) : null;
+    let countdownTimer = null;
 
     const gameState = createInitialState();
 
@@ -812,6 +818,32 @@
       joinRoomCodeInput: document.getElementById("joinRoomCodeInput")
     };
 
+    function ensureClientId() {
+      if (setupState.clientId) return setupState.clientId;
+      const existing = localStorage.getItem("arctic_client_id");
+      setupState.clientId = existing || `c_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem("arctic_client_id", setupState.clientId);
+      return setupState.clientId;
+    }
+
+    function roomKey(code) { return `${ROOM_PREFIX}${code}`; }
+    function getRoomState(code = setupState.roomCode) { return JSON.parse(localStorage.getItem(roomKey(code)) || "null"); }
+    function isHost(room = getRoomState()) { return !!room && room.hostClientId === ensureClientId(); }
+    function saveRoomState(room) {
+      localStorage.setItem(roomKey(room.roomCode), JSON.stringify(room));
+      if (roomChannel) roomChannel.postMessage({ type: "room-update", roomCode: room.roomCode, from: ensureClientId(), room });
+    }
+    function getRoomPlayers(room) { return Object.entries(room?.players || {}); }
+    function getMyPlayer(room) { return room?.players?.[ensureClientId()] || null; }
+    function occupiedTeams(room, excludeSelf = false) {
+      const myId = ensureClientId();
+      return new Set(getRoomPlayers(room).filter(([id,p]) => p.team && (!excludeSelf || id !== myId)).map(([,p]) => p.team));
+    }
+    function firstAvailableTeam(room) {
+      const used = occupiedTeams(room, true);
+      return PLAYERS.find(t => !used.has(t)) || null;
+    }
+
     function applyRect(el, rect) {
       if (!el || !rect) return;
       el.style.left = rect.left;
@@ -833,7 +865,7 @@
       if (name === "playerCount") renderPlayerCountSelection();
       if (name === "teamSelect") renderTeamSelection();
       if (name === "roomReadyLobby") renderReadyLobby();
-      if (name === "game") startMatch();
+      if (name === "game" && setupState.mode === "offline") startMatch();
     }
 
     function showToast(text) {
@@ -870,6 +902,12 @@
       setupState.playerCount = count;
       if (setupState.mode === "offline") {
         setupState.selectedTeams = PLAYERS.slice(0, count);
+      } else if (setupState.onlineFlow === "create") {
+        const room = getRoomState();
+        if (room && isHost(room)) {
+          room.playerCount = count;
+          saveRoomState(room);
+        }
       }
       renderPlayerCountSelection();
     }
@@ -882,10 +920,13 @@
     }
 
     function renderTeamSelection() {
+      const room = setupState.mode === "online" ? getRoomState() : null;
+      const used = room ? occupiedTeams(room, true) : new Set();
       Object.entries(ui.teamOutlines).forEach(([alias, el]) => {
         applyRect(el, TEAM_OUTLINES[alias]);
         const team = TEAM_ALIAS_TO_INTERNAL[alias];
         el.classList.toggle("active", setupState.selectedTeams.includes(team));
+        el.style.opacity = used.has(team) && !setupState.selectedTeams.includes(team) ? "0.4" : "1";
       });
     }
 
@@ -903,7 +944,19 @@
         }
         setupState.selectedTeams = Array.from(selected);
       } else {
+        const room = getRoomState();
+        if (!room) return;
+        if (occupiedTeams(room, true).has(team)) {
+          alert("That team is already taken.");
+          return;
+        }
+        const me = getMyPlayer(room);
+        if (!me) return;
+        me.team = team;
+        me.ready = false;
         setupState.selectedTeams = [team];
+        setupState.ready = false;
+        saveRoomState(room);
       }
       renderTeamSelection();
     }
@@ -914,6 +967,9 @@
         return;
       }
       if (setupState.mode === "online") {
+        const room = getRoomState();
+        const me = getMyPlayer(room);
+        if (!me?.team) return alert("Select a team.");
         setScreen("roomReadyLobby");
       } else {
         setScreen("game");
@@ -929,12 +985,26 @@
     }
 
     function createRoomFlow() {
+      const clientId = ensureClientId();
       setupState.mode = "online";
       setupState.onlineFlow = "create";
       setupState.roomCode = makeRoomCode();
       setupState.ready = false;
       setupState.playerCount = 2;
+      const room = {
+        roomCode: setupState.roomCode,
+        hostClientId: clientId,
+        playerCount: 2,
+        players: {
+          [clientId]: { name: "Host", team: "green", ready: false, isHost: true }
+        },
+        gameStarted: false,
+        countdownStartTime: null,
+        countdownDurationMs: 5000,
+        gameStateSnapshot: null
+      };
       setupState.selectedTeams = ["green"];
+      saveRoomState(room);
       setScreen("playerCount");
     }
 
@@ -946,9 +1016,19 @@
     }
 
     function continueJoinRoom() {
-      const code = ui.joinRoomCodeInput.value.trim().toUpperCase() || "ABCD";
+      const code = ui.joinRoomCodeInput.value.trim().toUpperCase();
+      const room = getRoomState(code);
+      if (!room) return alert("Room not found.");
+      const players = getRoomPlayers(room);
+      if (!room.players[ensureClientId()] && players.length >= room.playerCount) return alert("Room is full.");
+      const clientId = ensureClientId();
+      if (!room.players[clientId]) room.players[clientId] = { name: `Player ${players.length + 1}`, team: null, ready: false, isHost: false };
+      if (!room.players[clientId].team) room.players[clientId].team = firstAvailableTeam(room);
+      room.players[clientId].ready = false;
+      saveRoomState(room);
       setupState.roomCode = code;
-      setupState.selectedTeams = ["blue"];
+      setupState.playerCount = room.playerCount;
+      setupState.selectedTeams = [room.players[clientId].team].filter(Boolean);
       setScreen("teamSelect");
     }
 
@@ -960,21 +1040,20 @@
     }
 
     function renderReadyLobby() {
-      ui.roomSummaryText.textContent = `Room: ${setupState.roomCode} · ${setupState.onlineFlow === "create" ? "Host" : "Joiner"} · ${setupState.playerCount} humans`;
-      ui.readyToggleBtn.textContent = setupState.ready ? "Unready" : "Ready";
-      ui.startOnlineGameBtn.disabled = !setupState.ready;
-      ui.startOnlineGameBtn.style.opacity = setupState.ready ? "1" : ".55";
-
-      const myTeam = setupState.selectedTeams[0] || "green";
-      const rows = [];
-      rows.push({ label: "You", team: myTeam, ready: setupState.ready });
-
-      if (setupState.onlineFlow === "create") {
-        const otherTeams = PLAYERS.filter(t => t !== myTeam).slice(0, Math.max(0, setupState.playerCount - 1));
-        otherTeams.forEach((team, index) => rows.push({ label: `Player ${index + 2}`, team, ready: false }));
-      } else {
-        rows.push({ label: "Host", team: "green", ready: true });
+      const room = getRoomState();
+      if (!room) return;
+      const me = getMyPlayer(room);
+      if (me) {
+        setupState.ready = !!me.ready;
+        setupState.selectedTeams = me.team ? [me.team] : [];
       }
+      const left = getCountdownRemaining(room);
+      ui.roomSummaryText.textContent = `Room: ${room.roomCode} · ${isHost(room) ? "Host" : "Joiner"} · ${room.playerCount} humans${left > 0 ? ` · Starting in ${left}...` : ""}`;
+      ui.readyToggleBtn.textContent = setupState.ready ? "Unready" : "Ready";
+      ui.startOnlineGameBtn.disabled = true;
+      ui.startOnlineGameBtn.style.opacity = ".55";
+
+      const rows = getRoomPlayers(room).map(([id, p], idx) => ({ label: id === ensureClientId() ? "You" : (p.isHost ? "Host" : `Player ${idx + 1}`), team: p.team, ready: p.ready }));
 
       ui.roomPlayerList.innerHTML = rows.map(row => `
         <div class="lobby-row">
@@ -986,13 +1065,19 @@
     }
 
     function toggleReady() {
-      setupState.ready = !setupState.ready;
+      const room = getRoomState();
+      const me = getMyPlayer(room);
+      if (!room || !me) return;
+      me.ready = !me.ready;
+      setupState.ready = me.ready;
+      room.countdownStartTime = null;
+      saveRoomState(room);
+      evaluateRoomReadiness();
       renderReadyLobby();
     }
 
     function startOnlineGame() {
-      if (!setupState.ready) return;
-      setScreen("game");
+      evaluateRoomReadiness();
     }
 
     function createInitialState() {
@@ -1092,13 +1177,20 @@
         const humans = new Set(setupState.selectedTeams);
         PLAYERS.forEach(team => map[team] = humans.has(team) ? "human" : "bot");
       } else {
-        const humans = new Set(setupState.selectedTeams);
-        PLAYERS.forEach(team => map[team] = humans.has(team) ? "online-human" : "remote/bot");
+        const room = getRoomState();
+        const humanTeams = new Set(getRoomPlayers(room).map(([,p]) => p.team).filter(Boolean));
+        PLAYERS.forEach(team => map[team] = humanTeams.has(team) ? "online-human" : "bot");
       }
       return map;
     }
 
     function startMatch() {
+      if (setupState.mode === "online") {
+        const room = getRoomState();
+        if (room?.gameStateSnapshot) Object.assign(gameState, JSON.parse(JSON.stringify(room.gameStateSnapshot)));
+        renderGame();
+        return;
+      }
       gameState.board = createEmptyBoard();
       gameState.currentPlayerIndex = 0;
       gameState.selected = null;
@@ -1110,6 +1202,40 @@
       gameState.controlMap = getControlMap();
       setupInitialBoard();
       renderGame();
+    }
+
+    function snapshotGame() { return JSON.parse(JSON.stringify(gameState)); }
+    function syncGameState() {
+      if (setupState.mode !== "online") return;
+      const room = getRoomState();
+      if (!room) return;
+      room.gameStateSnapshot = snapshotGame();
+      saveRoomState(room);
+    }
+    function getMyTeam() { return setupState.selectedTeams[0] || null; }
+    function canControlCurrentTurn() { return setupState.mode === "offline" || getMyTeam() === currentTeam(); }
+    function getCountdownRemaining(room) {
+      if (!room?.countdownStartTime) return 0;
+      return Math.max(0, Math.ceil((room.countdownDurationMs - (Date.now() - room.countdownStartTime)) / 1000));
+    }
+    function evaluateRoomReadiness() {
+      const room = getRoomState();
+      if (!room || !isHost(room) || room.gameStarted) return;
+      const players = getRoomPlayers(room).map(([,p]) => p);
+      const full = players.length === room.playerCount;
+      const teams = players.map(p => p.team).filter(Boolean);
+      const unique = new Set(teams).size === players.length;
+      const allReady = players.length > 0 && players.every(p => p.ready && p.team);
+      if (full && unique && allReady) {
+        if (!room.countdownStartTime) room.countdownStartTime = Date.now();
+      } else room.countdownStartTime = null;
+      if (room.countdownStartTime && Date.now() - room.countdownStartTime >= room.countdownDurationMs) {
+        room.gameStarted = true;
+        gameState.controlMap = getControlMap();
+        startMatch();
+        room.gameStateSnapshot = snapshotGame();
+      }
+      saveRoomState(room);
     }
 
     function setupInitialBoard() {
@@ -1252,7 +1378,8 @@
       if (gameState.gameOver) return;
       const team = currentTeam();
       const control = gameState.controlMap[team];
-      if (control === "bot" || control === "remote/bot") return;
+      if (control === "bot") return;
+      if (setupState.mode === "online" && !canControlCurrentTurn()) return;
       if (!gameState.dice.rolled) return;
 
       const chosenMove = gameState.legalMoves.find(m => m.toRow === row && m.toCol === col);
@@ -1280,7 +1407,8 @@
       if (gameState.gameOver) return;
       const team = currentTeam();
       const control = gameState.controlMap[team];
-      if (control === "bot" || control === "remote/bot") return;
+      if (control === "bot") return;
+      if (setupState.mode === "online" && !canControlCurrentTurn()) return;
       if (gameState.dice.rolled) return;
       gameState.dice.values = [rollD6(), rollD6()];
       gameState.dice.used = [false, false];
@@ -1289,6 +1417,7 @@
       gameState.legalMoves = [];
       renderGame();
       autoEndIfNoMoves(team);
+      syncGameState();
     }
 
     function rollD6() { return Math.floor(Math.random() * 6) + 1; }
@@ -1491,6 +1620,7 @@
       const team = currentTeam();
       if (gameState.dice.used.every(Boolean) || !hasAnyLegalMoveForTeam(team)) endTurn();
       else renderGame();
+      syncGameState();
     }
 
     function endTurn() {
@@ -1508,12 +1638,14 @@
         if (teamHasKing(currentTeam())) break;
       }
       renderGame();
+      syncGameState();
     }
 
     function maybeBotTurn() {
       const team = currentTeam();
       const control = gameState.controlMap[team];
       if (control !== "bot") return;
+      if (setupState.mode === "online" && !isHost(getRoomState())) return;
       window.setTimeout(() => {
         if (currentTeam() !== team || gameState.gameOver) return;
         gameState.dice.values = [rollD6(), rollD6()];
@@ -1522,6 +1654,7 @@
         const moves = getAllLegalMovesForTeam(team);
         if (moves.length) applyMove(moves[Math.floor(Math.random() * moves.length)]);
         else endTurn();
+        syncGameState();
       }, 550);
     }
 
@@ -1537,6 +1670,32 @@
     }
 
     function bindEvents() {
+      ensureClientId();
+      if (roomChannel) {
+        roomChannel.onmessage = (event) => {
+          const msg = event.data || {};
+          if (msg.type !== "room-update" || msg.from === ensureClientId()) return;
+          if (!setupState.roomCode || msg.roomCode !== setupState.roomCode) return;
+          const room = getRoomState();
+          if (!room) return;
+          if (room.gameStarted && !ui.screens.game.classList.contains("active")) setScreen("game");
+          if (ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
+          if (ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
+          if (ui.screens.game.classList.contains("active") && room.gameStateSnapshot) {
+            Object.assign(gameState, JSON.parse(JSON.stringify(room.gameStateSnapshot)));
+            renderGame();
+          }
+        };
+      }
+      window.setInterval(() => {
+        if (setupState.mode !== "online" || !setupState.roomCode) return;
+        evaluateRoomReadiness();
+        const room = getRoomState();
+        if (!room) return;
+        if (ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
+        if (room.gameStarted && !ui.screens.game.classList.contains("active")) setScreen("game");
+      }, 300);
+
       ui.coverContinueArea.addEventListener("click", () => setScreen("menu"));
       ui.coverContinueArea.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") setScreen("menu"); });
 
