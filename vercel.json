@@ -10,6 +10,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "tap-area-editor.html",
+      "use": "@vercel/static"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -22,6 +26,10 @@
     {
       "src": "/sw.js",
       "dest": "/sw.js"
+    },
+    {
+      "src": "/tap-area-editor.html",
+      "dest": "/tap-area-editor.html"
     },
     {
       "src": "/(.*)",

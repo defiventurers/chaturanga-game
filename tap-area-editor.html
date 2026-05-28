@@ -42,13 +42,21 @@ document.getElementById('copyBtn').onclick=async()=>{const txt=JSON.stringify(st
 function pct(v){return Number(v.toFixed(2))}
 function render(){stage.innerHTML='';const sc=state[current];const img=new Image();img.src=sc.image;stage.appendChild(img);
   Object.entries(sc.tap).forEach(([id,b])=>makeNode(id,b,false));Object.entries(sc.text).forEach(([id,b])=>makeNode(id,b,true));out.value=JSON.stringify(sc,null,2)}
-function makeNode(id,b,isText){const n=document.createElement('div');n.className='node'+(isText?' text-node':'');n.innerHTML=`<div class="label">${id}</div>${isText?b.text:''}<div class="handle"></div>`;
-  place();stage.appendChild(n);n.ondblclick=()=>{if(!isText)return;const t=prompt('Text',b.text);if(t!==null){b.text=t;n.childNodes[1].textContent=t;out.value=JSON.stringify(state[current],null,2)}};
-  drag(n,(dx,dy)=>{b.l=pct(b.l+dx);b.t=pct(b.t+dy);place()});
-  drag(n.querySelector('.handle'),(dx,dy)=>{b.w=pct(Math.max(3,b.w+dx));b.h=pct(Math.max(2,b.h+dy));place()});
-  function place(){n.style.left=b.l+'%';n.style.top=b.t+'%';n.style.width=b.w+'%';n.style.height=b.h+'%';if(isText){n.childNodes[1].textContent=b.text}out.value=JSON.stringify(state[current],null,2)} }
-function drag(el,onMove){el.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();const rect=stage.getBoundingClientRect();const sx=e.clientX,sy=e.clientY;
-  const mm=(ev)=>onMove((ev.clientX-sx)/rect.width*100,(ev.clientY-sy)/rect.height*100), up=()=>{window.removeEventListener('pointermove',mm);window.removeEventListener('pointerup',up)};
+function makeNode(id,b,isText){
+  const n=document.createElement('div');
+  n.className='node'+(isText?' text-node':'');
+  const label=document.createElement('div');label.className='label';label.textContent=id;
+  const textSpan=document.createElement('span');if(isText) textSpan.textContent=b.text;
+  const handle=document.createElement('div');handle.className='handle';
+  n.append(label);if(isText)n.append(textSpan);n.append(handle);
+  place();stage.appendChild(n);
+  n.ondblclick=()=>{if(!isText)return;const t=prompt('Text',b.text);if(t!==null){b.text=t;textSpan.textContent=t;out.value=JSON.stringify(state[current],null,2)}};
+  drag(n,()=>({l:b.l,t:b.t}),(base,dx,dy)=>{b.l=pct(base.l+dx);b.t=pct(base.t+dy);place()});
+  drag(handle,()=>({w:b.w,h:b.h}),(base,dx,dy)=>{b.w=pct(Math.max(3,base.w+dx));b.h=pct(Math.max(2,base.h+dy));place()});
+  function place(){n.style.left=b.l+'%';n.style.top=b.t+'%';n.style.width=b.w+'%';n.style.height=b.h+'%';if(isText){textSpan.textContent=b.text}out.value=JSON.stringify(state[current],null,2)}
+}
+function drag(el,getBase,onMove){el.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();const rect=stage.getBoundingClientRect();const sx=e.clientX,sy=e.clientY;const base=getBase();
+  const mm=(ev)=>onMove(base,(ev.clientX-sx)/rect.width*100,(ev.clientY-sy)/rect.height*100), up=()=>{window.removeEventListener('pointermove',mm);window.removeEventListener('pointerup',up)};
   window.addEventListener('pointermove',mm);window.addEventListener('pointerup',up);});}
 render();
 </script>
