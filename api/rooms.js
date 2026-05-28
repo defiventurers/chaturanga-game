@@ -1,6 +1,32 @@
 const ROOM_KEY_PREFIX = "arctic-dominion:room:";
 const ROOM_TTL_SECONDS = 24 * 60 * 60;
 const CODE_PATTERN = /^[A-Z0-9]{4,6}$/;
+const MEMORY_STORE_GLOBAL_KEY = "__arcticDominionRoomStore";
+
+function getMemoryStore() {
+  if (!globalThis[MEMORY_STORE_GLOBAL_KEY]) {
+    globalThis[MEMORY_STORE_GLOBAL_KEY] = new Map();
+  }
+  return globalThis[MEMORY_STORE_GLOBAL_KEY];
+}
+
+function getMemoryRecord(key) {
+  const store = getMemoryStore();
+  const record = store.get(key);
+  if (!record) return null;
+  if (record.expiresAt <= Date.now()) {
+    store.delete(key);
+    return null;
+  }
+  return record.value;
+}
+
+function setMemoryRecord(key, value, ttlSeconds = ROOM_TTL_SECONDS) {
+  getMemoryStore().set(key, {
+    value,
+    expiresAt: Date.now() + ttlSeconds * 1000
+  });
+}
 
 function getRedisConfig() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -26,11 +52,17 @@ function sendError(res, statusCode, message) {
   sendJson(res, statusCode, { ok: false, error: message });
 }
 
-async function redisCommand(command) {
+async function roomStorageCommand(command) {
   const { url, token } = getRedisConfig();
   if (!url || !token) {
-    const error = new Error("Room storage is not configured. Set KV_REST_API_URL and KV_REST_API_TOKEN on Vercel.");
-    error.statusCode = 503;
+    const [operation, key, value, _ex, ttlSeconds] = command;
+    if (operation === "GET") return getMemoryRecord(key);
+    if (operation === "SET") {
+      setMemoryRecord(key, value, Number(ttlSeconds) || ROOM_TTL_SECONDS);
+      return "OK";
+    }
+    const error = new Error(`Unsupported in-memory room storage command: ${operation}`);
+    error.statusCode = 500;
     throw error;
   }
 
@@ -71,7 +103,7 @@ function parseRedisJson(value) {
 async function getRoom(roomCode) {
   const code = normalizeRoomCode(roomCode);
   if (!CODE_PATTERN.test(code)) return null;
-  return parseRedisJson(await redisCommand(["GET", roomKey(code)]));
+  return parseRedisJson(await roomStorageCommand(["GET", roomKey(code)]));
 }
 
 async function saveRoom(room) {
@@ -99,7 +131,7 @@ async function saveRoom(room) {
     updatedAt: Date.now()
   };
 
-  await redisCommand(["SET", roomKey(code), JSON.stringify(stampedRoom), "EX", ROOM_TTL_SECONDS]);
+  await roomStorageCommand(["SET", roomKey(code), JSON.stringify(stampedRoom), "EX", ROOM_TTL_SECONDS]);
   return stampedRoom;
 }
 

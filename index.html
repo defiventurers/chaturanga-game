@@ -1044,13 +1044,14 @@
       activeRoom = room;
       syncSetupFromRoom();
       if (shouldBroadcast) roomChannel?.postMessage({ type: "room-state", roomCode: room.roomCode, room });
-      persistRoomToServer(cloneRoom(room));
+      const syncPromise = persistRoomToServer(cloneRoom(room));
       if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
       if (typeof ui !== "undefined" && ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
       if (typeof ui !== "undefined" && ui.screens.game.classList.contains("active") && room.gameStateSnapshot) {
         loadGameStateSnapshot(room.gameStateSnapshot);
         renderGame();
       }
+      return syncPromise;
     }
 
     function syncSetupFromRoom() {
@@ -1109,8 +1110,8 @@
         updatedAt: Date.now()
       };
       setupState.roomCode = code;
-      saveRoom(room);
-      return room;
+      await saveRoom(room);
+      return activeRoom?.roomCode === code ? activeRoom : room;
     }
 
     async function joinOnlineRoom(roomCode) {
@@ -1147,7 +1148,7 @@
         room.players[clientId].ready = false;
       }
       setupState.roomCode = code;
-      saveRoom(room);
+      await saveRoom(room);
       return true;
     }
 
@@ -1471,7 +1472,7 @@
       renderTeamSelection();
     }
 
-    function continueFromTeamSelect() {
+    async function continueFromTeamSelect() {
       if (setupState.selectedTeams.length === 0) {
         alert("Select at least one team.");
         return;
@@ -1490,7 +1491,7 @@
         activeRoom.players[clientId].team = myTeam;
         activeRoom.players[clientId].ready = false;
         activeRoom.countdownStartTime = null;
-        saveRoom(activeRoom);
+        await saveRoom(activeRoom);
         setScreen("roomReadyLobby");
       } else {
         setScreen("game");
