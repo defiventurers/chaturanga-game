@@ -679,6 +679,29 @@
     const ROWS = 8;
     const COLS = 8;
     const PLAYERS = ["green", "red", "blue", "yellow"];
+    // Reference turn order: Polly/Yellow → Abster/Green → Retsba/Red → Pengu/Blue.
+    const TURN_ORDER = ["yellow", "green", "red", "blue"];
+
+    // Reference pawn-promotion map. Board coordinates are zero-based internally:
+    // row 0 = rank 1 / bottom, row 7 = rank 8 / top, col 0 = file A / left.
+    const PROMOTION_PIECES = {
+      yellow: {
+        "7,0": "ship", "7,1": "horse", "7,2": "elephant", "7,3": "king",
+        "7,4": "king", "7,5": "elephant", "7,6": "horse", "7,7": "ship"
+      },
+      red: {
+        "7,7": "ship", "6,7": "elephant", "5,7": "horse", "4,7": "king",
+        "3,7": "king", "2,7": "horse", "1,7": "elephant", "0,7": "ship"
+      },
+      green: {
+        "0,0": "ship", "0,1": "horse", "0,2": "elephant", "0,3": "king",
+        "0,4": "king", "0,5": "elephant", "0,6": "horse", "0,7": "ship"
+      },
+      blue: {
+        "7,0": "ship", "6,0": "horse", "5,0": "elephant", "4,0": "king",
+        "3,0": "king", "2,0": "elephant", "1,0": "horse", "0,0": "ship"
+      }
+    };
     const TEAM_LABEL = { green: "Green", red: "Red", blue: "Blue", yellow: "Pink" };
     const TEAM_ASSET_COLOR = { green: "green", red: "red", blue: "blue", yellow: "pink" };
     const TEAM_COLOR = { green: "#75db9e", red: "#ff9ea3", blue: "#a8c4ff", yellow: "#ffb7e1" };
@@ -750,16 +773,8 @@
       playerCount: 1,
       selectedTeams: ["green"],
       roomCode: "ABCD",
-      ready: false,
-      roomHostTeam: "green",
-      roomTakenTeams: [],
-      roomPlayers: []
+      ready: false
     };
-
-    // Local-only online room simulation.
-    // This prevents duplicate team picks and lets the online path play through using the same board engine.
-    // Real cross-device online still needs a backend / realtime database / smart-contract synced state later.
-    const ONLINE_ROOM_STORAGE_KEY = "arctic_dominion_local_rooms_v1";
 
     const gameState = createInitialState();
 
@@ -855,17 +870,13 @@
       setupState.playerCount = count;
       if (setupState.mode === "offline") {
         setupState.selectedTeams = PLAYERS.slice(0, count);
-      } else if (setupState.onlineFlow === "create") {
-        // Host chooses one unique team. Other online seats are simulated later in the lobby.
-        setupState.selectedTeams = [setupState.selectedTeams[0] || "green"];
       }
       renderPlayerCountSelection();
     }
 
     function continueFromPlayerCount() {
       if (setupState.mode === "online" && setupState.onlineFlow === "create") {
-        setupState.selectedTeams = [setupState.selectedTeams[0] || "green"];
-        setupState.roomHostTeam = setupState.selectedTeams[0];
+        setupState.selectedTeams = ["green"];
       }
       setScreen("teamSelect");
     }
@@ -892,14 +903,7 @@
         }
         setupState.selectedTeams = Array.from(selected);
       } else {
-        const taken = getOnlineTakenTeams();
-        const currentTeam = setupState.selectedTeams[0];
-        if (taken.has(team) && team !== currentTeam) {
-          alert(`${TEAM_LABEL[team]} is already taken in this room. Pick another team.`);
-          return;
-        }
         setupState.selectedTeams = [team];
-        if (setupState.onlineFlow === "create") setupState.roomHostTeam = team;
       }
       renderTeamSelection();
     }
@@ -910,13 +914,6 @@
         return;
       }
       if (setupState.mode === "online") {
-        const chosenTeam = setupState.selectedTeams[0];
-        const taken = getOnlineTakenTeams();
-        if (taken.has(chosenTeam) && !(setupState.onlineFlow === "create" && chosenTeam === setupState.roomHostTeam)) {
-          alert(`${TEAM_LABEL[chosenTeam]} is already taken in this room. Pick another team.`);
-          return;
-        }
-        syncOnlineRoomAfterTeamSelect();
         setScreen("roomReadyLobby");
       } else {
         setScreen("game");
@@ -938,15 +935,6 @@
       setupState.ready = false;
       setupState.playerCount = 2;
       setupState.selectedTeams = ["green"];
-      setupState.roomHostTeam = "green";
-      setupState.roomTakenTeams = [];
-      setupState.roomPlayers = [];
-      saveLocalRoom({
-        code: setupState.roomCode,
-        playerCount: setupState.playerCount,
-        hostTeam: setupState.roomHostTeam,
-        players: [{ label: "Host", team: setupState.roomHostTeam, ready: false, local: true }]
-      });
       setScreen("playerCount");
     }
 
@@ -958,14 +946,9 @@
     }
 
     function continueJoinRoom() {
-      const code = normalizeRoomCode(ui.joinRoomCodeInput.value) || "ABCD";
+      const code = ui.joinRoomCodeInput.value.trim().toUpperCase() || "ABCD";
       setupState.roomCode = code;
-      const room = getLocalRoom(code);
-      setupState.roomHostTeam = room?.hostTeam || "green";
-      setupState.playerCount = room?.playerCount || 2;
-      setupState.roomTakenTeams = getRoomTakenTeams(room);
-      setupState.selectedTeams = [getFirstAvailableTeam(setupState.roomTakenTeams) || "blue"];
-      setupState.ready = false;
+      setupState.selectedTeams = ["blue"];
       setScreen("teamSelect");
     }
 
@@ -976,126 +959,39 @@
       return out;
     }
 
-    function normalizeRoomCode(value) {
-      return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-    }
-
-    function getStoredRooms() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(ONLINE_ROOM_STORAGE_KEY) || "{}");
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch (_error) {
-        return {};
-      }
-    }
-
-    function saveStoredRooms(rooms) {
-      try { localStorage.setItem(ONLINE_ROOM_STORAGE_KEY, JSON.stringify(rooms)); }
-      catch (_error) {}
-    }
-
-    function saveLocalRoom(room) {
-      if (!room?.code) return;
-      const rooms = getStoredRooms();
-      rooms[room.code] = room;
-      saveStoredRooms(rooms);
-    }
-
-    function getLocalRoom(code) {
-      return getStoredRooms()[normalizeRoomCode(code)] || null;
-    }
-
-    function getRoomTakenTeams(room) {
-      return new Set((room?.players || []).map(player => player.team).filter(Boolean));
-    }
-
-    function getFirstAvailableTeam(takenTeams) {
-      const taken = takenTeams instanceof Set ? takenTeams : new Set(takenTeams || []);
-      return PLAYERS.find(team => !taken.has(team)) || null;
-    }
-
-    function getOnlineTakenTeams() {
-      if (setupState.mode !== "online") return new Set();
-      if (setupState.onlineFlow === "create") return new Set();
-      const room = getLocalRoom(setupState.roomCode);
-      const taken = getRoomTakenTeams(room);
-      if (!room) taken.add(setupState.roomHostTeam || "green");
-      return taken;
-    }
-
-    function getOnlineRoomTeams() {
-      const myTeam = setupState.selectedTeams[0] || "green";
-      const teams = [];
-      if (setupState.onlineFlow === "join") {
-        teams.push(setupState.roomHostTeam || "green");
-        if (!teams.includes(myTeam)) teams.push(myTeam);
-      } else {
-        teams.push(myTeam);
-      }
-      for (const team of PLAYERS) {
-        if (teams.length >= Math.max(1, setupState.playerCount)) break;
-        if (!teams.includes(team)) teams.push(team);
-      }
-      return teams;
-    }
-
-    function syncOnlineRoomAfterTeamSelect() {
-      const myTeam = setupState.selectedTeams[0] || "green";
-      if (setupState.onlineFlow === "create") {
-        setupState.roomHostTeam = myTeam;
-        const players = [{ label: "Host", team: myTeam, ready: setupState.ready, local: true }];
-        getOnlineRoomTeams().slice(1).forEach((team, index) => {
-          players.push({ label: `Player ${index + 2}`, team, ready: true, local: false });
-        });
-        setupState.roomPlayers = players;
-        saveLocalRoom({ code: setupState.roomCode, playerCount: setupState.playerCount, hostTeam: myTeam, players });
-      } else {
-        const room = getLocalRoom(setupState.roomCode);
-        const hostTeam = room?.hostTeam || setupState.roomHostTeam || "green";
-        setupState.roomHostTeam = hostTeam;
-        const players = [{ label: "Host", team: hostTeam, ready: true, local: false }];
-        if (myTeam !== hostTeam) players.push({ label: "You", team: myTeam, ready: setupState.ready, local: true });
-        setupState.roomPlayers = players;
-      }
-    }
-
     function renderReadyLobby() {
-      syncOnlineRoomAfterTeamSelect();
-      const myTeam = setupState.selectedTeams[0] || "green";
-      const rows = (setupState.roomPlayers && setupState.roomPlayers.length)
-        ? setupState.roomPlayers
-        : [{ label: "You", team: myTeam, ready: setupState.ready, local: true }];
-
-      const allReady = rows.every(row => row.ready);
       ui.roomSummaryText.textContent = `Room: ${setupState.roomCode} · ${setupState.onlineFlow === "create" ? "Host" : "Joiner"} · ${setupState.playerCount} humans`;
       ui.readyToggleBtn.textContent = setupState.ready ? "Unready" : "Ready";
-      ui.startOnlineGameBtn.disabled = !allReady;
-      ui.startOnlineGameBtn.style.opacity = allReady ? "1" : ".55";
+      ui.startOnlineGameBtn.disabled = !setupState.ready;
+      ui.startOnlineGameBtn.style.opacity = setupState.ready ? "1" : ".55";
 
-      const seen = new Set();
-      ui.roomPlayerList.innerHTML = rows.map(row => {
-        const duplicate = seen.has(row.team);
-        seen.add(row.team);
-        return `
-          <div class="lobby-row">
-            <strong>${row.label}</strong>
-            <span>${TEAM_LABEL[row.team]}${duplicate ? " · DUPLICATE" : ""}</span>
-            <span class="${row.ready ? "ready" : "waiting"}">${row.ready ? "READY" : "WAITING"}</span>
-          </div>
-        `;
-      }).join("");
+      const myTeam = setupState.selectedTeams[0] || "green";
+      const rows = [];
+      rows.push({ label: "You", team: myTeam, ready: setupState.ready });
+
+      if (setupState.onlineFlow === "create") {
+        const otherTeams = PLAYERS.filter(t => t !== myTeam).slice(0, Math.max(0, setupState.playerCount - 1));
+        otherTeams.forEach((team, index) => rows.push({ label: `Player ${index + 2}`, team, ready: false }));
+      } else {
+        rows.push({ label: "Host", team: "green", ready: true });
+      }
+
+      ui.roomPlayerList.innerHTML = rows.map(row => `
+        <div class="lobby-row">
+          <strong>${row.label}</strong>
+          <span>${TEAM_LABEL[row.team]}</span>
+          <span class="${row.ready ? "ready" : "waiting"}">${row.ready ? "READY" : "WAITING"}</span>
+        </div>
+      `).join("");
     }
 
     function toggleReady() {
       setupState.ready = !setupState.ready;
-      syncOnlineRoomAfterTeamSelect();
       renderReadyLobby();
     }
 
     function startOnlineGame() {
-      syncOnlineRoomAfterTeamSelect();
-      const rows = setupState.roomPlayers || [];
-      if (!rows.length || !rows.every(row => row.ready)) return;
+      if (!setupState.ready) return;
       setScreen("game");
     }
 
@@ -1196,13 +1092,8 @@
         const humans = new Set(setupState.selectedTeams);
         PLAYERS.forEach(team => map[team] = humans.has(team) ? "human" : "bot");
       } else {
-        const localTeam = setupState.selectedTeams[0];
-        const roomTeams = new Set(getOnlineRoomTeams());
-        PLAYERS.forEach(team => {
-          if (team === localTeam) map[team] = "online-human";
-          else if (roomTeams.has(team)) map[team] = "bot";
-          else map[team] = "bot";
-        });
+        const humans = new Set(setupState.selectedTeams);
+        PLAYERS.forEach(team => map[team] = humans.has(team) ? "online-human" : "remote/bot");
       }
       return map;
     }
@@ -1222,23 +1113,52 @@
     }
 
     function setupInitialBoard() {
-      const backRank = ["ship", "horse", "elephant", "king", "elephant", "horse", "ship", "pawn"];
+      gameState.board = createEmptyBoard();
 
-      for (let c = 0; c < 8; c++) {
-        gameState.board[0][c] = makePiece("green", backRank[c], backRank[c] === "king");
-        gameState.board[1][c] = makePiece("green", "pawn");
-        gameState.board[7][c] = makePiece("red", backRank[c], backRank[c] === "king");
-        gameState.board[6][c] = makePiece("red", "pawn");
-      }
+      // Reference starting positions, 8 pieces per team.
+      // Yellow / Polly — lower-left: A1-D1 back rank, A2-D2 pawns.
+      gameState.board[0][0] = makePiece("yellow", "ship");
+      gameState.board[0][1] = makePiece("yellow", "horse");
+      gameState.board[0][2] = makePiece("yellow", "elephant");
+      gameState.board[0][3] = makePiece("yellow", "king", true);
+      gameState.board[1][0] = makePiece("yellow", "pawn");
+      gameState.board[1][1] = makePiece("yellow", "pawn");
+      gameState.board[1][2] = makePiece("yellow", "pawn");
+      gameState.board[1][3] = makePiece("yellow", "pawn");
 
-      for (let r = 2; r < 6; r++) {
-        gameState.board[r][0] = makePiece("blue", r === 3 ? "king" : "pawn", r === 3);
-        gameState.board[r][7] = makePiece("yellow", r === 4 ? "king" : "pawn", r === 4);
-      }
+      // Red / Retsba — upper-left: A8-A5 back file, B8-B5 pawns.
+      gameState.board[7][0] = makePiece("red", "ship");
+      gameState.board[6][0] = makePiece("red", "horse");
+      gameState.board[5][0] = makePiece("red", "elephant");
+      gameState.board[4][0] = makePiece("red", "king", true);
+      gameState.board[7][1] = makePiece("red", "pawn");
+      gameState.board[6][1] = makePiece("red", "pawn");
+      gameState.board[5][1] = makePiece("red", "pawn");
+      gameState.board[4][1] = makePiece("red", "pawn");
+
+      // Green / Abster — upper-right: E8-H8 back rank, E7-H7 pawns.
+      gameState.board[7][4] = makePiece("green", "king", true);
+      gameState.board[7][5] = makePiece("green", "elephant");
+      gameState.board[7][6] = makePiece("green", "horse");
+      gameState.board[7][7] = makePiece("green", "ship");
+      gameState.board[6][4] = makePiece("green", "pawn");
+      gameState.board[6][5] = makePiece("green", "pawn");
+      gameState.board[6][6] = makePiece("green", "pawn");
+      gameState.board[6][7] = makePiece("green", "pawn");
+
+      // Blue / Pengu — lower-right: H4-H1 back file, G4-G1 pawns.
+      gameState.board[3][7] = makePiece("blue", "king", true);
+      gameState.board[2][7] = makePiece("blue", "elephant");
+      gameState.board[1][7] = makePiece("blue", "horse");
+      gameState.board[0][7] = makePiece("blue", "ship");
+      gameState.board[3][6] = makePiece("blue", "pawn");
+      gameState.board[2][6] = makePiece("blue", "pawn");
+      gameState.board[1][6] = makePiece("blue", "pawn");
+      gameState.board[0][6] = makePiece("blue", "pawn");
     }
 
     function currentTeam() {
-      return PLAYERS[gameState.currentPlayerIndex];
+      return TURN_ORDER[gameState.currentPlayerIndex];
     }
 
     function renderGame() {
@@ -1249,6 +1169,15 @@
     }
 
     function renderStatus() {
+      if (gameState.gameOver) {
+        const winnerLabel = gameState.winner ? TEAM_LABEL[gameState.winner] : "No one";
+        ui.statusPlayer.textContent = `${winnerLabel} Wins`;
+        ui.statusBar.textContent = "Game over · New game to restart";
+        ui.statusControlBadge.textContent = "DONE";
+        if (gameState.winner) document.querySelector(".game-stage").style.setProperty("--active-player-color", TEAM_COLOR[gameState.winner]);
+        return;
+      }
+
       const team = currentTeam();
       const control = gameState.controlMap[team] || "human";
       const needsRoll = !gameState.dice.rolled;
@@ -1299,18 +1228,23 @@
           ui.diePieces[i].textContent = i === 0 ? "ROLL" : "DICE";
           continue;
         }
+
         const allowed = DICE_ROLLS[value];
         ui.diePieces[i].innerHTML = "";
         if (used) {
           ui.diePieces[i].textContent = "USED";
-        } else {
-          const type = allowed[0];
+          continue;
+        }
+
+        // A 1 or 5 activates both Pawn and King. Show both icons, not only the first one.
+        allowed.forEach(type => {
           const img = document.createElement("img");
           img.src = getPieceImageSrc({ team: currentTeam(), type });
-          img.alt = `${value}: ${allowed.join("/")}`;
-          img.onerror = () => { ui.diePieces[i].textContent = allowed.join(" /"); };
+          img.alt = `${value}: ${PIECE_NAME[type]}`;
+          img.title = `${value}: ${allowed.map(t => PIECE_NAME[t]).join(" / ")}`;
+          img.onerror = () => { ui.diePieces[i].textContent = allowed.map(t => PIECE_NAME[t]).join(" /"); };
           ui.diePieces[i].appendChild(img);
-        }
+        });
       }
     }
 
@@ -1354,6 +1288,7 @@
       gameState.selected = null;
       gameState.legalMoves = [];
       renderGame();
+      autoEndIfNoMoves(team);
     }
 
     function rollD6() { return Math.floor(Math.random() * 6) + 1; }
@@ -1366,29 +1301,41 @@
         return value && !gameState.dice.used[i] && DICE_ROLLS[value].includes(piece.type);
       });
       if (activeDieIndexes.length === 0) return [];
-      const dieIndex = activeDieIndexes[0];
-      return getPossibleTargets(row, col, piece).map(([toRow, toCol]) => {
-        const target = gameState.board[toRow][toCol];
-        return { fromRow: row, fromCol: col, toRow, toCol, dieIndex, captured: target || null };
-      }).filter(move => {
-        const target = gameState.board[move.toRow][move.toCol];
-        return !target || target.team !== piece.team;
+
+      const moves = [];
+      activeDieIndexes.forEach(dieIndex => {
+        getPossibleTargets(row, col, piece).forEach(([toRow, toCol]) => {
+          const target = gameState.board[toRow][toCol];
+          if (target && target.team === piece.team) return;
+          moves.push({ fromRow: row, fromCol: col, toRow, toCol, dieIndex, captured: target || null });
+        });
+      });
+      return dedupeMoves(moves);
+    }
+
+    function dedupeMoves(moves) {
+      const seen = new Set();
+      return moves.filter(move => {
+        const key = `${move.fromRow},${move.fromCol},${move.toRow},${move.toCol},${move.dieIndex}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       });
     }
 
     function getPossibleTargets(row, col, piece) {
       if (piece.type === "king") return kingMoves(row, col);
       if (piece.type === "pawn") return pawnMoves(row, col, piece.team);
-      if (piece.type === "ship") return stepMoves(row, col, [[1,1],[1,-1],[-1,1],[-1,-1]], 2);
+      if (piece.type === "ship") return shipMoves(row, col);
       if (piece.type === "horse") return knightMoves(row, col);
-      if (piece.type === "elephant") return stepMoves(row, col, [[1,0],[-1,0],[0,1],[0,-1]], 8, true);
+      if (piece.type === "elephant") return slideMoves(row, col, [[1,0],[-1,0],[0,1],[0,-1]]);
       return [];
     }
 
     function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
 
     function kingMoves(row, col) {
-      return stepMoves(row, col, [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]], 1);
+      return oneStepMoves(row, col, [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]);
     }
 
     function knightMoves(row, col) {
@@ -1397,56 +1344,169 @@
         .filter(([r, c]) => inBounds(r, c));
     }
 
+    function shipMoves(row, col) {
+      // Reference rule: Icebreaker/Ship leaps exactly 2 squares diagonally.
+      return [[2,2],[2,-2],[-2,2],[-2,-2]]
+        .map(([dr, dc]) => [row + dr, col + dc])
+        .filter(([r, c]) => inBounds(r, c));
+    }
+
     function pawnMoves(row, col, team) {
-      const dir = team === "red" ? -1 : team === "green" ? 1 : 0;
-      const side = team === "blue" ? 1 : team === "yellow" ? -1 : 0;
+      // Reference pawn rule: forward move only if empty; diagonal forward capture only if enemy.
+      const directions = {
+        yellow: { forward: [1, 0], captures: [[1, -1], [1, 1]] },
+        red:    { forward: [0, 1], captures: [[-1, 1], [1, 1]] },
+        green:  { forward: [-1, 0], captures: [[-1, -1], [-1, 1]] },
+        blue:   { forward: [0, -1], captures: [[-1, -1], [1, -1]] }
+      };
+      const spec = directions[team];
+      if (!spec) return [];
+
       const out = [];
-      if (dir) {
-        if (inBounds(row + dir, col)) out.push([row + dir, col]);
-        if (inBounds(row + dir, col + 1)) out.push([row + dir, col + 1]);
-        if (inBounds(row + dir, col - 1)) out.push([row + dir, col - 1]);
-      }
-      if (side) {
-        if (inBounds(row, col + side)) out.push([row, col + side]);
-        if (inBounds(row + 1, col + side)) out.push([row + 1, col + side]);
-        if (inBounds(row - 1, col + side)) out.push([row - 1, col + side]);
-      }
+      const [fr, fc] = spec.forward;
+      const fRow = row + fr;
+      const fCol = col + fc;
+      if (inBounds(fRow, fCol) && !gameState.board[fRow][fCol]) out.push([fRow, fCol]);
+
+      spec.captures.forEach(([dr, dc]) => {
+        const r = row + dr;
+        const c = col + dc;
+        if (!inBounds(r, c)) return;
+        const target = gameState.board[r][c];
+        if (target && target.team !== team) out.push([r, c]);
+      });
       return out;
     }
 
-    function stepMoves(row, col, dirs, maxSteps, stopOnBlock = false) {
+    function oneStepMoves(row, col, dirs) {
+      return dirs
+        .map(([dr, dc]) => [row + dr, col + dc])
+        .filter(([r, c]) => inBounds(r, c));
+    }
+
+    function slideMoves(row, col, dirs) {
       const out = [];
       for (const [dr, dc] of dirs) {
-        for (let step = 1; step <= maxSteps; step++) {
+        for (let step = 1; step < 8; step++) {
           const r = row + dr * step;
           const c = col + dc * step;
           if (!inBounds(r, c)) break;
           out.push([r, c]);
-          if (stopOnBlock && gameState.board[r][c]) break;
+          if (gameState.board[r][c]) break;
         }
       }
       return out;
     }
 
+    function getPromotionPiece(team, row, col) {
+      return PROMOTION_PIECES[team]?.[`${row},${col}`] || null;
+    }
+
+    function maybePromotePawn(piece, row, col) {
+      if (!piece || piece.type !== "pawn") return;
+      const promotionType = getPromotionPiece(piece.team, row, col);
+      if (!promotionType) return;
+      const label = PIECE_NAME[promotionType] || promotionType;
+      const control = gameState.controlMap[piece.team] || "human";
+      const ok = control === "bot" || control === "remote/bot"
+        ? true
+        : window.confirm(`${TEAM_LABEL[piece.team]} pawn reached promotion. Promote to ${label}?`);
+      if (ok) {
+        piece.type = promotionType;
+        piece.isRoyal = false;
+        gameState.moveLog.unshift(`${TEAM_LABEL[piece.team]} pawn promoted to ${label}`);
+      }
+    }
+
+    function teamHasKing(team) {
+      return gameState.board.some(row => row.some(piece => piece && piece.team === team && piece.type === "king"));
+    }
+
+    function removeTeamPieces(team) {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (gameState.board[r][c]?.team === team) gameState.board[r][c] = null;
+        }
+      }
+    }
+
+    function checkEliminationAfterCapture(captured) {
+      if (!captured || captured.type !== "king") return;
+      if (!teamHasKing(captured.team)) {
+        removeTeamPieces(captured.team);
+        gameState.moveLog.unshift(`${TEAM_LABEL[captured.team]} eliminated`);
+      }
+    }
+
+    function checkWinner() {
+      const alive = PLAYERS.filter(team => teamHasKing(team));
+      if (alive.length <= 1) {
+        gameState.gameOver = true;
+        gameState.winner = alive[0] || null;
+      }
+    }
+
+    function hasAnyLegalMoveForTeam(team) {
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const piece = gameState.board[row][col];
+          if (piece && piece.team === team && getLegalMovesForPiece(row, col).length > 0) return true;
+        }
+      }
+      return false;
+    }
+
+    function autoEndIfNoMoves(team) {
+      if (gameState.gameOver || !gameState.dice.rolled || currentTeam() !== team) return;
+      if (hasAnyLegalMoveForTeam(team)) return;
+      window.setTimeout(() => {
+        if (!gameState.gameOver && currentTeam() === team && gameState.dice.rolled && !hasAnyLegalMoveForTeam(team)) endTurn();
+      }, 650);
+    }
+
     function applyMove(move) {
       const piece = gameState.board[move.fromRow][move.fromCol];
+      if (!piece) return;
+
+      const captured = gameState.board[move.toRow][move.toCol];
       gameState.board[move.toRow][move.toCol] = piece;
       gameState.board[move.fromRow][move.fromCol] = null;
       gameState.dice.used[move.dieIndex] = true;
       gameState.selected = null;
       gameState.legalMoves = [];
-      if (move.captured?.type === "king") {
-        gameState.moveLog.unshift(`${TEAM_LABEL[piece.team]} captured ${TEAM_LABEL[move.captured.team]} king`);
+
+      if (captured) {
+        gameState.moveLog.unshift(`${TEAM_LABEL[piece.team]} captured ${TEAM_LABEL[captured.team]} ${PIECE_NAME[captured.type]}`);
       }
-      if (gameState.dice.used.every(Boolean)) endTurn();
+
+      maybePromotePawn(piece, move.toRow, move.toCol);
+      checkEliminationAfterCapture(captured);
+      checkWinner();
+
+      if (gameState.gameOver) {
+        renderGame();
+        return;
+      }
+
+      const team = currentTeam();
+      if (gameState.dice.used.every(Boolean) || !hasAnyLegalMoveForTeam(team)) endTurn();
       else renderGame();
     }
 
     function endTurn() {
+      if (gameState.gameOver) {
+        renderGame();
+        return;
+      }
       gameState.selected = null;
       gameState.legalMoves = [];
       gameState.dice = { values: [null, null], used: [false, false], rolled: false };
-      gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % PLAYERS.length;
+
+      // Advance through the reference turn order and skip eliminated teams.
+      for (let i = 0; i < TURN_ORDER.length; i++) {
+        gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % TURN_ORDER.length;
+        if (teamHasKing(currentTeam())) break;
+      }
       renderGame();
     }
 
