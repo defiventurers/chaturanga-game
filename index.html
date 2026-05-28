@@ -279,36 +279,12 @@
       text-transform: uppercase;
     }
 
-
-    .room-code-text {
-      position: absolute;
-      left: 28%;
-      top: 21.85%;
-      width: 44%;
-      height: 3.2%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #f5fdff;
-      font-size: clamp(11px, 2.5vw, 19px);
-      font-weight: 900;
-      letter-spacing: .08em;
-      text-shadow:
-        0 2px 2px rgba(0, 10, 40, .95),
-        0 0 8px rgba(90, 220, 255, .9),
-        0 0 14px rgba(255, 255, 255, .38);
-    }
-
     .room-info-text {
       position: absolute;
-      left: 16.74%;
-      top: 25.69%;
-      width: 64.63%;
-      height: 3.88%;
+      left: 17.68%;
+      top: 25.79%;
+      width: 55.44%;
+      height: 3.35%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -345,10 +321,10 @@
         0 0 7px rgba(90, 220, 255, .62);
     }
 
-    .lobby-status-red { left: 61.48%; top: 33.48%; width: 24.52%; height: 5.06%; }
-    .lobby-status-green { left: 61.29%; top: 42.90%; width: 24.34%; height: 4.64%; }
-    .lobby-status-blue { left: 62.04%; top: 52.65%; width: 23.59%; height: 4.42%; }
-    .lobby-status-yellow { left: 62.04%; top: 61.53%; width: 23.40%; height: 4.63%; }
+    .lobby-status-red { left: 7.25%; top: 32.74%; width: 84.75%; height: 6.85%; }
+    .lobby-status-green { left: 8.00%; top: 41.95%; width: 84.19%; height: 6.64%; }
+    .lobby-status-blue { left: 8.00%; top: 50.85%; width: 84.19%; height: 7.27%; }
+    .lobby-status-yellow { left: 7.25%; top: 60.57%; width: 85.50%; height: 6.42%; }
 
     .lobby-status-text.status-ready {
       color: #8dffb0;
@@ -382,10 +358,10 @@
 
     .ready-lobby-status-text {
       position: absolute;
-      left: 11.81%;
-      top: 84.49%;
-      width: 74.51%;
-      height: 5.95%;
+      left: 9.37%;
+      top: 72.88%;
+      width: 79.38%;
+      height: 7.75%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -771,9 +747,9 @@
       <div class="plain-card">
         <div class="screen-note">CREATE THIS IMAGE LATER: /assets/screens/join-room.png</div>
         <h1>Join Room</h1>
-        <p>Enter the 6-character room code from the host device.</p>
+        <p>Temporary local-only join screen. Real networking comes later.</p>
         <div class="room-code-box">
-          <input id="joinRoomCodeInput" maxlength="6" placeholder="ROOM" value="" />
+          <input id="joinRoomCodeInput" maxlength="6" placeholder="ROOM" value="ABCD" />
           <button id="joinRoomContinueBtn" class="ui-btn">Join</button>
         </div>
         <button id="joinRoomBackBtn" class="ui-btn ghost">Back</button>
@@ -787,8 +763,7 @@
         <img class="screen-art" src="/assets/screens/room-ready-lobby.png" alt="Room Ready Lobby" />
 
         <div class="room-ready-overlay" aria-live="polite">
-          <div id="roomCodeText" class="room-code-text">ROOM ----</div>
-          <div id="roomSummaryText" class="room-info-text">WAITING</div>
+          <div id="roomSummaryText" class="room-info-text">Room: ----</div>
 
           <div id="lobbyStatusRed" class="lobby-status-text lobby-status-red">BOT</div>
           <div id="lobbyStatusGreen" class="lobby-status-text lobby-status-green">BOT</div>
@@ -910,7 +885,7 @@
       onlineLobbyBackBtn: { left: "30.53%", top: "73.60%", width: "41.56%", height: "8.81%" },
       readyToggleBtn: { left: "10.25%", top: "70.88%", width: "78.37%", height: "12.23%" },
       startOnlineGameBtn: { left: "11.38%", top: "85.18%", width: "75.00%", height: "6.00%" },
-      readyLobbyBackBtn: { left: "22.81%", top: "92.31%", width: "52.69%", height: "6.76%" }
+      readyLobbyBackBtn: { left: "23.19%", top: "92.52%", width: "52.69%", height: "6.76%" }
     };
 
     const PLAYER_OUTLINES = {
@@ -944,16 +919,13 @@
 
     const ROOM_STORAGE_PREFIX = "arctic_dominion_room_";
     const ROOM_CHANNEL_NAME = "arctic_dominion_rooms_v1";
-    const ROOM_API_URL = "/api/rooms";
     const CLIENT_ID_STORAGE_KEY = "arctic_dominion_client_id";
     const COUNTDOWN_DURATION_MS = 5000;
     const clientId = getOrCreateClientId();
     const roomChannel = "BroadcastChannel" in window ? new BroadcastChannel(ROOM_CHANNEL_NAME) : null;
-    const roomMemoryCache = new Map();
     let activeRoom = null;
     let roomTickTimer = null;
     let botTurnTimer = null;
-    let lastRoomSyncError = "";
 
     const gameState = createInitialState();
 
@@ -970,25 +942,9 @@
       return `${ROOM_STORAGE_PREFIX}${String(roomCode || "").toUpperCase()}`;
     }
 
-    function cloneRoom(room) {
-      return room ? JSON.parse(JSON.stringify(room)) : null;
-    }
-
-    function cacheRoom(room) {
-      if (!room?.roomCode) return;
-      roomMemoryCache.set(room.roomCode, cloneRoom(room));
-      try {
-        localStorage.setItem(roomStorageKey(room.roomCode), JSON.stringify(room));
-      } catch (error) {
-        console.warn("Could not cache room locally", error);
-      }
-    }
-
     function loadRoom(roomCode) {
-      const code = String(roomCode || "").trim().toUpperCase();
-      if (roomMemoryCache.has(code)) return cloneRoom(roomMemoryCache.get(code));
       try {
-        const raw = localStorage.getItem(roomStorageKey(code));
+        const raw = localStorage.getItem(roomStorageKey(roomCode));
         return raw ? JSON.parse(raw) : null;
       } catch (error) {
         console.warn("Could not load room", error);
@@ -996,62 +952,19 @@
       }
     }
 
-    async function fetchRoom(roomCode) {
-      const code = String(roomCode || "").trim().toUpperCase();
-      if (!code) return null;
-      try {
-        const response = await fetch(`${ROOM_API_URL}?roomCode=${encodeURIComponent(code)}`, { cache: "no-store" });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok || !payload.ok) throw new Error(payload.error || "Room service unavailable");
-        lastRoomSyncError = "";
-        if (payload.room) cacheRoom(payload.room);
-        return payload.room || null;
-      } catch (error) {
-        lastRoomSyncError = error.message || "Room service unavailable";
-        console.warn("Could not fetch online room; using local fallback", error);
-        return loadRoom(code);
-      }
-    }
-
-    async function persistRoomToServer(room) {
-      try {
-        const response = await fetch(ROOM_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "save", room })
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok || !payload.ok) throw new Error(payload.error || "Room service unavailable");
-        lastRoomSyncError = "";
-        if (payload.room) {
-          cacheRoom(payload.room);
-          if (activeRoom?.roomCode === payload.room.roomCode && payload.room.updatedAt >= (activeRoom.updatedAt || 0)) {
-            activeRoom = payload.room;
-            syncSetupFromRoom();
-          }
-        }
-      } catch (error) {
-        lastRoomSyncError = error.message || "Room service unavailable";
-        console.warn("Could not save online room; changes are local only until sync recovers", error);
-      }
-      if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
-    }
-
     function saveRoom(room, shouldBroadcast = true) {
       if (!room || !room.roomCode) return;
       room.updatedAt = Date.now();
-      cacheRoom(room);
+      localStorage.setItem(roomStorageKey(room.roomCode), JSON.stringify(room));
       activeRoom = room;
       syncSetupFromRoom();
       if (shouldBroadcast) roomChannel?.postMessage({ type: "room-state", roomCode: room.roomCode, room });
-      const syncPromise = persistRoomToServer(cloneRoom(room));
       if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
       if (typeof ui !== "undefined" && ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
       if (typeof ui !== "undefined" && ui.screens.game.classList.contains("active") && room.gameStateSnapshot) {
         loadGameStateSnapshot(room.gameStateSnapshot);
         renderGame();
       }
-      return syncPromise;
     }
 
     function syncSetupFromRoom() {
@@ -1087,8 +1000,8 @@
       return activeRoom?.players?.[clientId] || null;
     }
 
-    async function createOnlineRoom(playerCount) {
-      const code = setupState.roomCode || await makeRoomCode();
+    function createOnlineRoom(playerCount) {
+      const code = setupState.roomCode || makeRoomCode();
       const room = {
         roomCode: code,
         hostClientId: clientId,
@@ -1110,13 +1023,13 @@
         updatedAt: Date.now()
       };
       setupState.roomCode = code;
-      await saveRoom(room);
-      return activeRoom?.roomCode === code ? activeRoom : room;
+      saveRoom(room);
+      return room;
     }
 
-    async function joinOnlineRoom(roomCode) {
+    function joinOnlineRoom(roomCode) {
       const code = String(roomCode || "").trim().toUpperCase();
-      const room = await fetchRoom(code);
+      const room = loadRoom(code);
       if (!room) {
         alert("Room not found. Check the room code.");
         return false;
@@ -1148,7 +1061,7 @@
         room.players[clientId].ready = false;
       }
       setupState.roomCode = code;
-      await saveRoom(room);
+      saveRoom(room);
       return true;
     }
 
@@ -1206,9 +1119,9 @@
 
     function startRoomTicker() {
       if (roomTickTimer) return;
-      roomTickTimer = window.setInterval(async () => {
+      roomTickTimer = window.setInterval(() => {
         if (!activeRoom) return;
-        const latest = await fetchRoom(activeRoom.roomCode);
+        const latest = loadRoom(activeRoom.roomCode);
         if (latest && latest.updatedAt !== activeRoom.updatedAt) {
           activeRoom = latest;
           syncSetupFromRoom();
@@ -1231,7 +1144,7 @@
             initializeOnlineMatchAsHost();
           }
         }
-      }, 1000);
+      }, 300);
     }
 
     function initializeOnlineMatchAsHost() {
@@ -1349,7 +1262,6 @@
       statusBar: document.getElementById("statusBar"),
       statusControlBadge: document.getElementById("statusControlBadge"),
       diePieces: [document.getElementById("diePiece0"), document.getElementById("diePiece1")],
-      roomCodeText: document.getElementById("roomCodeText"),
       roomSummaryText: document.getElementById("roomSummaryText"),
       readyLobbyStatusText: document.getElementById("readyLobbyStatusText"),
       lobbyStatusByTeam: {
@@ -1428,9 +1340,9 @@
       renderPlayerCountSelection();
     }
 
-    async function continueFromPlayerCount() {
+    function continueFromPlayerCount() {
       if (setupState.mode === "online" && setupState.onlineFlow === "create") {
-        const room = await createOnlineRoom(setupState.playerCount);
+        const room = createOnlineRoom(setupState.playerCount);
         setupState.selectedTeams = [room.players[clientId].team];
       }
       setScreen("teamSelect");
@@ -1472,7 +1384,7 @@
       renderTeamSelection();
     }
 
-    async function continueFromTeamSelect() {
+    function continueFromTeamSelect() {
       if (setupState.selectedTeams.length === 0) {
         alert("Select at least one team.");
         return;
@@ -1491,7 +1403,7 @@
         activeRoom.players[clientId].team = myTeam;
         activeRoom.players[clientId].ready = false;
         activeRoom.countdownStartTime = null;
-        await saveRoom(activeRoom);
+        saveRoom(activeRoom);
         setScreen("roomReadyLobby");
       } else {
         setScreen("game");
@@ -1506,10 +1418,10 @@
       }
     }
 
-    async function createRoomFlow() {
+    function createRoomFlow() {
       setupState.mode = "online";
       setupState.onlineFlow = "create";
-      setupState.roomCode = await makeRoomCode();
+      setupState.roomCode = makeRoomCode();
       setupState.ready = false;
       setupState.playerCount = 2;
       setupState.selectedTeams = ["green"];
@@ -1525,23 +1437,19 @@
       setScreen("joinRoom");
     }
 
-    async function continueJoinRoom() {
-      const code = ui.joinRoomCodeInput.value.trim().toUpperCase();
-      if (!code) {
-        alert("Enter a room code from the host device.");
-        return;
-      }
-      if (!await joinOnlineRoom(code)) return;
+    function continueJoinRoom() {
+      const code = ui.joinRoomCodeInput.value.trim().toUpperCase() || "ABCD";
+      if (!joinOnlineRoom(code)) return;
       setScreen("teamSelect");
     }
 
-    async function makeRoomCode() {
+    function makeRoomCode() {
       const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
       let out = "";
       do {
         out = "";
-        for (let i = 0; i < 6; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
-      } while (await fetchRoom(out));
+        for (let i = 0; i < 4; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+      } while (loadRoom(out));
       return out;
     }
 
@@ -1561,7 +1469,6 @@
 
     function renderReadyLobby() {
       if (!activeRoom) {
-        ui.roomCodeText.textContent = "ROOM ----";
         ui.roomSummaryText.textContent = "Room unavailable";
         ui.readyLobbyStatusText.textContent = "WAITING";
         setReadyLobbyStatusClass(ui.readyLobbyStatusText, "status-waiting");
@@ -1586,9 +1493,8 @@
       if (remainingMs !== null) summaryStatus = `Starting in ${Math.ceil(remainingMs / 1000)}`;
       else if (humansReady) summaryStatus = "All ready";
 
-      ui.roomCodeText.textContent = `ROOM ${activeRoom.roomCode}`;
       ui.roomSummaryText.textContent =
-        `${players.length}/${required} players · ${bots} bot${bots === 1 ? "" : "s"} · ${summaryStatus}`;
+        `Room: ${activeRoom.roomCode} · ${players.length}/${required} humans · ${bots} bot${bots === 1 ? "" : "s"} · ${summaryStatus}`;
 
       ui.readyToggleBtn.setAttribute("aria-label", me?.ready ? "Unready" : "Ready");
 
