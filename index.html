@@ -279,6 +279,30 @@
       text-transform: uppercase;
     }
 
+
+    .room-code-text {
+      position: absolute;
+      left: 28%;
+      top: 21.85%;
+      width: 44%;
+      height: 3.2%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #f5fdff;
+      font-size: clamp(11px, 2.5vw, 19px);
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-shadow:
+        0 2px 2px rgba(0, 10, 40, .95),
+        0 0 8px rgba(90, 220, 255, .9),
+        0 0 14px rgba(255, 255, 255, .38);
+    }
+
     .room-info-text {
       position: absolute;
       left: 16.74%;
@@ -763,7 +787,8 @@
         <img class="screen-art" src="/assets/screens/room-ready-lobby.png" alt="Room Ready Lobby" />
 
         <div class="room-ready-overlay" aria-live="polite">
-          <div id="roomSummaryText" class="room-info-text">Room: ----</div>
+          <div id="roomCodeText" class="room-code-text">ROOM ----</div>
+          <div id="roomSummaryText" class="room-info-text">WAITING</div>
 
           <div id="lobbyStatusRed" class="lobby-status-text lobby-status-red">BOT</div>
           <div id="lobbyStatusGreen" class="lobby-status-text lobby-status-green">BOT</div>
@@ -1323,6 +1348,7 @@
       statusBar: document.getElementById("statusBar"),
       statusControlBadge: document.getElementById("statusControlBadge"),
       diePieces: [document.getElementById("diePiece0"), document.getElementById("diePiece1")],
+      roomCodeText: document.getElementById("roomCodeText"),
       roomSummaryText: document.getElementById("roomSummaryText"),
       readyLobbyStatusText: document.getElementById("readyLobbyStatusText"),
       lobbyStatusByTeam: {
@@ -1534,6 +1560,7 @@
 
     function renderReadyLobby() {
       if (!activeRoom) {
+        ui.roomCodeText.textContent = "ROOM ----";
         ui.roomSummaryText.textContent = "Room unavailable";
         ui.readyLobbyStatusText.textContent = "WAITING";
         setReadyLobbyStatusClass(ui.readyLobbyStatusText, "status-waiting");
@@ -1558,9 +1585,9 @@
       if (remainingMs !== null) summaryStatus = `Starting in ${Math.ceil(remainingMs / 1000)}`;
       else if (humansReady) summaryStatus = "All ready";
 
+      ui.roomCodeText.textContent = `ROOM ${activeRoom.roomCode}`;
       ui.roomSummaryText.textContent =
-        `Room: ${activeRoom.roomCode} · ${players.length}/${required} humans · ${bots} bot${bots === 1 ? "" : "s"} · ${summaryStatus}`
-        + (lastRoomSyncError ? ` · Sync warning: ${lastRoomSyncError}` : "");
+        `${players.length}/${required} players · ${bots} bot${bots === 1 ? "" : "s"} · ${summaryStatus}`;
 
       ui.readyToggleBtn.setAttribute("aria-label", me?.ready ? "Unready" : "Ready");
 
