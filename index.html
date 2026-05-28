@@ -265,6 +265,140 @@
     .ready { color: #75db9e; font-weight: 900; }
     .waiting { color: #f7d56b; font-weight: 900; }
 
+
+    .room-ready-stage {
+      background: #061b3a;
+    }
+
+    .room-ready-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      pointer-events: none;
+      font-family: Georgia, "Times New Roman", serif;
+      text-transform: uppercase;
+    }
+
+    .room-info-text {
+      position: absolute;
+      left: 11.5%;
+      top: 25.15%;
+      width: 77%;
+      height: 4.4%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 2.5%;
+      color: #f5fdff;
+      font-size: clamp(10px, 2.25vw, 18px);
+      font-weight: 900;
+      letter-spacing: .035em;
+      text-shadow:
+        0 2px 2px rgba(0, 10, 40, .9),
+        0 0 8px rgba(90, 220, 255, .8),
+        0 0 14px rgba(255, 255, 255, .36);
+    }
+
+    .lobby-status-text {
+      position: absolute;
+      left: 67%;
+      width: 21.5%;
+      height: 5.4%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: clamp(11px, 2.55vw, 20px);
+      font-weight: 900;
+      letter-spacing: .045em;
+      color: #eaffff;
+      text-shadow:
+        0 2px 2px rgba(0, 10, 40, .95),
+        0 0 7px rgba(90, 220, 255, .62);
+    }
+
+    .lobby-status-red { top: 33.05%; }
+    .lobby-status-green { top: 41.95%; }
+    .lobby-status-blue { top: 50.85%; }
+    .lobby-status-yellow { top: 59.72%; }
+
+    .lobby-status-text.status-ready {
+      color: #8dffb0;
+      text-shadow:
+        0 2px 2px rgba(0, 30, 20, .95),
+        0 0 8px rgba(90, 255, 155, .82),
+        0 0 14px rgba(255, 255, 255, .28);
+    }
+
+    .lobby-status-text.status-waiting {
+      color: #ffe08a;
+      text-shadow:
+        0 2px 2px rgba(45, 25, 0, .95),
+        0 0 8px rgba(255, 215, 90, .75),
+        0 0 12px rgba(255, 255, 255, .22);
+    }
+
+    .lobby-status-text.status-bot {
+      color: #7ee8ff;
+      text-shadow:
+        0 2px 2px rgba(0, 20, 55, .95),
+        0 0 8px rgba(100, 230, 255, .82);
+    }
+
+    .lobby-status-text.status-human {
+      color: #f5fdff;
+      text-shadow:
+        0 2px 2px rgba(0, 10, 40, .95),
+        0 0 8px rgba(120, 230, 255, .62);
+    }
+
+    .ready-lobby-status-text {
+      position: absolute;
+      left: 13.5%;
+      top: 83.15%;
+      width: 73%;
+      height: 5.1%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 2%;
+      color: #ffe08a;
+      font-size: clamp(12px, 2.75vw, 22px);
+      font-weight: 900;
+      letter-spacing: .055em;
+      text-shadow:
+        0 2px 2px rgba(0, 10, 40, .95),
+        0 0 8px rgba(90, 220, 255, .72),
+        0 0 14px rgba(255, 255, 255, .28);
+    }
+
+    .ready-lobby-status-text.status-ready {
+      color: #8dffb0;
+      text-shadow:
+        0 2px 2px rgba(0, 30, 20, .95),
+        0 0 10px rgba(90, 255, 155, .86),
+        0 0 16px rgba(255, 255, 255, .28);
+    }
+
+    .ready-lobby-status-text.status-countdown {
+      color: #ffffff;
+      text-shadow:
+        0 2px 2px rgba(0, 10, 40, .95),
+        0 0 10px rgba(100, 230, 255, .95),
+        0 0 18px rgba(255, 255, 255, .42);
+    }
+
     #screenGame {
       background: #c9f3ff;
       align-items: flex-start;
@@ -523,7 +657,7 @@
   </style>
 </head>
 <body>
-  <div class="top-dev-note">Missing base images: online lobby menu, create/join room, ready lobby. I made plain HTML versions. Replace later with your own /assets/screens/*.png.</div>
+  <div class="top-dev-note">Missing base image: join room only. Ready lobby now uses /assets/screens/room-ready-lobby.png.</div>
 
   <section id="screenCover" class="screen active" aria-label="Cover screen">
     <div id="coverContinueArea" class="screen-shell" role="button" tabindex="0" aria-label="Tap or click to continue">
@@ -627,16 +761,25 @@
   </section>
 
   <section id="screenRoomReadyLobby" class="screen" aria-label="Room ready lobby">
-    <div class="plain-screen">
-      <div class="plain-card">
-        <div class="screen-note">CREATE THIS IMAGE LATER: /assets/screens/room-ready-lobby.png</div>
-        <h1>Room Ready</h1>
-        <p id="roomSummaryText">Room: ----</p>
-        <div id="roomPlayerList" class="lobby-list"></div>
-        <div class="button-stack">
-          <button id="readyToggleBtn" class="ui-btn">Ready</button>
-          <button id="startOnlineGameBtn" class="ui-btn secondary">Start Game</button>
-          <button id="readyLobbyBackBtn" class="ui-btn ghost">Back</button>
+    <div class="menu-screen-shell">
+      <div class="screen-stage room-ready-stage">
+        <img class="screen-art" src="/assets/screens/room-ready-lobby.png" alt="Room Ready Lobby" />
+
+        <div class="room-ready-overlay" aria-live="polite">
+          <div id="roomSummaryText" class="room-info-text">Room: ----</div>
+
+          <div id="lobbyStatusRed" class="lobby-status-text lobby-status-red">BOT</div>
+          <div id="lobbyStatusGreen" class="lobby-status-text lobby-status-green">BOT</div>
+          <div id="lobbyStatusBlue" class="lobby-status-text lobby-status-blue">BOT</div>
+          <div id="lobbyStatusYellow" class="lobby-status-text lobby-status-yellow">BOT</div>
+
+          <div id="readyLobbyStatusText" class="ready-lobby-status-text">WAITING</div>
+        </div>
+
+        <div class="hitbox-layer">
+          <button id="readyToggleBtn" class="hitbox" aria-label="Ready"></button>
+          <button id="startOnlineGameBtn" class="hitbox" aria-label="Room status"></button>
+          <button id="readyLobbyBackBtn" class="hitbox" aria-label="Back"></button>
         </div>
       </div>
     </div>
@@ -742,7 +885,10 @@
       teamContinueBtn: { left: "34.72%", top: "16.12%", width: "31.53%", height: "5.41%" },
       createRoomBtn: { left: "15.15%", top: "47.00%", width: "69.70%", height: "6.65%" },
       joinRoomBtn: { left: "15.15%", top: "58.05%", width: "69.70%", height: "6.80%" },
-      onlineLobbyBackBtn: { left: "20.40%", top: "68.75%", width: "59.20%", height: "5.75%" }
+      onlineLobbyBackBtn: { left: "20.40%", top: "68.75%", width: "59.20%", height: "5.75%" },
+      readyToggleBtn: { left: "10.25%", top: "70.35%", width: "79.50%", height: "9.80%" },
+      startOnlineGameBtn: { left: "12.50%", top: "82.65%", width: "75.00%", height: "6.00%" },
+      readyLobbyBackBtn: { left: "23.00%", top: "91.15%", width: "54.00%", height: "5.70%" }
     };
 
     const PLAYER_OUTLINES = {
@@ -1120,9 +1266,16 @@
       statusControlBadge: document.getElementById("statusControlBadge"),
       diePieces: [document.getElementById("diePiece0"), document.getElementById("diePiece1")],
       roomSummaryText: document.getElementById("roomSummaryText"),
-      roomPlayerList: document.getElementById("roomPlayerList"),
+      readyLobbyStatusText: document.getElementById("readyLobbyStatusText"),
+      lobbyStatusByTeam: {
+        red: document.getElementById("lobbyStatusRed"),
+        green: document.getElementById("lobbyStatusGreen"),
+        blue: document.getElementById("lobbyStatusBlue"),
+        yellow: document.getElementById("lobbyStatusYellow")
+      },
       startOnlineGameBtn: document.getElementById("startOnlineGameBtn"),
       readyToggleBtn: document.getElementById("readyToggleBtn"),
+      readyLobbyBackBtn: document.getElementById("readyLobbyBackBtn"),
       joinRoomCodeInput: document.getElementById("joinRoomCodeInput")
     };
 
@@ -1303,12 +1456,30 @@
       return out;
     }
 
+    function setReadyLobbyStatusClass(el, statusClass) {
+      if (!el) return;
+      el.classList.remove("status-ready", "status-waiting", "status-bot", "status-human", "status-countdown");
+      if (statusClass) el.classList.add(statusClass);
+    }
+
+    function getLobbyStatusForTeam(team, playerByTeam) {
+      const player = playerByTeam[team];
+      if (!player) return { text: "BOT", className: "status-bot" };
+      return player.ready
+        ? { text: "READY", className: "status-ready" }
+        : { text: "WAITING", className: "status-waiting" };
+    }
+
     function renderReadyLobby() {
       if (!activeRoom) {
         ui.roomSummaryText.textContent = "Room unavailable";
-        ui.roomPlayerList.innerHTML = "";
-        ui.readyToggleBtn.textContent = "Ready";
-        ui.startOnlineGameBtn.textContent = "Start Game";
+        ui.readyLobbyStatusText.textContent = "WAITING";
+        setReadyLobbyStatusClass(ui.readyLobbyStatusText, "status-waiting");
+        Object.values(ui.lobbyStatusByTeam).forEach(el => {
+          el.textContent = "BOT";
+          setReadyLobbyStatusClass(el, "status-bot");
+        });
+        ui.readyToggleBtn.setAttribute("aria-label", "Ready");
         ui.startOnlineGameBtn.disabled = true;
         return;
       }
@@ -1317,46 +1488,53 @@
       const me = getMyRoomPlayer();
       const remainingMs = getCountdownRemainingMs();
       const required = activeRoom.playerCount;
+      const readyHumans = players.filter(player => player.ready).length;
       const humansReady = isRoomReadyToCountdown(activeRoom);
       const bots = Math.max(0, 4 - activeRoom.playerCount);
 
-      let summary = `Room: ${activeRoom.roomCode} · ${players.length}/${required} humans · ${bots} bot${bots === 1 ? "" : "s"}`;
-      if (remainingMs !== null) summary += ` · Starting in ${Math.ceil(remainingMs / 1000)}...`;
-      else if (humansReady) summary += " · All ready";
-      else summary += " · Waiting";
-      ui.roomSummaryText.textContent = summary;
+      let summaryStatus = "Waiting";
+      if (remainingMs !== null) summaryStatus = `Starting in ${Math.ceil(remainingMs / 1000)}`;
+      else if (humansReady) summaryStatus = "All ready";
 
-      ui.readyToggleBtn.textContent = me?.ready ? "Unready" : "Ready";
+      ui.roomSummaryText.textContent =
+        `Room: ${activeRoom.roomCode} · ${players.length}/${required} humans · ${bots} bot${bots === 1 ? "" : "s"} · ${summaryStatus}`;
+
+      ui.readyToggleBtn.setAttribute("aria-label", me?.ready ? "Unready" : "Ready");
+
+      const playerByTeam = {};
+      players.forEach(player => {
+        if (player.team) playerByTeam[player.team] = player;
+      });
+
+      ["red", "green", "blue", "yellow"].forEach(team => {
+        const el = ui.lobbyStatusByTeam[team];
+        const status = getLobbyStatusForTeam(team, playerByTeam);
+        el.textContent = status.text;
+        setReadyLobbyStatusClass(el, status.className);
+      });
+
+      let bottomStatus = "";
+      let bottomClass = "status-waiting";
+
+      if (remainingMs !== null) {
+        bottomStatus = `STARTING IN ${Math.ceil(remainingMs / 1000)}`;
+        bottomClass = "status-countdown";
+      } else if (humansReady) {
+        bottomStatus = "AUTO START READY";
+        bottomClass = "status-ready";
+      } else if (players.length < required) {
+        const missingPlayers = required - players.length;
+        bottomStatus = `WAITING FOR ${missingPlayers} PLAYER${missingPlayers === 1 ? "" : "S"}`;
+      } else {
+        const missingReady = Math.max(1, required - readyHumans);
+        bottomStatus = `WAITING FOR ${missingReady} READY`;
+      }
+
+      ui.readyLobbyStatusText.textContent = bottomStatus;
+      setReadyLobbyStatusClass(ui.readyLobbyStatusText, bottomClass);
+
       ui.startOnlineGameBtn.disabled = true;
-      ui.startOnlineGameBtn.style.opacity = humansReady ? "1" : ".55";
-      ui.startOnlineGameBtn.textContent = remainingMs !== null
-        ? `STARTING IN ${Math.ceil(remainingMs / 1000)}`
-        : humansReady
-          ? "AUTO START READY"
-          : `WAITING FOR ${required} READY`;
-
-      const humanRows = players.map(player => ({
-        label: player.clientId === clientId ? "You" : (player.isHost ? "Host" : player.name),
-        team: player.team,
-        ready: player.ready,
-        isHost: player.isHost
-      }));
-
-      const selectedHumanTeams = new Set(players.map(player => player.team).filter(Boolean));
-      const botRows = PLAYERS.filter(team => !selectedHumanTeams.has(team)).map(team => ({
-        label: "Bot",
-        team,
-        ready: true,
-        bot: true
-      }));
-
-      ui.roomPlayerList.innerHTML = [...humanRows, ...botRows].map(row => `
-        <div class="lobby-row">
-          <strong>${row.label}${row.isHost ? " · HOST" : ""}</strong>
-          <span>${row.team ? TEAM_LABEL[row.team] : "No team"}</span>
-          <span class="${row.ready ? "ready" : "waiting"}">${row.bot ? "BOT" : row.ready ? "READY" : "WAITING"}</span>
-        </div>
-      `).join("");
+      ui.startOnlineGameBtn.setAttribute("aria-label", bottomStatus);
 
       evaluateRoomReadiness();
     }
