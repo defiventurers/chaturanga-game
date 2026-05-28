@@ -3,7 +3,7 @@
   "routes": [
     {
       "src": "/assets/(.*)",
-      "dest": "/assets/$1"
+      "dest": "/public/assets/$1"
     },
     {
       "src": "/sw.js",
