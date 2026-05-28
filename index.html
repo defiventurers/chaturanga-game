@@ -281,10 +281,10 @@
 
     .room-info-text {
       position: absolute;
-      left: 17.68%;
-      top: 25.79%;
-      width: 55.44%;
-      height: 3.35%;
+      left: 11.5%;
+      top: 25.15%;
+      width: 77%;
+      height: 4.4%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -305,6 +305,9 @@
 
     .lobby-status-text {
       position: absolute;
+      left: 67%;
+      width: 21.5%;
+      height: 5.4%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -321,10 +324,10 @@
         0 0 7px rgba(90, 220, 255, .62);
     }
 
-    .lobby-status-red { left: 7.25%; top: 32.74%; width: 84.75%; height: 6.85%; }
-    .lobby-status-green { left: 8.00%; top: 41.95%; width: 84.19%; height: 6.64%; }
-    .lobby-status-blue { left: 8.00%; top: 50.85%; width: 84.19%; height: 7.27%; }
-    .lobby-status-yellow { left: 7.25%; top: 60.57%; width: 85.50%; height: 6.42%; }
+    .lobby-status-red { top: 33.05%; }
+    .lobby-status-green { top: 41.95%; }
+    .lobby-status-blue { top: 50.85%; }
+    .lobby-status-yellow { top: 59.72%; }
 
     .lobby-status-text.status-ready {
       color: #8dffb0;
@@ -358,10 +361,10 @@
 
     .ready-lobby-status-text {
       position: absolute;
-      left: 9.37%;
-      top: 72.88%;
-      width: 79.38%;
-      height: 7.75%;
+      left: 13.5%;
+      top: 83.15%;
+      width: 73%;
+      height: 5.1%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -880,12 +883,12 @@
       hitPolly: { left: "0.42%", top: "54.35%", width: "50.83%", height: "30.78%" },
       teamSelectBackBtn: { left: "0%", top: "0%", width: "15.97%", height: "9.85%" },
       teamContinueBtn: { left: "34.72%", top: "16.12%", width: "31.53%", height: "5.41%" },
-      createRoomBtn: { left: "27.91%", top: "49.85%", width: "46.06%", height: "7.50%" },
-      joinRoomBtn: { left: "29.79%", top: "62.27%", width: "41.74%", height: "8.28%" },
-      onlineLobbyBackBtn: { left: "30.53%", top: "73.60%", width: "41.56%", height: "8.81%" },
-      readyToggleBtn: { left: "10.25%", top: "70.88%", width: "78.37%", height: "12.23%" },
-      startOnlineGameBtn: { left: "11.38%", top: "85.18%", width: "75.00%", height: "6.00%" },
-      readyLobbyBackBtn: { left: "23.19%", top: "92.52%", width: "52.69%", height: "6.76%" }
+      createRoomBtn: { left: "15.15%", top: "47.00%", width: "69.70%", height: "6.65%" },
+      joinRoomBtn: { left: "15.15%", top: "58.05%", width: "69.70%", height: "6.80%" },
+      onlineLobbyBackBtn: { left: "20.40%", top: "68.75%", width: "59.20%", height: "5.75%" },
+      readyToggleBtn: { left: "10.25%", top: "70.35%", width: "79.50%", height: "9.80%" },
+      startOnlineGameBtn: { left: "12.50%", top: "82.65%", width: "75.00%", height: "6.00%" },
+      readyLobbyBackBtn: { left: "23.00%", top: "91.15%", width: "54.00%", height: "5.70%" }
     };
 
     const PLAYER_OUTLINES = {
@@ -921,11 +924,16 @@
     const ROOM_CHANNEL_NAME = "arctic_dominion_rooms_v1";
     const CLIENT_ID_STORAGE_KEY = "arctic_dominion_client_id";
     const COUNTDOWN_DURATION_MS = 5000;
+    const PRODUCTION_WS_URL = "wss://chaturanga-game.onrender.com";
+    const LOCAL_WS_URL = "ws://localhost:10000";
     const clientId = getOrCreateClientId();
     const roomChannel = "BroadcastChannel" in window ? new BroadcastChannel(ROOM_CHANNEL_NAME) : null;
     let activeRoom = null;
     let roomTickTimer = null;
     let botTurnTimer = null;
+    let roomSocket = null;
+    let roomSocketReadyPromise = null;
+    const pendingRoomRequests = new Map();
 
     const gameState = createInitialState();
 
@@ -952,13 +960,117 @@
       }
     }
 
+    function getRoomServerUrl() {
+      if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return LOCAL_WS_URL;
+      return PRODUCTION_WS_URL;
+    }
+
+    function safeWriteLocalRoom(room) {
+      try {
+        localStorage.setItem(roomStorageKey(room.roomCode), JSON.stringify(room));
+      } catch (error) {
+        console.warn("Could not cache room locally", error);
+      }
+    }
+
+    function connectRoomSocket() {
+      if (roomSocket && roomSocket.readyState === WebSocket.OPEN) return Promise.resolve(roomSocket);
+      if (roomSocket && roomSocket.readyState === WebSocket.CONNECTING && roomSocketReadyPromise) return roomSocketReadyPromise;
+
+      const url = getRoomServerUrl();
+      roomSocketReadyPromise = new Promise((resolve, reject) => {
+        try {
+          roomSocket = new WebSocket(url);
+        } catch (error) {
+          reject(error);
+          return;
+        }
+
+        const failTimer = window.setTimeout(() => {
+          reject(new Error(`Could not connect to room server: ${url}`));
+        }, 8000);
+
+        roomSocket.addEventListener("open", () => {
+          window.clearTimeout(failTimer);
+          resolve(roomSocket);
+        }, { once: true });
+
+        roomSocket.addEventListener("message", event => {
+          let packet = null;
+          try { packet = JSON.parse(event.data); } catch (_error) { return; }
+          handleRoomSocketPacket(packet);
+        });
+
+        roomSocket.addEventListener("close", () => {
+          roomSocket = null;
+          roomSocketReadyPromise = null;
+        });
+
+        roomSocket.addEventListener("error", () => {
+          if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) {
+            ui.readyLobbyStatusText.textContent = "ROOM SERVER OFFLINE";
+            setReadyLobbyStatusClass(ui.readyLobbyStatusText, "status-waiting");
+          }
+        });
+      });
+      return roomSocketReadyPromise;
+    }
+
+    function handleRoomSocketPacket(packet) {
+      if (!packet || typeof packet.type !== "string") return;
+
+      if (packet.requestId && pendingRoomRequests.has(packet.requestId)) {
+        const pending = pendingRoomRequests.get(packet.requestId);
+        pendingRoomRequests.delete(packet.requestId);
+        if (packet.type === "error_notice") pending.reject(new Error(packet.payload?.message || "Room server error."));
+        else pending.resolve(packet.payload || {});
+        return;
+      }
+
+      if (packet.type === "room_state" && packet.payload?.room) {
+        handleIncomingRoomState(packet.payload.room);
+      }
+
+      if (packet.type === "error_notice") {
+        alert(packet.payload?.message || "Room server error.");
+      }
+    }
+
+    async function sendRoomRequest(type, payload = {}) {
+      const socket = await connectRoomSocket();
+      const requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      return new Promise((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          pendingRoomRequests.delete(requestId);
+          reject(new Error("Room server timed out."));
+        }, 10000);
+        pendingRoomRequests.set(requestId, {
+          resolve(value) { window.clearTimeout(timeout); resolve(value); },
+          reject(error) { window.clearTimeout(timeout); reject(error); }
+        });
+        socket.send(JSON.stringify({ type, requestId, payload: { ...payload, clientId } }));
+      });
+    }
+
+    function publishRoomToServer(room) {
+      if (!room || setupState.mode !== "online") return;
+      connectRoomSocket().then(socket => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "update_room", payload: { clientId, room } }));
+        }
+      }).catch(error => console.warn("Could not publish room", error));
+    }
+
     function saveRoom(room, shouldBroadcast = true) {
       if (!room || !room.roomCode) return;
       room.updatedAt = Date.now();
-      localStorage.setItem(roomStorageKey(room.roomCode), JSON.stringify(room));
+      safeWriteLocalRoom(room);
       activeRoom = room;
       syncSetupFromRoom();
-      if (shouldBroadcast) roomChannel?.postMessage({ type: "room-state", roomCode: room.roomCode, room });
+      if (shouldBroadcast) {
+        roomChannel?.postMessage({ type: "room-state", roomCode: room.roomCode, room });
+        publishRoomToServer(room);
+      }
       if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
       if (typeof ui !== "undefined" && ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
       if (typeof ui !== "undefined" && ui.screens.game.classList.contains("active") && room.gameStateSnapshot) {
@@ -1000,7 +1112,7 @@
       return activeRoom?.players?.[clientId] || null;
     }
 
-    function createOnlineRoom(playerCount) {
+    async function createOnlineRoom(playerCount) {
       const code = setupState.roomCode || makeRoomCode();
       const room = {
         roomCode: code,
@@ -1023,46 +1135,44 @@
         updatedAt: Date.now()
       };
       setupState.roomCode = code;
-      saveRoom(room);
-      return room;
+      saveRoom(room, false);
+      try {
+        const response = await sendRoomRequest("create_room", { room });
+        if (response.room) saveRoom(response.room, false);
+      } catch (error) {
+        alert(`Could not create online room. Check that the Render room server is live.
+
+${error.message}`);
+        throw error;
+      }
+      return activeRoom || room;
     }
 
-    function joinOnlineRoom(roomCode) {
+    async function joinOnlineRoom(roomCode) {
       const code = String(roomCode || "").trim().toUpperCase();
-      const room = loadRoom(code);
-      if (!room) {
-        alert("Room not found. Check the room code.");
+      if (!code) return false;
+      try {
+        const response = await sendRoomRequest("join_room", {
+          roomCode: code,
+          player: {
+            clientId,
+            name: "Player",
+            team: null,
+            ready: false,
+            isHost: false,
+            joinedAt: Date.now()
+          }
+        });
+        if (!response.room) throw new Error("Room server did not return a room.");
+        setupState.roomCode = code;
+        saveRoom(response.room, false);
+        return true;
+      } catch (error) {
+        alert(`${error.message}
+
+Make sure the host created the room and the Render server is awake.`);
         return false;
       }
-      if (room.gameStarted) {
-        alert("This room already started.");
-        return false;
-      }
-      if (!room.players) room.players = {};
-      if (!room.players[clientId] && getRoomPlayers(room).length >= room.playerCount) {
-        alert("Room is full.");
-        return false;
-      }
-      const preferredTeam = getFirstAvailableTeam(room, "blue") || getFirstAvailableTeam(room);
-      if (!preferredTeam) {
-        alert("No teams are available in this room.");
-        return false;
-      }
-      room.players[clientId] = room.players[clientId] || {
-        clientId,
-        name: `Player ${getRoomPlayers(room).length + 1}`,
-        team: preferredTeam,
-        ready: false,
-        isHost: false,
-        joinedAt: Date.now()
-      };
-      if (getTakenTeams(clientId, room).has(room.players[clientId].team)) {
-        room.players[clientId].team = preferredTeam;
-        room.players[clientId].ready = false;
-      }
-      setupState.roomCode = code;
-      saveRoom(room);
-      return true;
     }
 
     function updateRoomPlayerTeam(team) {
@@ -1122,7 +1232,7 @@
       roomTickTimer = window.setInterval(() => {
         if (!activeRoom) return;
         const latest = loadRoom(activeRoom.roomCode);
-        if (latest && latest.updatedAt !== activeRoom.updatedAt) {
+        if (latest && latest.updatedAt > (activeRoom.updatedAt || 0)) {
           activeRoom = latest;
           syncSetupFromRoom();
         }
@@ -1213,9 +1323,11 @@
     }
 
     function handleIncomingRoomState(room) {
-      if (!room || !activeRoom || room.roomCode !== activeRoom.roomCode) return;
-      if (room.updatedAt < (activeRoom.updatedAt || 0)) return;
+      if (!room || !room.roomCode) return;
+      if (activeRoom && room.roomCode !== activeRoom.roomCode) return;
+      if (activeRoom && room.updatedAt < (activeRoom.updatedAt || 0)) return;
       activeRoom = room;
+      safeWriteLocalRoom(room);
       syncSetupFromRoom();
       if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
       if (typeof ui !== "undefined" && ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
@@ -1340,9 +1452,14 @@
       renderPlayerCountSelection();
     }
 
-    function continueFromPlayerCount() {
+    async function continueFromPlayerCount() {
       if (setupState.mode === "online" && setupState.onlineFlow === "create") {
-        const room = createOnlineRoom(setupState.playerCount);
+        let room;
+        try {
+          room = await createOnlineRoom(setupState.playerCount);
+        } catch (_error) {
+          return;
+        }
         setupState.selectedTeams = [room.players[clientId].team];
       }
       setScreen("teamSelect");
@@ -1437,9 +1554,9 @@
       setScreen("joinRoom");
     }
 
-    function continueJoinRoom() {
+    async function continueJoinRoom() {
       const code = ui.joinRoomCodeInput.value.trim().toUpperCase() || "ABCD";
-      if (!joinOnlineRoom(code)) return;
+      if (!(await joinOnlineRoom(code))) return;
       setScreen("teamSelect");
     }
 
