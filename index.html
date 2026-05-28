@@ -279,6 +279,30 @@
       text-transform: uppercase;
     }
 
+
+    .room-code-text {
+      position: absolute;
+      left: 28%;
+      top: 21.85%;
+      width: 44%;
+      height: 3.2%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #f5fdff;
+      font-size: clamp(11px, 2.5vw, 19px);
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-shadow:
+        0 2px 2px rgba(0, 10, 40, .95),
+        0 0 8px rgba(90, 220, 255, .9),
+        0 0 14px rgba(255, 255, 255, .38);
+    }
+
     .room-info-text {
       position: absolute;
       left: 16.74%;
@@ -747,9 +771,9 @@
       <div class="plain-card">
         <div class="screen-note">CREATE THIS IMAGE LATER: /assets/screens/join-room.png</div>
         <h1>Join Room</h1>
-        <p>Temporary local-only join screen. Real networking comes later.</p>
+        <p>Enter the 6-character room code from the host device.</p>
         <div class="room-code-box">
-          <input id="joinRoomCodeInput" maxlength="6" placeholder="ROOM" value="ABCD" />
+          <input id="joinRoomCodeInput" maxlength="6" placeholder="ROOM" value="" />
           <button id="joinRoomContinueBtn" class="ui-btn">Join</button>
         </div>
         <button id="joinRoomBackBtn" class="ui-btn ghost">Back</button>
@@ -763,7 +787,8 @@
         <img class="screen-art" src="/assets/screens/room-ready-lobby.png" alt="Room Ready Lobby" />
 
         <div class="room-ready-overlay" aria-live="polite">
-          <div id="roomSummaryText" class="room-info-text">Room: ----</div>
+          <div id="roomCodeText" class="room-code-text">ROOM ----</div>
+          <div id="roomSummaryText" class="room-info-text">WAITING</div>
 
           <div id="lobbyStatusRed" class="lobby-status-text lobby-status-red">BOT</div>
           <div id="lobbyStatusGreen" class="lobby-status-text lobby-status-green">BOT</div>
@@ -919,13 +944,16 @@
 
     const ROOM_STORAGE_PREFIX = "arctic_dominion_room_";
     const ROOM_CHANNEL_NAME = "arctic_dominion_rooms_v1";
+    const ROOM_API_URL = "/api/rooms";
     const CLIENT_ID_STORAGE_KEY = "arctic_dominion_client_id";
     const COUNTDOWN_DURATION_MS = 5000;
     const clientId = getOrCreateClientId();
     const roomChannel = "BroadcastChannel" in window ? new BroadcastChannel(ROOM_CHANNEL_NAME) : null;
+    const roomMemoryCache = new Map();
     let activeRoom = null;
     let roomTickTimer = null;
     let botTurnTimer = null;
+    let lastRoomSyncError = "";
 
     const gameState = createInitialState();
 
@@ -942,9 +970,25 @@
       return `${ROOM_STORAGE_PREFIX}${String(roomCode || "").toUpperCase()}`;
     }
 
-    function loadRoom(roomCode) {
+    function cloneRoom(room) {
+      return room ? JSON.parse(JSON.stringify(room)) : null;
+    }
+
+    function cacheRoom(room) {
+      if (!room?.roomCode) return;
+      roomMemoryCache.set(room.roomCode, cloneRoom(room));
       try {
-        const raw = localStorage.getItem(roomStorageKey(roomCode));
+        localStorage.setItem(roomStorageKey(room.roomCode), JSON.stringify(room));
+      } catch (error) {
+        console.warn("Could not cache room locally", error);
+      }
+    }
+
+    function loadRoom(roomCode) {
+      const code = String(roomCode || "").trim().toUpperCase();
+      if (roomMemoryCache.has(code)) return cloneRoom(roomMemoryCache.get(code));
+      try {
+        const raw = localStorage.getItem(roomStorageKey(code));
         return raw ? JSON.parse(raw) : null;
       } catch (error) {
         console.warn("Could not load room", error);
@@ -952,13 +996,55 @@
       }
     }
 
+    async function fetchRoom(roomCode) {
+      const code = String(roomCode || "").trim().toUpperCase();
+      if (!code) return null;
+      try {
+        const response = await fetch(`${ROOM_API_URL}?roomCode=${encodeURIComponent(code)}`, { cache: "no-store" });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.ok) throw new Error(payload.error || "Room service unavailable");
+        lastRoomSyncError = "";
+        if (payload.room) cacheRoom(payload.room);
+        return payload.room || null;
+      } catch (error) {
+        lastRoomSyncError = error.message || "Room service unavailable";
+        console.warn("Could not fetch online room; using local fallback", error);
+        return loadRoom(code);
+      }
+    }
+
+    async function persistRoomToServer(room) {
+      try {
+        const response = await fetch(ROOM_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "save", room })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.ok) throw new Error(payload.error || "Room service unavailable");
+        lastRoomSyncError = "";
+        if (payload.room) {
+          cacheRoom(payload.room);
+          if (activeRoom?.roomCode === payload.room.roomCode && payload.room.updatedAt >= (activeRoom.updatedAt || 0)) {
+            activeRoom = payload.room;
+            syncSetupFromRoom();
+          }
+        }
+      } catch (error) {
+        lastRoomSyncError = error.message || "Room service unavailable";
+        console.warn("Could not save online room; changes are local only until sync recovers", error);
+      }
+      if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
+    }
+
     function saveRoom(room, shouldBroadcast = true) {
       if (!room || !room.roomCode) return;
       room.updatedAt = Date.now();
-      localStorage.setItem(roomStorageKey(room.roomCode), JSON.stringify(room));
+      cacheRoom(room);
       activeRoom = room;
       syncSetupFromRoom();
       if (shouldBroadcast) roomChannel?.postMessage({ type: "room-state", roomCode: room.roomCode, room });
+      persistRoomToServer(cloneRoom(room));
       if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
       if (typeof ui !== "undefined" && ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
       if (typeof ui !== "undefined" && ui.screens.game.classList.contains("active") && room.gameStateSnapshot) {
@@ -1000,8 +1086,8 @@
       return activeRoom?.players?.[clientId] || null;
     }
 
-    function createOnlineRoom(playerCount) {
-      const code = setupState.roomCode || makeRoomCode();
+    async function createOnlineRoom(playerCount) {
+      const code = setupState.roomCode || await makeRoomCode();
       const room = {
         roomCode: code,
         hostClientId: clientId,
@@ -1027,9 +1113,9 @@
       return room;
     }
 
-    function joinOnlineRoom(roomCode) {
+    async function joinOnlineRoom(roomCode) {
       const code = String(roomCode || "").trim().toUpperCase();
-      const room = loadRoom(code);
+      const room = await fetchRoom(code);
       if (!room) {
         alert("Room not found. Check the room code.");
         return false;
@@ -1119,9 +1205,9 @@
 
     function startRoomTicker() {
       if (roomTickTimer) return;
-      roomTickTimer = window.setInterval(() => {
+      roomTickTimer = window.setInterval(async () => {
         if (!activeRoom) return;
-        const latest = loadRoom(activeRoom.roomCode);
+        const latest = await fetchRoom(activeRoom.roomCode);
         if (latest && latest.updatedAt !== activeRoom.updatedAt) {
           activeRoom = latest;
           syncSetupFromRoom();
@@ -1144,7 +1230,7 @@
             initializeOnlineMatchAsHost();
           }
         }
-      }, 300);
+      }, 1000);
     }
 
     function initializeOnlineMatchAsHost() {
@@ -1262,6 +1348,7 @@
       statusBar: document.getElementById("statusBar"),
       statusControlBadge: document.getElementById("statusControlBadge"),
       diePieces: [document.getElementById("diePiece0"), document.getElementById("diePiece1")],
+      roomCodeText: document.getElementById("roomCodeText"),
       roomSummaryText: document.getElementById("roomSummaryText"),
       readyLobbyStatusText: document.getElementById("readyLobbyStatusText"),
       lobbyStatusByTeam: {
@@ -1340,9 +1427,9 @@
       renderPlayerCountSelection();
     }
 
-    function continueFromPlayerCount() {
+    async function continueFromPlayerCount() {
       if (setupState.mode === "online" && setupState.onlineFlow === "create") {
-        const room = createOnlineRoom(setupState.playerCount);
+        const room = await createOnlineRoom(setupState.playerCount);
         setupState.selectedTeams = [room.players[clientId].team];
       }
       setScreen("teamSelect");
@@ -1418,10 +1505,10 @@
       }
     }
 
-    function createRoomFlow() {
+    async function createRoomFlow() {
       setupState.mode = "online";
       setupState.onlineFlow = "create";
-      setupState.roomCode = makeRoomCode();
+      setupState.roomCode = await makeRoomCode();
       setupState.ready = false;
       setupState.playerCount = 2;
       setupState.selectedTeams = ["green"];
@@ -1437,19 +1524,23 @@
       setScreen("joinRoom");
     }
 
-    function continueJoinRoom() {
-      const code = ui.joinRoomCodeInput.value.trim().toUpperCase() || "ABCD";
-      if (!joinOnlineRoom(code)) return;
+    async function continueJoinRoom() {
+      const code = ui.joinRoomCodeInput.value.trim().toUpperCase();
+      if (!code) {
+        alert("Enter a room code from the host device.");
+        return;
+      }
+      if (!await joinOnlineRoom(code)) return;
       setScreen("teamSelect");
     }
 
-    function makeRoomCode() {
+    async function makeRoomCode() {
       const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
       let out = "";
       do {
         out = "";
-        for (let i = 0; i < 4; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
-      } while (loadRoom(out));
+        for (let i = 0; i < 6; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+      } while (await fetchRoom(out));
       return out;
     }
 
@@ -1469,6 +1560,7 @@
 
     function renderReadyLobby() {
       if (!activeRoom) {
+        ui.roomCodeText.textContent = "ROOM ----";
         ui.roomSummaryText.textContent = "Room unavailable";
         ui.readyLobbyStatusText.textContent = "WAITING";
         setReadyLobbyStatusClass(ui.readyLobbyStatusText, "status-waiting");
@@ -1493,8 +1585,9 @@
       if (remainingMs !== null) summaryStatus = `Starting in ${Math.ceil(remainingMs / 1000)}`;
       else if (humansReady) summaryStatus = "All ready";
 
+      ui.roomCodeText.textContent = `ROOM ${activeRoom.roomCode}`;
       ui.roomSummaryText.textContent =
-        `Room: ${activeRoom.roomCode} · ${players.length}/${required} humans · ${bots} bot${bots === 1 ? "" : "s"} · ${summaryStatus}`;
+        `${players.length}/${required} players · ${bots} bot${bots === 1 ? "" : "s"} · ${summaryStatus}`;
 
       ui.readyToggleBtn.setAttribute("aria-label", me?.ready ? "Unready" : "Ready");
 
