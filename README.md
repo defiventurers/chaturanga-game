@@ -26,7 +26,7 @@ UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
 ```
 
-If these variables are missing, the frontend keeps a local fallback so the game can still be tested on one device, but multi-device rooms require shared KV/Redis storage.
+If these variables are missing, `/api/rooms` uses a temporary in-memory room store so online rooms can still be tested from multiple browser sessions against the same running server. In-memory rooms can disappear when the serverless function cold-starts or scales, so production deployments should still use shared KV/Redis storage.
 
 ## Local development
 
@@ -48,8 +48,9 @@ Then open the local Vercel URL in a browser. A player who creates a room gets a 
 
 - **Cannot sync between devices**
   - Confirm `/api/rooms?roomCode=XXXXXX` responds from the deployed domain.
-  - Confirm `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or the Upstash equivalents) are set in Vercel.
+  - For production, confirm `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or the Upstash equivalents) are set in Vercel.
   - Redeploy after changing environment variables.
+  - Without KV/Redis, rooms use temporary in-memory server storage and may reset on cold starts or across scaled serverless instances.
 - **Room code rejected**
   - Room IDs are 6 uppercase alphanumeric characters in the UI.
 - **Room disappears later**
