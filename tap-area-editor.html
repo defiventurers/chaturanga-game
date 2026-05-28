@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Temporary Tap Area + Text Editor</title>
+<style>
+  body{margin:0;background:#03142e;color:#fff;font-family:Arial,sans-serif;display:flex;min-height:100vh}
+  .sidebar{width:280px;padding:12px;background:#061f44;display:flex;flex-direction:column;gap:10px;position:fixed;left:0;top:0;bottom:0;z-index:5}
+  .sidebar button,.sidebar select{padding:10px;border-radius:8px;border:1px solid #7fb5ff;background:#0e366f;color:#fff}
+  .workspace{margin-left:280px;flex:1;display:flex;justify-content:center;align-items:flex-start;padding:12px}
+  .stage{position:relative;width:min(calc(100vw - 320px),calc((100vh - 24px)*9/16));aspect-ratio:9/16;background:#000}
+  .stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;user-select:none;pointer-events:none}
+  .node{position:absolute;border:2px solid #ffe66d;background:rgba(255,0,0,.2);touch-action:none;cursor:move}
+  .text-node{border-color:#61f2ff;background:rgba(0,150,255,.22);display:flex;align-items:center;justify-content:center;padding:4px;color:#fff;font-weight:700;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .node .label{position:absolute;left:0;top:-18px;font-size:11px;background:rgba(0,0,0,.7);padding:2px 4px;border-radius:4px}
+  .handle{position:absolute;width:14px;height:14px;right:-7px;bottom:-7px;background:#fff;border-radius:50%;border:2px solid #000;cursor:nwse-resize}
+  textarea{flex:1;width:100%;background:#021024;color:#a8f2ff;border:1px solid #2a6ec2;border-radius:8px;padding:8px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <select id="screenSelect"></select>
+  <button id="copyBtn">Copy Values</button>
+  <button id="resetBtn">Reset Current Screen</button>
+  <div style="font-size:12px;line-height:1.4">Drag boxes to move. Drag white dot to resize.<br/>Double click text boxes to rename dynamic text.</div>
+  <textarea id="out" readonly></textarea>
+</div>
+<div class="workspace"><div id="stage" class="stage"></div></div>
+<script>
+const SCREENS={
+  roomReady:{title:'room-ready-lobby.png',image:'/assets/screens/room-ready-lobby.png',tap:{readyToggleBtn:{l:10.25,t:70.35,w:79.5,h:9.8},startOnlineGameBtn:{l:12.5,t:82.65,w:75,h:6},readyLobbyBackBtn:{l:23,t:91.15,w:54,h:5.7}},text:{roomSummaryText:{l:16,t:26,w:68,h:4.5,text:'Room: ----'},lobbyStatusRed:{l:8,t:33.05,w:84,h:4,text:'BOT'},lobbyStatusGreen:{l:8,t:41.95,w:84,h:4,text:'BOT'},lobbyStatusBlue:{l:8,t:50.85,w:84,h:4,text:'BOT'},lobbyStatusYellow:{l:8,t:59.72,w:84,h:4,text:'BOT'},readyLobbyStatusText:{l:12,t:77,w:76,h:5,text:'WAITING'}}},
+  roomMenu:{title:'create/join room menu',image:'/assets/screens/arctic-dominion-room-menu.png',tap:{createRoomBtn:{l:15.15,t:47,w:69.7,h:6.65},joinRoomBtn:{l:15.15,t:58.05,w:69.7,h:6.8},onlineLobbyBackBtn:{l:20.4,t:68.75,w:59.2,h:5.75}},text:{createLabel:{l:27,t:48,w:46,h:4,text:'CREATE ROOM'},joinLabel:{l:30,t:59,w:40,h:4,text:'JOIN ROOM'},backLabel:{l:42,t:69.5,w:18,h:3.5,text:'BACK'}}},
+  joinRoom:{title:'join room screen',image:'/assets/screens/arctic-dominion-room-menu.png',tap:{joinRoomCodeInput:{l:14,t:43,w:54,h:7},joinRoomContinueBtn:{l:70,t:43,w:17,h:7},joinRoomBackBtn:{l:24,t:56,w:52,h:6}},text:{joinTitle:{l:30,t:25,w:40,h:6,text:'JOIN ROOM'},joinHint:{l:14,t:34,w:72,h:4,text:'Enter room code'},joinBtnText:{l:72,t:44,w:13,h:4,text:'JOIN'}}}
+};
+let state=JSON.parse(JSON.stringify(SCREENS)),current='roomReady';
+const stage=document.getElementById('stage'),sel=document.getElementById('screenSelect'),out=document.getElementById('out');
+Object.entries(state).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=v.title;sel.appendChild(o)});
+sel.onchange=()=>{current=sel.value;render()};
+document.getElementById('resetBtn').onclick=()=>{state[current]=JSON.parse(JSON.stringify(SCREENS[current]));render()};
+document.getElementById('copyBtn').onclick=async()=>{const txt=JSON.stringify(state,null,2);await navigator.clipboard.writeText(txt);out.value=txt};
+function pct(v){return Number(v.toFixed(2))}
+function render(){stage.innerHTML='';const sc=state[current];const img=new Image();img.src=sc.image;stage.appendChild(img);
+  Object.entries(sc.tap).forEach(([id,b])=>makeNode(id,b,false));Object.entries(sc.text).forEach(([id,b])=>makeNode(id,b,true));out.value=JSON.stringify(sc,null,2)}
+function makeNode(id,b,isText){
+  const n=document.createElement('div');
+  n.className='node'+(isText?' text-node':'');
+  const label=document.createElement('div');label.className='label';label.textContent=id;
+  const textSpan=document.createElement('span');if(isText) textSpan.textContent=b.text;
+  const handle=document.createElement('div');handle.className='handle';
+  n.append(label);if(isText)n.append(textSpan);n.append(handle);
+  place();stage.appendChild(n);
+  n.ondblclick=()=>{if(!isText)return;const t=prompt('Text',b.text);if(t!==null){b.text=t;textSpan.textContent=t;out.value=JSON.stringify(state[current],null,2)}};
+  drag(n,()=>({l:b.l,t:b.t}),(base,dx,dy)=>{b.l=pct(base.l+dx);b.t=pct(base.t+dy);place()});
+  drag(handle,()=>({w:b.w,h:b.h}),(base,dx,dy)=>{b.w=pct(Math.max(3,base.w+dx));b.h=pct(Math.max(2,base.h+dy));place()});
+  function place(){n.style.left=b.l+'%';n.style.top=b.t+'%';n.style.width=b.w+'%';n.style.height=b.h+'%';if(isText){textSpan.textContent=b.text}out.value=JSON.stringify(state[current],null,2)}
+}
+function drag(el,getBase,onMove){el.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();const rect=stage.getBoundingClientRect();const sx=e.clientX,sy=e.clientY;const base=getBase();
+  const mm=(ev)=>onMove(base,(ev.clientX-sx)/rect.width*100,(ev.clientY-sy)/rect.height*100), up=()=>{window.removeEventListener('pointermove',mm);window.removeEventListener('pointerup',up)};
+  window.addEventListener('pointermove',mm);window.addEventListener('pointerup',up);});}
+render();
+</script>
+</body></html>
