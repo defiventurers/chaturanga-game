@@ -652,7 +652,69 @@
       pointer-events: none;
     }
 
-    /* HOW TO PLAY INTERACTIVE TRAINER */
+
+    /* RESILIENT FALLBACK UI + HOW TO PLAY TRAINER */
+    .asset-fallback-ui {
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      display: none;
+      place-items: center;
+      padding: 22px;
+      pointer-events: none;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 14%, rgba(90, 230, 255, .20), transparent 34%),
+        linear-gradient(180deg, rgba(6,27,58,.1), rgba(6,27,58,.78));
+    }
+
+    .asset-missing .asset-fallback-ui { display: grid; }
+
+    .fallback-card {
+      width: min(86%, 360px);
+      display: grid;
+      gap: 12px;
+      padding: 20px;
+      border-radius: 22px;
+      background: rgba(4, 22, 46, .78);
+      border: 1px solid rgba(190,245,255,.38);
+      box-shadow: 0 18px 40px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.16);
+      pointer-events: auto;
+    }
+
+    .fallback-card h1,
+    .fallback-card h2 {
+      margin: 0;
+      font-weight: 1000;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 8px rgba(0,0,0,.55), 0 0 18px rgba(105,230,255,.48);
+    }
+
+    .fallback-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: .92rem;
+    }
+
+    .fallback-btn {
+      min-height: 48px;
+      border-radius: 15px;
+      border: 1px solid rgba(190,245,255,.52);
+      color: #fff;
+      background: linear-gradient(180deg, rgba(56,217,255,.95), rgba(8,120,216,.95));
+      font-weight: 1000;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(6,79,158,.32), inset 0 1px 0 rgba(255,255,255,.5);
+    }
+
+    .fallback-btn.secondary {
+      background: linear-gradient(180deg, rgba(155,220,255,.22), rgba(18,58,100,.52));
+    }
+
     .htp-hidden { display: none !important; }
 
     .htp-overlay {
@@ -723,78 +785,3 @@
       margin: 10px 0 6px;
       text-align: center;
       font-size: clamp(1.45rem, 6vw, 2.1rem);
-      line-height: 1.1;
-      letter-spacing: .03em;
-    }
-
-    .htp-subtitle {
-      margin: 0 auto 20px;
-      max-width: 620px;
-      text-align: center;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: .96rem;
-    }
-
-    .htp-team-grid,
-    .htp-piece-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(132px, 1fr));
-      gap: 14px;
-    }
-
-    .htp-team-card,
-    .htp-piece-card {
-      min-height: 98px;
-      border: 1px solid rgba(190,245,255,.34);
-      background: linear-gradient(180deg, rgba(230,250,255,.16), rgba(6,22,46,.64));
-      color: white;
-      border-radius: 20px;
-      font-size: 1rem;
-      font-weight: 1000;
-      letter-spacing: .04em;
-      cursor: pointer;
-      box-shadow: 0 12px 26px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.16);
-      touch-action: manipulation;
-    }
-
-    .htp-piece-card {
-      display: grid;
-      place-items: center;
-      gap: 4px;
-      padding: 14px 10px;
-      text-align: center;
-    }
-
-    .htp-piece-card:first-child {
-      border-color: rgba(125, 231, 255, .92);
-      box-shadow: 0 0 18px rgba(125,231,255,.45), 0 12px 26px rgba(0,0,0,.28);
-    }
-
-    .htp-piece-card small {
-      display: block;
-      color: rgba(230,248,255,.72);
-      font-size: .72rem;
-      letter-spacing: 0;
-      font-weight: 800;
-      text-transform: none;
-    }
-
-    .htp-piece-icon {
-      width: 42px;
-      height: 42px;
-      object-fit: contain;
-      display: block;
-      margin: 0 auto 4px;
-      filter: drop-shadow(0 4px 6px rgba(0,20,60,.42));
-    }
-
-    .htp-piece-emoji {
-      font-size: 34px;
-      line-height: 1;
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .team-dot {
-      displ
