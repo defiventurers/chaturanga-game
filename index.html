@@ -958,7 +958,7 @@
   </style>
 </head>
 <body>
-  <div class="top-dev-note">Missing base image: join room only. Ready lobby now uses /assets/screens/room-ready-lobby.png.</div>
+  <div class="top-dev-note">Online mode now expects a Colyseus authoritative lobby server. Set COLYSEUS_SERVER_URL before publishing.</div>
 
   <section id="screenCover" class="screen active" aria-label="Cover screen">
     <div id="coverContinueArea" class="screen-shell" role="button" tabindex="0" aria-label="Tap or click to continue">
@@ -1051,7 +1051,7 @@
       <div class="plain-card">
         <div class="screen-note">CREATE THIS IMAGE LATER: /assets/screens/join-room.png</div>
         <h1>Join Room</h1>
-        <p>Temporary local-only join screen. Real networking comes later.</p>
+        <p>Enter the room code created by the Colyseus lobby server.</p>
         <div class="room-code-box">
           <input id="joinRoomCodeInput" maxlength="6" placeholder="ROOM" value="ABCD" />
           <button id="joinRoomContinueBtn" class="ui-btn">Join</button>
@@ -1180,6 +1180,7 @@
   </section>
 
 
+  <script src="https://unpkg.com/colyseus.js@0.16.7/dist/colyseus.js"></script>
   <script>
     "use strict";
 
@@ -1286,169 +1287,122 @@
       ready: false
     };
 
-    const ROOM_STORAGE_PREFIX = "arctic_dominion_room_";
-    const ROOM_CHANNEL_NAME = "arctic_dominion_rooms_v1";
-    const ONLINE_ROOM_SERVER_URL = "wss://chaturanga-game.onrender.com";
+    // -------------------------------------------------------------------------
+    // ONLINE MULTIPLAYER CLIENT
+    // -------------------------------------------------------------------------
+    // This index.html is now wired for a Colyseus-style authoritative lobby.
+    // The browser no longer owns room truth. It sends intents; the server owns:
+    // room code, player list, team locks, ready state, countdown, match start,
+    // dice, moves, bot turns, and final game state.
+    //
+    // Required server room name: "arctic_lobby"
+    // Expected client messages: select_team, set_ready, roll_dice, make_move, end_turn, leave_lobby
+    // Expected server updates: Schema state changes and/or message "room_state" containing a plain room object.
+    const COLYSEUS_SERVER_URL = "wss://chaturanga-game.onrender.com";
+    const COLYSEUS_LOBBY_ROOM_NAME = "arctic_lobby";
     const CLIENT_ID_STORAGE_KEY = "arctic_dominion_client_id";
     const COUNTDOWN_DURATION_MS = 5000;
     const clientId = getOrCreateClientId();
-    const roomChannel = "BroadcastChannel" in window ? new BroadcastChannel(ROOM_CHANNEL_NAME) : null;
     let activeRoom = null;
+    let colyseusRoom = null;
     let roomTickTimer = null;
     let botTurnTimer = null;
 
     const gameState = createInitialState();
-    const RemoteRoomService = {
-      socket: null,
-      connected: false,
-      connectPromise: null,
-      pending: new Map(),
-      requestSeq: 0,
 
-      connect() {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-          this.connected = true;
-          return Promise.resolve(true);
+    const ColyseusLobbyService = {
+      client: null,
+      room: null,
+      connecting: false,
+
+      ensureClient() {
+        if (!window.Colyseus?.Client) {
+          throw new Error("Colyseus client library not loaded. Check the CDN script or bundle colyseus.js locally.");
         }
-        if (this.connectPromise) return this.connectPromise;
+        if (!this.client) this.client = new Colyseus.Client(COLYSEUS_SERVER_URL);
+        return this.client;
+      },
 
-        this.connectPromise = new Promise((resolve, reject) => {
-          let socket;
-          try {
-            socket = new WebSocket(ONLINE_ROOM_SERVER_URL);
-          } catch (error) {
-            this.connectPromise = null;
-            reject(error);
-            return;
-          }
-
-          const failTimer = window.setTimeout(() => {
-            this.connectPromise = null;
-            try { socket.close(); } catch (_error) {}
-            reject(new Error("Online room server timed out. Render may still be waking up."));
-          }, 15000);
-
-          socket.addEventListener("open", () => {
-            window.clearTimeout(failTimer);
-            this.socket = socket;
-            this.connected = true;
-            this.connectPromise = null;
-            resolve(true);
-          });
-
-          socket.addEventListener("message", event => this.handleMessage(event));
-
-          socket.addEventListener("close", () => {
-            window.clearTimeout(failTimer);
-            this.connected = false;
-            this.connectPromise = null;
-            for (const pending of this.pending.values()) {
-              window.clearTimeout(pending.timer);
-              pending.reject(new Error("Online room server disconnected."));
-            }
-            this.pending.clear();
-          });
-
-          socket.addEventListener("error", () => {
-            this.connected = false;
-            if (this.connectPromise) {
-              window.clearTimeout(failTimer);
-              this.connectPromise = null;
-              reject(new Error("Could not connect to the online room server."));
-            }
-          });
+      async createRoom(playerCount) {
+        const client = this.ensureClient();
+        const room = await client.create(COLYSEUS_LOBBY_ROOM_NAME, {
+          clientId,
+          playerCount,
+          preferredTeam: "green",
+          requestedRoomCode: setupState.roomCode || null
         });
-
-        return this.connectPromise;
-      },
-
-      async request(type, payload = {}, timeoutMs = 12000) {
-        await this.connect();
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-          throw new Error("Online room server is not connected.");
-        }
-
-        const requestId = `req_${Date.now().toString(36)}_${++this.requestSeq}`;
-
-        return new Promise((resolve, reject) => {
-          const timer = window.setTimeout(() => {
-            this.pending.delete(requestId);
-            reject(new Error("Online room server did not respond in time."));
-          }, timeoutMs);
-
-          this.pending.set(requestId, { resolve, reject, timer });
-
-          try {
-            this.socket.send(JSON.stringify({ type, requestId, payload }));
-          } catch (error) {
-            window.clearTimeout(timer);
-            this.pending.delete(requestId);
-            reject(error);
-          }
-        });
-      },
-
-      publishRoom(room) {
-        if (setupState.mode !== "online" || !room?.roomCode) return;
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
-        try {
-          this.socket.send(JSON.stringify({
-            type: "update_room",
-            payload: { clientId, room }
-          }));
-        } catch (error) {
-          console.warn("Could not sync room to server", error);
-        }
-      },
-
-      async createRoom(room) {
-        const payload = await this.request("create_room", { clientId, room });
-        return payload.room;
+        this.attachRoom(room);
+        return activeRoom;
       },
 
       async joinRoom(roomCode) {
-        const payload = await this.request("join_room", { clientId, roomCode, player: { name: "Player" } });
-        return payload.room;
+        const client = this.ensureClient();
+        const code = String(roomCode || "").trim().toUpperCase();
+        if (!code) throw new Error("Enter a room code.");
+
+        // Your Colyseus server should implement requestJoin/options filtering by roomCode.
+        // If you prefer joining by Colyseus roomId, change this to client.joinById(roomId, { clientId }).
+        const room = await client.join(COLYSEUS_LOBBY_ROOM_NAME, { clientId, roomCode: code });
+        this.attachRoom(room);
+        return activeRoom;
       },
 
-      async getRoom(roomCode) {
-        const payload = await this.request("get_room", { clientId, roomCode }, 8000);
-        return payload.room;
+      attachRoom(room) {
+        if (this.room && this.room !== room) {
+          try { this.room.leave(false); } catch (_error) {}
+        }
+
+        this.room = room;
+        colyseusRoom = room;
+
+        const applyState = state => {
+          const normalized = normalizeColyseusRoomState(state, room);
+          if (normalized) handleIncomingRoomState(normalized);
+        };
+
+        if (room.state) applyState(room.state);
+
+        room.onStateChange(state => applyState(state));
+
+        room.onMessage("room_state", payload => {
+          const normalized = normalizeColyseusRoomState(payload?.room || payload, room);
+          if (normalized) handleIncomingRoomState(normalized);
+        });
+
+        room.onMessage("game_state", payload => {
+          const nextRoom = { ...(activeRoom || {}), ...(payload?.room || {}) };
+          if (payload?.gameStateSnapshot) nextRoom.gameStateSnapshot = payload.gameStateSnapshot;
+          if (Object.keys(nextRoom).length) handleIncomingRoomState(normalizeColyseusRoomState(nextRoom, room));
+        });
+
+        room.onMessage("error_notice", payload => {
+          alert(payload?.message || "Online room request failed.");
+        });
+
+        room.onLeave(code => {
+          console.warn("Left Colyseus room", code);
+          if (setupState.mode === "online") showToast("Disconnected from room");
+        });
+
+        room.onError((code, message) => {
+          alert(message || `Online room error: ${code}`);
+        });
       },
 
-      handleMessage(event) {
-        let packet;
-        try {
-          packet = JSON.parse(event.data);
-        } catch (error) {
-          console.warn("Bad room server message", error);
-          return;
-        }
+      send(type, payload = {}) {
+        if (!this.room) throw new Error("Not connected to an online room.");
+        this.room.send(type, { clientId, ...payload });
+      },
 
-        const requestId = packet?.requestId || null;
-        const payload = packet?.payload || {};
-
-        if (requestId && this.pending.has(requestId)) {
-          const pending = this.pending.get(requestId);
-          window.clearTimeout(pending.timer);
-          this.pending.delete(requestId);
-          if (packet.type === "error_notice") {
-            pending.reject(new Error(payload.message || "Online room request failed."));
-          } else {
-            pending.resolve(payload);
-          }
-        }
-
-        if (packet.type === "room_state" && payload.room) {
-          handleIncomingRoomState(payload.room);
-        }
-
-        if (packet.type === "error_notice") {
-          console.warn("Online room server:", payload.message || payload.code || packet);
-        }
+      leave() {
+        if (!this.room) return;
+        try { this.room.send("leave_lobby", { clientId }); } catch (_error) {}
+        try { this.room.leave(false); } catch (_error) {}
+        this.room = null;
+        colyseusRoom = null;
+        activeRoom = null;
       }
     };
-
 
     function getOrCreateClientId() {
       let id = sessionStorage.getItem(CLIENT_ID_STORAGE_KEY);
@@ -1459,34 +1413,64 @@
       return id;
     }
 
-    function roomStorageKey(roomCode) {
-      return `${ROOM_STORAGE_PREFIX}${String(roomCode || "").toUpperCase()}`;
-    }
-
-    function loadRoom(roomCode) {
-      try {
-        const raw = localStorage.getItem(roomStorageKey(roomCode));
-        return raw ? JSON.parse(raw) : null;
-      } catch (error) {
-        console.warn("Could not load room", error);
-        return null;
+    function mapLikeToPlain(value) {
+      if (!value) return value;
+      if (value instanceof Map) return Object.fromEntries(Array.from(value.entries()).map(([k, v]) => [k, mapLikeToPlain(v)]));
+      if (typeof value.toJSON === "function") return value.toJSON();
+      if (Array.isArray(value)) return value.map(mapLikeToPlain);
+      if (typeof value === "object") {
+        const out = {};
+        Object.keys(value).forEach(key => {
+          if (typeof value[key] !== "function" && !key.startsWith("$")) out[key] = mapLikeToPlain(value[key]);
+        });
+        return out;
       }
+      return value;
     }
 
-    function saveRoom(room, shouldBroadcast = true) {
+    function normalizePlayers(players, roomSessionId) {
+      const raw = mapLikeToPlain(players) || {};
+      if (Array.isArray(raw)) {
+        const out = {};
+        raw.forEach((player, index) => {
+          const id = player.clientId || player.sessionId || player.id || `player_${index}`;
+          out[id] = { clientId: id, ...player };
+        });
+        return out;
+      }
+      const out = {};
+      Object.entries(raw).forEach(([key, player]) => {
+        const id = player?.clientId || player?.sessionId || key;
+        out[id] = { clientId: id, ...player };
+      });
+      return out;
+    }
+
+    function normalizeColyseusRoomState(state, roomRef = colyseusRoom) {
+      if (!state) return null;
+      const plain = mapLikeToPlain(state);
+      const roomCode = String(plain.roomCode || plain.code || setupState.roomCode || "").toUpperCase();
+      const players = normalizePlayers(plain.players || plain.playerMap || {}, roomRef?.sessionId);
+
+      return {
+        roomId: roomRef?.roomId || plain.roomId || null,
+        roomCode,
+        hostClientId: plain.hostClientId || plain.hostSessionId || plain.hostId || null,
+        mySessionId: roomRef?.sessionId || null,
+        playerCount: Number(plain.playerCount || plain.requiredPlayers || setupState.playerCount || 2),
+        countdownStartTime: plain.countdownStartTime || null,
+        countdownDurationMs: plain.countdownDurationMs || COUNTDOWN_DURATION_MS,
+        gameStarted: !!plain.gameStarted,
+        gameStateSnapshot: plain.gameStateSnapshot || plain.matchState || null,
+        players,
+        updatedAt: plain.updatedAt || Date.now()
+      };
+    }
+
+    function applyRoomLocally(room) {
       if (!room || !room.roomCode) return;
-      room.updatedAt = Date.now();
-      try {
-        localStorage.setItem(roomStorageKey(room.roomCode), JSON.stringify(room));
-      } catch (error) {
-        console.warn("Could not save room locally", error);
-      }
       activeRoom = room;
       syncSetupFromRoom();
-      if (shouldBroadcast) {
-        roomChannel?.postMessage({ type: "room-state", roomCode: room.roomCode, room });
-        RemoteRoomService.publishRoom(room);
-      }
       if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
       if (typeof ui !== "undefined" && ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
       if (typeof ui !== "undefined" && ui.screens.game.classList.contains("active") && room.gameStateSnapshot) {
@@ -1497,17 +1481,19 @@
 
     function syncSetupFromRoom() {
       if (!activeRoom) return;
-      const me = activeRoom.players?.[clientId];
+      const me = getMyRoomPlayer();
       setupState.mode = "online";
       setupState.roomCode = activeRoom.roomCode;
       setupState.playerCount = activeRoom.playerCount;
       setupState.ready = !!me?.ready;
       setupState.selectedTeams = me?.team ? [me.team] : [];
-      setupState.onlineFlow = me?.isHost ? "create" : "join";
+      setupState.onlineFlow = me?.isHost || isRoomHost() ? "create" : "join";
     }
 
     function isRoomHost() {
-      return !!activeRoom && activeRoom.hostClientId === clientId;
+      if (!activeRoom) return false;
+      const me = getMyRoomPlayer();
+      return !!me?.isHost || activeRoom.hostClientId === clientId || activeRoom.hostClientId === colyseusRoom?.sessionId;
     }
 
     function getRoomPlayers(room = activeRoom) {
@@ -1515,7 +1501,9 @@
     }
 
     function getTakenTeams(exceptClientId = null, room = activeRoom) {
-      return new Set(getRoomPlayers(room).filter(player => player.clientId !== exceptClientId && player.team).map(player => player.team));
+      return new Set(getRoomPlayers(room)
+        .filter(player => player.clientId !== exceptClientId && player.sessionId !== exceptClientId && player.team)
+        .map(player => player.team));
     }
 
     function getFirstAvailableTeam(room = activeRoom, preferred = "green") {
@@ -1525,39 +1513,21 @@
     }
 
     function getMyRoomPlayer() {
-      return activeRoom?.players?.[clientId] || null;
+      if (!activeRoom?.players) return null;
+      return activeRoom.players[clientId]
+        || activeRoom.players[colyseusRoom?.sessionId]
+        || getRoomPlayers(activeRoom).find(player => player.clientId === clientId || player.sessionId === colyseusRoom?.sessionId)
+        || null;
     }
 
     async function createOnlineRoom(playerCount) {
-      const code = setupState.roomCode || makeRoomCode();
-      const room = {
-        roomCode: code,
-        hostClientId: clientId,
-        playerCount,
-        countdownStartTime: null,
-        countdownDurationMs: COUNTDOWN_DURATION_MS,
-        gameStarted: false,
-        gameStateSnapshot: null,
-        players: {
-          [clientId]: {
-            clientId,
-            name: "Host",
-            team: "green",
-            ready: false,
-            isHost: true,
-            joinedAt: Date.now()
-          }
-        },
-        updatedAt: Date.now()
-      };
-      setupState.roomCode = code;
-
+      setupState.roomCode = setupState.roomCode || makeRoomCode();
       try {
-        const remoteRoom = await RemoteRoomService.createRoom(room);
-        saveRoom(remoteRoom || room, false);
-        return activeRoom;
+        const room = await ColyseusLobbyService.createRoom(playerCount);
+        if (!room) throw new Error("Room was created but no room state was received.");
+        return room;
       } catch (error) {
-        alert(error.message || "Could not create online room. Check the Render server.");
+        alert(error.message || "Could not create online room. Check the Colyseus server.");
         throw error;
       }
     }
@@ -1570,38 +1540,41 @@
       }
 
       try {
-        const room = await RemoteRoomService.joinRoom(code);
+        await ColyseusLobbyService.joinRoom(code);
         setupState.roomCode = code;
-        saveRoom(room, false);
         return true;
       } catch (error) {
-        alert(error.message || "Room not found. Check the room code and make sure the host is online.");
+        alert(error.message || "Room not found. Check the room code and server.");
         return false;
       }
     }
 
     function updateRoomPlayerTeam(team) {
-      if (!activeRoom?.players?.[clientId]) return false;
+      if (!activeRoom) return false;
       const taken = getTakenTeams(clientId);
       if (taken.has(team)) {
         showToast(`${TEAM_LABEL[team]} is already taken`);
         return false;
       }
-      activeRoom.players[clientId].team = team;
-      activeRoom.players[clientId].ready = false;
-      activeRoom.countdownStartTime = null;
-      activeRoom.gameStarted = false;
-      activeRoom.gameStateSnapshot = null;
-      saveRoom(activeRoom);
-      return true;
+      try {
+        ColyseusLobbyService.send("select_team", { team });
+        setupState.selectedTeams = [team];
+        setupState.ready = false;
+        return true;
+      } catch (error) {
+        alert(error.message || "Could not select team.");
+        return false;
+      }
     }
 
     function updateRoomReady(ready) {
-      if (!activeRoom?.players?.[clientId]) return;
-      activeRoom.players[clientId].ready = !!ready;
-      if (!isRoomReadyToCountdown(activeRoom)) activeRoom.countdownStartTime = null;
-      saveRoom(activeRoom);
-      evaluateRoomReadiness();
+      if (!activeRoom) return;
+      try {
+        ColyseusLobbyService.send("set_ready", { ready: !!ready });
+        setupState.ready = !!ready;
+      } catch (error) {
+        alert(error.message || "Could not update ready state.");
+      }
     }
 
     function isRoomReadyToCountdown(room = activeRoom) {
@@ -1614,17 +1587,7 @@
     }
 
     function evaluateRoomReadiness() {
-      if (!activeRoom || !isRoomHost() || activeRoom.gameStarted) return;
-      if (isRoomReadyToCountdown(activeRoom)) {
-        if (!activeRoom.countdownStartTime) {
-          activeRoom.countdownStartTime = Date.now();
-          activeRoom.countdownDurationMs = COUNTDOWN_DURATION_MS;
-          saveRoom(activeRoom);
-        }
-      } else if (activeRoom.countdownStartTime) {
-        activeRoom.countdownStartTime = null;
-        saveRoom(activeRoom);
-      }
+      // Server-owned in the Colyseus setup. The client only renders countdown/gameStarted.
     }
 
     function getCountdownRemainingMs(room = activeRoom) {
@@ -1634,54 +1597,18 @@
 
     function startRoomTicker() {
       if (roomTickTimer) return;
-      let remotePollCounter = 0;
       roomTickTimer = window.setInterval(() => {
         if (!activeRoom) return;
-
-        if (setupState.mode === "online") {
-          remotePollCounter += 1;
-          if (remotePollCounter >= 4 && RemoteRoomService.connected && activeRoom.roomCode) {
-            remotePollCounter = 0;
-            RemoteRoomService.getRoom(activeRoom.roomCode).catch(() => {});
-          }
-        } else {
-          const latest = loadRoom(activeRoom.roomCode);
-          if (latest && latest.updatedAt !== activeRoom.updatedAt) {
-            activeRoom = latest;
-            syncSetupFromRoom();
-          }
-        }
-
         if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
         if (activeRoom?.gameStarted && typeof ui !== "undefined" && !ui.screens.game.classList.contains("active")) {
           setScreen("game");
-          return;
         }
-        kickOnlineBotTurnIfNeeded();
-        if (isRoomHost() && activeRoom && !activeRoom.gameStarted) {
-          if (!isRoomReadyToCountdown(activeRoom)) {
-            if (activeRoom.countdownStartTime) {
-              activeRoom.countdownStartTime = null;
-              saveRoom(activeRoom);
-            }
-            return;
-          }
-          if (activeRoom.countdownStartTime && getCountdownRemainingMs(activeRoom) <= 0) {
-            initializeOnlineMatchAsHost();
-          }
-        }
-      }, 300);
+      }, 250);
     }
 
     function initializeOnlineMatchAsHost() {
-      if (!activeRoom || !isRoomHost()) return;
-      resetLocalGameStateForMatch();
-      gameState.controlMap = getControlMap();
-      activeRoom.gameStateSnapshot = snapshotGameState();
-      activeRoom.gameStarted = true;
-      activeRoom.countdownStartTime = null;
-      saveRoom(activeRoom);
-      setScreen("game");
+      // Deprecated in the Colyseus setup. Match start must be server-authoritative.
+      // The server should set activeRoom.gameStarted and send the first gameStateSnapshot.
     }
 
     function snapshotGameState() {
@@ -1712,9 +1639,8 @@
     }
 
     function syncGameStateToRoom() {
-      if (setupState.mode !== "online" || !activeRoom?.gameStarted) return;
-      activeRoom.gameStateSnapshot = snapshotGameState();
-      saveRoom(activeRoom);
+      // Server-authoritative mode: never publish full game truth from the browser.
+      // Kept as a no-op so offline game functions do not need branching everywhere.
     }
 
     function canCurrentClientControlTeam(team) {
@@ -1726,40 +1652,23 @@
 
     function shouldThisClientRunBotTurn() {
       if (setupState.mode !== "online") return true;
-      return !!activeRoom?.gameStarted && isRoomHost();
+      return false;
     }
 
     function kickOnlineBotTurnIfNeeded() {
-      if (setupState.mode !== "online") return;
-      if (!ui?.screens?.game?.classList.contains("active")) return;
-      if (!activeRoom?.gameStarted || !activeRoom.gameStateSnapshot) return;
-      if (!isRoomHost()) return;
-      const team = currentTeam();
-      if (gameState.controlMap?.[team] === "bot") maybeBotTurn();
+      // Bots belong on the server in online mode.
     }
 
     function handleIncomingRoomState(room) {
-      if (!room || !activeRoom || room.roomCode !== activeRoom.roomCode) return;
-      if (room.updatedAt < (activeRoom.updatedAt || 0)) return;
-      activeRoom = room;
-      syncSetupFromRoom();
-      if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
-      if (typeof ui !== "undefined" && ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
+      if (!room) return;
+      if (activeRoom && room.roomCode && activeRoom.roomCode && room.roomCode !== activeRoom.roomCode) return;
+      applyRoomLocally(room);
       if (room.gameStarted && room.gameStateSnapshot) {
         loadGameStateSnapshot(room.gameStateSnapshot);
         if (typeof ui !== "undefined" && !ui.screens.game.classList.contains("active")) setScreen("game");
         else if (typeof ui !== "undefined") renderGame();
       }
     }
-
-    roomChannel?.addEventListener("message", event => {
-      if (event.data?.type === "room-state") handleIncomingRoomState(event.data.room);
-    });
-
-    window.addEventListener("storage", event => {
-      if (!activeRoom || event.key !== roomStorageKey(activeRoom.roomCode) || !event.newValue) return;
-      try { handleIncomingRoomState(JSON.parse(event.newValue)); } catch (_error) {}
-    });
 
     const ui = {
       screens: {
@@ -1922,7 +1831,7 @@
         return;
       }
       if (setupState.mode === "online") {
-        if (!activeRoom?.players?.[clientId]) {
+        if (!activeRoom) {
           alert("Room state missing. Create or join a room again.");
           setScreen("onlineLobbyMenu");
           return;
@@ -1932,12 +1841,14 @@
           alert("Choose an available team.");
           return;
         }
-        activeRoom.players[clientId].team = myTeam;
-        activeRoom.players[clientId].ready = true;
-        if (!isRoomReadyToCountdown(activeRoom)) activeRoom.countdownStartTime = null;
-        saveRoom(activeRoom);
-        setScreen("roomReadyLobby");
-        evaluateRoomReadiness();
+        try {
+          ColyseusLobbyService.send("select_team", { team: myTeam });
+          ColyseusLobbyService.send("set_ready", { ready: true });
+          setupState.ready = true;
+          setScreen("roomReadyLobby");
+        } catch (error) {
+          alert(error.message || "Could not enter ready lobby.");
+        }
       } else {
         setScreen("game");
       }
@@ -1983,7 +1894,7 @@
       do {
         out = "";
         for (let i = 0; i < 4; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
-      } while (loadRoom(out));
+      } while (false);
       return out;
     }
 
@@ -2211,18 +2122,8 @@
 
     function startMatch() {
       if (setupState.mode === "online") {
-        if (!activeRoom?.gameStarted) {
-          renderGame();
-          return;
-        }
-        if (activeRoom.gameStateSnapshot) {
+        if (activeRoom?.gameStateSnapshot) {
           loadGameStateSnapshot(activeRoom.gameStateSnapshot);
-          renderGame();
-          return;
-        }
-        if (isRoomHost()) {
-          initializeOnlineMatchAsHost();
-          return;
         }
         renderGame();
         return;
@@ -2372,6 +2273,23 @@
 
       const chosenMove = gameState.legalMoves.find(m => m.toRow === row && m.toCol === col);
       if (chosenMove) {
+        if (setupState.mode === "online") {
+          try {
+            ColyseusLobbyService.send("make_move", {
+              fromRow: chosenMove.fromRow,
+              fromCol: chosenMove.fromCol,
+              toRow: chosenMove.toRow,
+              toCol: chosenMove.toCol,
+              dieIndex: chosenMove.dieIndex
+            });
+            gameState.selected = null;
+            gameState.legalMoves = [];
+            renderGame();
+          } catch (error) {
+            alert(error.message || "Could not send move.");
+          }
+          return;
+        }
         applyMove(chosenMove);
         return;
       }
@@ -2396,7 +2314,13 @@
       const team = currentTeam();
       const control = gameState.controlMap[team];
       if (control === "bot" || control === "remote/bot") return;
-      if (setupState.mode === "online" && !canCurrentClientControlTeam(team)) return;
+      if (setupState.mode === "online") {
+        if (!canCurrentClientControlTeam(team)) return;
+        if (gameState.dice.rolled) return;
+        try { ColyseusLobbyService.send("roll_dice", { team }); }
+        catch (error) { alert(error.message || "Could not roll dice online."); }
+        return;
+      }
       if (gameState.dice.rolled) return;
       gameState.dice.values = [rollD6(), rollD6()];
       gameState.dice.used = [false, false];
@@ -2627,6 +2551,13 @@
     }
 
     function endTurn() {
+      if (setupState.mode === "online") {
+        const team = currentTeam();
+        if (!canCurrentClientControlTeam(team)) return;
+        try { ColyseusLobbyService.send("end_turn", { team }); }
+        catch (error) { alert(error.message || "Could not end turn online."); }
+        return;
+      }
       if (gameState.gameOver) {
         renderGame();
         syncGameStateToRoom();
@@ -2985,11 +2916,11 @@
       document.getElementById("joinRoomBackBtn").addEventListener("click", () => setScreen("onlineLobbyMenu"));
       document.getElementById("readyToggleBtn").addEventListener("click", toggleReady);
       document.getElementById("startOnlineGameBtn").addEventListener("click", startOnlineGame);
-      document.getElementById("readyLobbyBackBtn").addEventListener("click", () => setScreen("teamSelect"));
+      document.getElementById("readyLobbyBackBtn").addEventListener("click", () => { if (setupState.mode === "online") updateRoomReady(false); setScreen("teamSelect"); });
 
       document.getElementById("rollBtn").addEventListener("click", rollDice);
       document.getElementById("endTurnBtn").addEventListener("click", endTurn);
-      document.getElementById("newGameBtn").addEventListener("click", () => setScreen("menu"));
+      document.getElementById("newGameBtn").addEventListener("click", () => { if (setupState.mode === "online") ColyseusLobbyService.leave(); setScreen("menu"); });
     }
 
     applyHitboxConfig();
