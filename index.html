@@ -939,84 +939,6 @@
     }
 
 
-
-    .asset-fallback {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 24px;
-      text-align: center;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(84, 220, 255, .28), transparent 36%),
-        linear-gradient(180deg, #082c5d 0%, #061b3a 72%, #031326 100%);
-      color: #f4fdff;
-      pointer-events: none;
-    }
-
-    .asset-fallback h1,
-    .asset-fallback h2 {
-      margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      text-shadow: 0 3px 8px rgba(0,0,0,.55), 0 0 14px rgba(90,220,255,.45);
-    }
-
-    .asset-fallback h1 { font-size: clamp(2rem, 9vw, 4rem); }
-    .asset-fallback h2 { font-size: clamp(1.6rem, 7vw, 3rem); }
-
-    .asset-fallback p {
-      margin: 0;
-      max-width: 360px;
-      color: rgba(235, 250, 255, .82);
-      line-height: 1.4;
-      font-size: clamp(.9rem, 3.5vw, 1.05rem);
-    }
-
-    .asset-fallback-actions {
-      display: grid;
-      gap: 10px;
-      width: min(78%, 320px);
-      margin-top: 8px;
-    }
-
-    .asset-fallback-btn {
-      min-height: 48px;
-      border: 1px solid rgba(190,245,255,.58);
-      border-radius: 15px;
-      background: linear-gradient(180deg, rgba(56,217,255,.94), rgba(8,120,216,.94));
-      color: #fff;
-      font-weight: 900;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      box-shadow: 0 10px 22px rgba(6,79,158,.35), inset 0 1px 0 rgba(255,255,255,.45);
-      cursor: pointer;
-      pointer-events: auto;
-    }
-
-    .asset-fallback-btn.secondary {
-      background: linear-gradient(180deg, rgba(155,220,255,.22), rgba(18,58,100,.62));
-    }
-
-    .screen-stage.asset-missing .screen-art {
-      display: none !important;
-    }
-
-    .screen-stage.asset-missing .asset-fallback {
-      z-index: 140;
-      pointer-events: auto;
-    }
-
-    .screen-stage.asset-missing .hitbox-layer {
-      z-index: 130;
-    }
-
-
     .top-dev-note {
       position: fixed;
       left: 50%;
@@ -1042,13 +964,6 @@
     <div id="coverContinueArea" class="screen-shell" role="button" tabindex="0" aria-label="Tap or click to continue">
       <div class="screen-stage">
         <img class="screen-art" src="/assets/screens/cover.png" alt="Arctic Dominion Cover" />
-        <div class="asset-fallback" aria-hidden="true">
-          <h1>Arctic Dominion</h1>
-          <p>Tap Start to enter the game. Cover artwork did not load, but the game is still usable.</p>
-          <div class="asset-fallback-actions">
-            <button type="button" class="asset-fallback-btn" data-fallback-action="menu">Start</button>
-          </div>
-        </div>
       </div>
     </div>
   </section>
@@ -1057,14 +972,6 @@
     <div class="menu-screen-shell">
       <div class="screen-stage">
         <img class="screen-art" src="/assets/screens/main-menu.png" alt="Arctic Dominion Main Menu" />
-        <div class="asset-fallback" aria-hidden="true">
-          <h1>Arctic Dominion</h1>
-          <p>Main menu artwork did not load. Use the buttons below.</p>
-          <div class="asset-fallback-actions">
-            <button type="button" class="asset-fallback-btn" data-fallback-action="mode">Play Now</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="howToPlay">How to Play</button>
-          </div>
-        </div>
         <div class="hitbox-layer">
           <button id="menuPlayBtn" class="hitbox" aria-label="Play Now"></button>
           <button id="menuHowBtn" class="hitbox" aria-label="How To Play"></button>
@@ -1077,15 +984,6 @@
     <div class="menu-screen-shell">
       <div class="screen-stage mode-screen">
         <img id="modeSelectArt" class="screen-art" src="/assets/screens/mode-offline-selected.png" alt="Choose Play Mode" />
-        <div class="asset-fallback" aria-hidden="true">
-          <h2>Choose Mode</h2>
-          <p>Select offline for local bot play, or online for room play.</p>
-          <div class="asset-fallback-actions">
-            <button type="button" class="asset-fallback-btn" data-fallback-action="offline">Offline</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="online">Online</button>
-            <button type="button" class="asset-fallback-btn" data-fallback-action="afterMode">Continue</button>
-          </div>
-        </div>
         <div class="hitbox-layer">
           <button id="modeOfflineBtn" class="hitbox" aria-label="Offline Battle"></button>
           <button id="modeOnlineBtn" class="hitbox" aria-label="Online Room"></button>
@@ -1102,17 +1000,6 @@
     <div class="menu-screen-shell">
       <div class="screen-stage player-count-screen">
         <img class="screen-art" src="/assets/screens/player-count.png" alt="Choose Player Count" />
-        <div class="asset-fallback" aria-hidden="true">
-          <h2>Choose Player Count</h2>
-          <p>Select how many human teams will join.</p>
-          <div class="asset-fallback-actions">
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="count1">1 Player</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="count2">2 Players</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="count3">3 Players</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="count4">4 Players</button>
-            <button type="button" class="asset-fallback-btn" data-fallback-action="playerCountContinue">Continue</button>
-          </div>
-        </div>
         <div class="hitbox-layer">
           <div id="playerCountOutline" class="selected-player-outline" aria-hidden="true"></div>
           <button id="playerCountOneBtn" class="hitbox" aria-label="1 Player"></button>
@@ -1130,17 +1017,6 @@
     <div class="menu-screen-shell">
       <div class="screen-stage team-select-stage team-select-screen">
         <img class="screen-art" src="/assets/screens/team-select.png" alt="Choose Teams" />
-        <div class="asset-fallback" aria-hidden="true">
-          <h2>Choose Team</h2>
-          <p>Select a clan, then continue.</p>
-          <div class="asset-fallback-actions">
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="teamGreen">Abster / Green</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="teamRed">Retsba / Red</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="teamBlue">Pengu / Blue</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="teamYellow">Polly / Pink</button>
-            <button type="button" class="asset-fallback-btn" data-fallback-action="teamContinue">Continue</button>
-          </div>
-        </div>
         <div class="hitbox-layer">
           <button id="hitRetsba" class="hitbox" aria-label="Select Retsba"></button>
           <button id="hitAbster" class="hitbox" aria-label="Select Abster"></button>
@@ -1161,14 +1037,6 @@
     <div class="menu-screen-shell">
       <div class="screen-stage">
         <img class="screen-art" src="/assets/screens/arctic-dominion-room-menu.png" alt="Arctic Dominion Room Menu" />
-        <div class="asset-fallback" aria-hidden="true">
-          <h2>Online Room</h2>
-          <p>Create a room or join with a code.</p>
-          <div class="asset-fallback-actions">
-            <button type="button" class="asset-fallback-btn" data-fallback-action="createRoom">Create Room</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="joinRoom">Join Room</button>
-          </div>
-        </div>
         <div class="hitbox-layer">
           <button id="createRoomBtn" class="hitbox" aria-label="Create Room"></button>
           <button id="joinRoomBtn" class="hitbox" aria-label="Join Room"></button>
@@ -1197,14 +1065,6 @@
     <div class="menu-screen-shell">
       <div class="screen-stage room-ready-stage">
         <img class="screen-art" src="/assets/screens/room-ready-lobby.png" alt="Room Ready Lobby" />
-        <div class="asset-fallback" aria-hidden="true">
-          <h2>Room Lobby</h2>
-          <p>Ready up. The match starts when the room conditions are met.</p>
-          <div class="asset-fallback-actions">
-            <button type="button" class="asset-fallback-btn" data-fallback-action="readyToggle">Ready / Unready</button>
-            <button type="button" class="asset-fallback-btn secondary" data-fallback-action="teamSelect">Back to Teams</button>
-          </div>
-        </div>
 
         <div class="room-ready-overlay" aria-live="polite">
           <div id="roomSummaryText" class="room-info-text">Room: ----</div>
@@ -1690,32 +1550,16 @@
         },
         updatedAt: Date.now()
       };
-
-      setupState.mode = "online";
-      setupState.onlineFlow = "create";
       setupState.roomCode = code;
-      setupState.selectedTeams = ["green"];
-      setupState.ready = false;
 
-      /*
-        Do not block the UI on the websocket server.
-        The previous version waited for RemoteRoomService.createRoom(). If the
-        server was asleep, offline, or blocked on mobile, the Continue button
-        appeared to do nothing. We create the local room immediately, move to
-        the ready lobby, then try to sync with the server in the background.
-      */
-      saveRoom(room, true);
-
-      RemoteRoomService.createRoom(room)
-        .then(remoteRoom => {
-          if (remoteRoom?.roomCode === code) saveRoom(remoteRoom, false);
-        })
-        .catch(error => {
-          console.warn("Online room server unavailable. Local lobby is still usable.", error);
-          showToast("Lobby created. Server sync pending.");
-        });
-
-      return activeRoom;
+      try {
+        const remoteRoom = await RemoteRoomService.createRoom(room);
+        saveRoom(remoteRoom || room, false);
+        return activeRoom;
+      } catch (error) {
+        alert(error.message || "Could not create online room. Check the Render server.");
+        throw error;
+      }
     }
 
     async function joinOnlineRoom(roomCode) {
@@ -1977,13 +1821,7 @@
     }
 
     function setScreen(name) {
-      if (!ui.screens[name]) {
-        console.error(`Unknown screen: ${name}`);
-        return;
-      }
-      Object.values(ui.screens).forEach(screen => {
-        if (screen) screen.classList.remove("active");
-      });
+      Object.values(ui.screens).forEach(screen => screen.classList.remove("active"));
       ui.screens[name].classList.add("active");
       if (name === "playerCount") renderPlayerCountSelection();
       if (name === "teamSelect") renderTeamSelection();
@@ -2032,12 +1870,13 @@
 
     async function continueFromPlayerCount() {
       if (setupState.mode === "online" && setupState.onlineFlow === "create") {
-        const room = await createOnlineRoom(setupState.playerCount);
-        setupState.selectedTeams = [room.players[clientId].team || "green"];
-        setScreen("roomReadyLobby");
-        return;
+        try {
+          const room = await createOnlineRoom(setupState.playerCount);
+          setupState.selectedTeams = [room.players[clientId].team];
+        } catch (_error) {
+          return;
+        }
       }
-
       setScreen("teamSelect");
     }
 
@@ -3112,54 +2951,6 @@
     }
 
 
-
-    function installAssetFallbacks() {
-      document.querySelectorAll(".screen-art").forEach(img => {
-        const stage = img.closest(".screen-stage");
-        if (!stage) return;
-        const markMissing = () => stage.classList.add("asset-missing");
-        const markLoaded = () => stage.classList.remove("asset-missing");
-
-        img.addEventListener("error", markMissing);
-        img.addEventListener("load", markLoaded);
-
-        if (img.complete && img.naturalWidth === 0) markMissing();
-      });
-    }
-
-    function bindFallbackButtons() {
-      document.querySelectorAll("[data-fallback-action]").forEach(btn => {
-        btn.addEventListener("click", event => {
-          event.stopPropagation();
-          const action = btn.dataset.fallbackAction;
-          if (action === "menu") setScreen("menu");
-          else if (action === "mode") setScreen("mode");
-          else if (action === "howToPlay") setScreen("howToPlay");
-          else if (action === "offline") selectMode("offline");
-          else if (action === "online") selectMode("online");
-          else if (action === "afterMode") goAfterModeContinue();
-          else if (action === "count1") setPlayerCount(1);
-          else if (action === "count2") setPlayerCount(2);
-          else if (action === "count3") setPlayerCount(3);
-          else if (action === "count4") setPlayerCount(4);
-          else if (action === "playerCountContinue") continueFromPlayerCount();
-          else if (action === "teamGreen") selectTeam("abster");
-          else if (action === "teamRed") selectTeam("retsba");
-          else if (action === "teamBlue") selectTeam("pengu");
-          else if (action === "teamYellow") selectTeam("polly");
-          else if (action === "teamContinue") continueFromTeamSelect();
-          else if (action === "createRoom") createRoomFlow();
-          else if (action === "joinRoom") joinRoomFlow();
-          else if (action === "readyToggle") toggleReady();
-          else if (action === "teamSelect") setScreen("teamSelect");
-        });
-      });
-    }
-
-    window.addEventListener("error", event => {
-      console.error("Arctic Dominion runtime error:", event.message, event.error || "");
-    });
-
     function bindEvents() {
       ui.coverContinueArea.addEventListener("click", () => setScreen("menu"));
       ui.coverContinueArea.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") setScreen("menu"); });
@@ -3201,8 +2992,6 @@
       document.getElementById("newGameBtn").addEventListener("click", () => setScreen("menu"));
     }
 
-    installAssetFallbacks();
-    bindFallbackButtons();
     applyHitboxConfig();
     bindEvents();
     bindHowPlayEvents();
