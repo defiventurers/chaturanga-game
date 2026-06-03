@@ -1,12 +1,12 @@
 {
-  "name": "arctic-dominion-server",
+  "name": "arctic-dominion-room-server",
   "version": "1.0.0",
   "private": true,
-  "type": "commonjs",
+  "main": "chaturanga-room-server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node chaturanga-room-server.js"
   },
-  "dependencies": {
-    "ws": "^8.18.0"
+  "engines": {
+    "node": ">=18"
   }
 }
