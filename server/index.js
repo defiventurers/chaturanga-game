@@ -198,6 +198,11 @@ function handleGetRoom(ws, requestId, payload) {
     requestId,
     payload: { room }
   });
+
+  send(ws, {
+    type: "room_state",
+    payload: { room }
+  });
 }
 
 function handleUpdateRoom(ws, requestId, payload) {
