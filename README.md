@@ -5,55 +5,95 @@ This project is a **visual/branding re-theme** of the existing Chaturanga game.
 ## Current deployment setup
 
 - **Frontend host**: Vercel
-- **Room sync**: Vercel Serverless Function at `/api/rooms`
-- **Shared room storage**: Vercel KV / Upstash Redis REST
+- **Multiplayer backend**: Render Web Service
+- **Realtime transport**: plain WebSocket using Node.js + `ws`
+- **Backend folder**: `server/`
 
-Online rooms now sync through shared server storage instead of `localStorage`, so different phones, tablets, and computers can join the same room code.
+The browser game connects to the multiplayer server with:
 
-## Vercel environment variables
-
-Create a Vercel KV database (or an Upstash Redis database) and set these environment variables in the Vercel project:
-
-```bash
-KV_REST_API_URL=...
-KV_REST_API_TOKEN=...
+```js
+const ONLINE_ROOM_SERVER_URL = "wss://chaturanga-game.onrender.com";
 ```
 
-The API also accepts Upstash's equivalent variable names:
+Vercel should only serve the static frontend. Do not use Vercel `/api/rooms`, Vercel KV, Upstash, or Colyseus for this version.
 
-```bash
-UPSTASH_REDIS_REST_URL=...
-UPSTASH_REDIS_REST_TOKEN=...
+## Render backend setup
+
+Create a Render **Web Service** from this GitHub repository.
+
+Use these settings exactly:
+
+```text
+Name: chaturanga-game
+Root Directory: server
+Runtime: Node
+Build Command: npm install
+Start Command: npm start
 ```
 
-If these variables are missing, `/api/rooms` uses a temporary in-memory room store so online rooms can still be tested from multiple browser sessions against the same running server. In-memory rooms can disappear when the serverless function cold-starts or scales, so production deployments should still use shared KV/Redis storage.
+The server uses `process.env.PORT || 10000`, which is what Render expects for a Web Service.
 
-## Local development
+## Backend health checks
 
-### 1) Optional: set room storage variables
+After Render deploys, test:
 
-For real multi-device testing locally, export the same KV/Upstash REST variables used on Vercel.
-
-### 2) Start frontend + API
-
-Deploy with Vercel or run Vercel's local dev server so `/api/rooms` is available:
-
-```bash
-vercel dev
+```text
+https://chaturanga-game.onrender.com/
 ```
 
-Then open the local Vercel URL in a browser. A player who creates a room gets a 6-character room code; other devices join with that code.
+Expected response:
+
+```text
+Arctic Dominion WebSocket server is running.
+```
+
+Then test:
+
+```text
+https://chaturanga-game.onrender.com/health
+```
+
+Expected response shape:
+
+```json
+{
+  "ok": true,
+  "rooms": 0,
+  "clients": 0
+}
+```
+
+## Local backend development
+
+```bash
+cd server
+npm install
+npm start
+```
+
+The local server runs on:
+
+```text
+http://localhost:10000
+ws://localhost:10000
+```
+
+For production, keep the frontend pointed at:
+
+```text
+wss://chaturanga-game.onrender.com
+```
 
 ## Troubleshooting
 
-- **Cannot sync between devices**
-  - Confirm `/api/rooms?roomCode=XXXXXX` responds from the deployed domain.
-  - For production, confirm `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or the Upstash equivalents) are set in Vercel.
-  - Redeploy after changing environment variables.
-  - Without KV/Redis, rooms use temporary in-memory server storage and may reset on cold starts or across scaled serverless instances.
-- **Room code rejected**
-  - Room IDs are 6 uppercase alphanumeric characters in the UI.
-- **Room disappears later**
-  - Rooms have a 24-hour TTL and are refreshed whenever room state is saved.
-- **No room start countdown**
-  - Countdown starts only when all required human seats are filled and every human player is ready.
+- **Online room does not create**
+  - Open `https://chaturanga-game.onrender.com/health` first.
+  - If that page does not load, the Render backend is not running.
+- **Frontend says server timed out**
+  - Free Render services can sleep. Open the health URL and wait for it to wake up, then retry.
+- **Two devices do not sync**
+  - Confirm both devices are using the same deployed Vercel frontend.
+  - Confirm the frontend contains `ONLINE_ROOM_SERVER_URL = "wss://chaturanga-game.onrender.com"`.
+  - Confirm Render logs show WebSocket connections.
+- **Rooms disappear after restart**
+  - This prototype stores rooms in memory. Render restart = rooms disappear. That is expected for now.
