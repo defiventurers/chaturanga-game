@@ -4,13 +4,14 @@ const WebSocket = require("ws");
 const PORT = process.env.PORT || 10000;
 const rooms = new Map();
 const socketsByClientId = new Map();
+const roomCodesByClientId = new Map();
 
 function normalizeRoomCode(roomCode) {
   return String(roomCode || "").trim().toUpperCase();
 }
 
 function send(ws, packet) {
-  if (ws.readyState === WebSocket.OPEN) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(packet));
   }
 }
@@ -25,6 +26,21 @@ function sendError(ws, requestId, message, code = "ERROR") {
 
 function getPlayers(room) {
   return Object.values(room?.players || {});
+}
+
+function rememberClientRoom(clientId, roomCode) {
+  if (!clientId || !roomCode) return;
+  roomCodesByClientId.set(clientId, roomCode);
+}
+
+function rememberRoomSockets(room, wsByClient = null) {
+  for (const player of getPlayers(room)) {
+    if (!player?.clientId) continue;
+    rememberClientRoom(player.clientId, room.roomCode);
+    if (wsByClient?.has(player.clientId)) {
+      socketsByClientId.set(player.clientId, wsByClient.get(player.clientId));
+    }
+  }
 }
 
 function broadcastRoom(room) {
@@ -44,15 +60,52 @@ function broadcastRoom(room) {
 function prepareRoom(room) {
   if (!room) return null;
 
-  room.roomCode = normalizeRoomCode(room.roomCode);
-  room.players = room.players || {};
-  room.updatedAt = Date.now();
+  const prepared = {
+    ...room,
+    roomCode: normalizeRoomCode(room.roomCode),
+    players: { ...(room.players || {}) },
+    updatedAt: Date.now()
+  };
 
-  if (!room.countdownDurationMs) room.countdownDurationMs = 5000;
-  if (typeof room.gameStarted !== "boolean") room.gameStarted = false;
-  if (!("gameStateSnapshot" in room)) room.gameStateSnapshot = null;
+  if (!prepared.countdownDurationMs) prepared.countdownDurationMs = 5000;
+  if (typeof prepared.gameStarted !== "boolean") prepared.gameStarted = false;
+  if (!("gameStateSnapshot" in prepared)) prepared.gameStateSnapshot = null;
 
-  return room;
+  return prepared;
+}
+
+function mergeRoomState(incomingRoom) {
+  const incoming = prepareRoom(incomingRoom);
+  if (!incoming?.roomCode) return null;
+
+  const existing = rooms.get(incoming.roomCode);
+  if (!existing) {
+    rooms.set(incoming.roomCode, incoming);
+    rememberRoomSockets(incoming);
+    return incoming;
+  }
+
+  const mergedPlayers = {
+    ...(existing.players || {}),
+    ...(incoming.players || {})
+  };
+
+  const merged = {
+    ...existing,
+    ...incoming,
+    roomCode: incoming.roomCode,
+    hostClientId: existing.hostClientId || incoming.hostClientId,
+    players: mergedPlayers,
+    gameStarted: Boolean(existing.gameStarted || incoming.gameStarted),
+    gameStateSnapshot: incoming.gameStateSnapshot || existing.gameStateSnapshot || null,
+    countdownStartTime: incoming.countdownStartTime ?? existing.countdownStartTime ?? null,
+    countdownDurationMs: incoming.countdownDurationMs || existing.countdownDurationMs || 5000,
+    updatedAt: Date.now()
+  };
+
+  rooms.set(merged.roomCode, merged);
+  rememberRoomSockets(merged);
+  return merged;
 }
 
 function handleCreateRoom(ws, requestId, payload) {
@@ -63,6 +116,7 @@ function handleCreateRoom(ws, requestId, payload) {
   if (!room?.roomCode) return sendError(ws, requestId, "Missing room data.", "MISSING_ROOM");
 
   socketsByClientId.set(clientId, ws);
+  rememberClientRoom(clientId, room.roomCode);
 
   room.hostClientId = room.hostClientId || clientId;
 
@@ -77,15 +131,15 @@ function handleCreateRoom(ws, requestId, payload) {
     };
   }
 
-  rooms.set(room.roomCode, room);
+  const mergedRoom = mergeRoomState(room);
 
   send(ws, {
     type: "create_room_result",
     requestId,
-    payload: { room }
+    payload: { room: mergedRoom }
   });
 
-  broadcastRoom(room);
+  broadcastRoom(mergedRoom);
 }
 
 function handleJoinRoom(ws, requestId, payload) {
@@ -96,14 +150,13 @@ function handleJoinRoom(ws, requestId, payload) {
   if (!roomCode) return sendError(ws, requestId, "Missing room code.", "MISSING_ROOM_CODE");
 
   const room = rooms.get(roomCode);
-
   if (!room) return sendError(ws, requestId, "Room not found.", "ROOM_NOT_FOUND");
 
   socketsByClientId.set(clientId, ws);
+  rememberClientRoom(clientId, roomCode);
 
   if (!room.players[clientId]) {
     const maxPlayers = Number(room.playerCount || 2);
-
     if (getPlayers(room).length >= maxPlayers) {
       return sendError(ws, requestId, "Room is full.", "ROOM_FULL");
     }
@@ -118,27 +171,27 @@ function handleJoinRoom(ws, requestId, payload) {
     };
   }
 
-  room.updatedAt = Date.now();
-  rooms.set(roomCode, room);
+  const mergedRoom = mergeRoomState(room);
 
   send(ws, {
     type: "join_room_result",
     requestId,
-    payload: { room }
+    payload: { room: mergedRoom }
   });
 
-  broadcastRoom(room);
+  broadcastRoom(mergedRoom);
 }
 
 function handleGetRoom(ws, requestId, payload) {
   const clientId = payload?.clientId;
-  const roomCode = normalizeRoomCode(payload?.roomCode);
+  const roomCode = normalizeRoomCode(payload?.roomCode || roomCodesByClientId.get(clientId));
 
   if (clientId) socketsByClientId.set(clientId, ws);
 
   const room = rooms.get(roomCode);
-
   if (!room) return sendError(ws, requestId, "Room not found.", "ROOM_NOT_FOUND");
+
+  if (clientId) rememberClientRoom(clientId, roomCode);
 
   send(ws, {
     type: "get_room_result",
@@ -149,21 +202,23 @@ function handleGetRoom(ws, requestId, payload) {
 
 function handleUpdateRoom(ws, requestId, payload) {
   const clientId = payload?.clientId;
-  const room = prepareRoom(payload?.room);
+  const room = payload?.room;
 
   if (!clientId) return sendError(ws, requestId, "Missing clientId.", "MISSING_CLIENT_ID");
   if (!room?.roomCode) return sendError(ws, requestId, "Missing room data.", "MISSING_ROOM");
 
   socketsByClientId.set(clientId, ws);
-  rooms.set(room.roomCode, room);
+  rememberClientRoom(clientId, normalizeRoomCode(room.roomCode));
+
+  const mergedRoom = mergeRoomState(room);
 
   send(ws, {
     type: "update_room_result",
     requestId,
-    payload: { room }
+    payload: { room: mergedRoom }
   });
 
-  broadcastRoom(room);
+  broadcastRoom(mergedRoom);
 }
 
 const server = http.createServer((req, res) => {
@@ -174,7 +229,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.url === "/health") {
-    res.writeHead(200, { "Content-Type": "application/json" });
+    res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
     res.end(JSON.stringify({
       ok: true,
       rooms: rooms.size,
@@ -201,7 +256,7 @@ wss.on("connection", (ws) => {
 
     try {
       packet = JSON.parse(raw);
-    } catch {
+    } catch (_error) {
       sendError(ws, null, "Invalid JSON packet.", "BAD_JSON");
       return;
     }
@@ -222,9 +277,7 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     for (const [clientId, socket] of socketsByClientId.entries()) {
-      if (socket === ws) {
-        socketsByClientId.delete(clientId);
-      }
+      if (socket === ws) socketsByClientId.delete(clientId);
     }
   });
 });
