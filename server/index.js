@@ -327,12 +327,13 @@ function handleGetRoom(ws, requestId, payload) {
     payload: { room }
   });
 
-  send(ws, {
-    type: "room_state",
-    payload: { room }
-  });
-
-  broadcastRoom(room);
+  if (!room.gameStarted) {
+    send(ws, {
+      type: "room_state",
+      payload: { room }
+    });
+    broadcastRoom(room);
+  }
 }
 
 function handleUpdateRoom(ws, requestId, payload) {
@@ -423,7 +424,11 @@ setInterval(() => {
     const beforeCountdown = room.countdownStartTime;
     maybeAdvanceRoomStart(room);
     room.updatedAt = serverUpdatedAt();
-    if (isRoomReadyToStart(room) || room.gameStarted || beforeStarted !== room.gameStarted || beforeCountdown !== room.countdownStartTime) {
+    const justStarted = beforeStarted !== room.gameStarted;
+    const countdownChanged = beforeCountdown !== room.countdownStartTime;
+    if (!room.gameStarted && (isRoomReadyToStart(room) || countdownChanged)) {
+      broadcastRoom(room);
+    } else if (justStarted) {
       broadcastRoom(room);
     }
   }
