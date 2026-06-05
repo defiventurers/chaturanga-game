@@ -134,6 +134,30 @@
     }
     .mode-toast.show { opacity: 1; }
 
+    .audio-toggle {
+      position: fixed;
+      right: max(10px, env(safe-area-inset-right));
+      top: max(10px, env(safe-area-inset-top));
+      z-index: 1000;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(190,245,255,.44);
+      border-radius: 999px;
+      background: rgba(0, 20, 40, .48);
+      color: rgba(235,250,255,.92);
+      font-size: 18px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      backdrop-filter: blur(8px);
+    }
+
+    .audio-toggle.off {
+      opacity: .58;
+    }
+
     .selected-player-outline,
     .team-selected-outline {
       position: absolute;
@@ -958,7 +982,9 @@
   </style>
 </head>
 <body>
-  <div class="top-dev-note">Missing base image: join room only. Ready lobby now uses /assets/screens/room-ready-lobby.png.</div>
+  
+  <button id="audioToggleBtn" class="audio-toggle" type="button" aria-label="Mute sound">🔊</button>
+<div class="top-dev-note">Missing base image: join room only. Ready lobby now uses /assets/screens/room-ready-lobby.png.</div>
 
   <section id="screenCover" class="screen active" aria-label="Cover screen">
     <div id="coverContinueArea" class="screen-shell" role="button" tabindex="0" aria-label="Tap or click to continue">
@@ -1327,8 +1353,11 @@
           gameStart: this.make("/assets/sounds/game-start.mp3", 0.82),
           promotion: this.make("/assets/sounds/promotion.mp3", 0.78),
           teamEliminated: this.make("/assets/sounds/team-eliminated.mp3", 0.86),
-          victory: this.make("/assets/sounds/victory.mp3", 0.88)
+          victory: this.make("/assets/sounds/victory.mp3", 0.88),
+          ambientIce: this.make("/assets/sounds/ambient-ice-loop.mp3", 0.20)
         };
+        if (this.sounds.ambientIce) this.sounds.ambientIce.loop = true;
+        this.applyStoredPreference();
       },
 
       make(src, volume) {
@@ -1336,6 +1365,38 @@
         audio.preload = "auto";
         audio.volume = volume;
         return audio;
+      },
+
+      applyStoredPreference() {
+        const stored = localStorage.getItem("arctic_dominion_audio_muted");
+        this.enabled = stored !== "true";
+        updateAudioToggleButton();
+      },
+
+      setMuted(muted) {
+        this.enabled = !muted;
+        localStorage.setItem("arctic_dominion_audio_muted", muted ? "true" : "false");
+        updateAudioToggleButton();
+        if (muted) this.stopAmbient();
+        else this.startAmbient();
+      },
+
+      toggleMuted() {
+        this.setMuted(this.enabled);
+      },
+
+      startAmbient() {
+        if (!this.enabled || !this.unlocked) return;
+        const ambient = this.sounds.ambientIce;
+        if (!ambient) return;
+        ambient.volume = 0.20;
+        ambient.play().catch(() => {});
+      },
+
+      stopAmbient() {
+        const ambient = this.sounds.ambientIce;
+        if (!ambient) return;
+        ambient.pause();
       },
 
       play(name, volume = null, cooldownMs = 60) {
@@ -1357,7 +1418,8 @@
         if (this.unlocked) return;
         this.unlocked = true;
 
-        Object.values(this.sounds).forEach(audio => {
+        Object.entries(this.sounds).forEach(([name, audio]) => {
+          if (name === "ambientIce") return;
           audio.play()
             .then(() => {
               audio.pause();
@@ -1365,8 +1427,18 @@
             })
             .catch(() => {});
         });
+
+        this.startAmbient();
       }
     };
+
+    function updateAudioToggleButton() {
+      const btn = document.getElementById("audioToggleBtn");
+      if (!btn || typeof SFX === "undefined") return;
+      btn.textContent = SFX.enabled ? "🔊" : "🔇";
+      btn.classList.toggle("off", !SFX.enabled);
+      btn.setAttribute("aria-label", SFX.enabled ? "Mute sound" : "Unmute sound");
+    }
 
     const gameState = createInitialState();
     const RemoteRoomService = {
@@ -1850,6 +1922,7 @@
         game: document.getElementById("screenGame")
       },
       coverContinueArea: document.getElementById("coverContinueArea"),
+      audioToggleBtn: document.getElementById("audioToggleBtn"),
       modeSelectArt: document.getElementById("modeSelectArt"),
       modeToast: document.getElementById("modeToast"),
       playerCountOutline: document.getElementById("playerCountOutline"),
@@ -3088,6 +3161,16 @@
 
 
     function bindEvents() {
+      ui.audioToggleBtn.addEventListener("click", event => {
+        event.stopPropagation();
+        SFX.unlock();
+        SFX.toggleMuted();
+      });
+
+      window.addEventListener("keydown", event => {
+        if (event.key && event.key.toLowerCase() === "m") SFX.toggleMuted();
+      });
+
       ui.coverContinueArea.addEventListener("click", () => {
         SFX.unlock();
         SFX.play("confirm");
