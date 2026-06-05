@@ -1,0 +1,253 @@
+name: Patch join room screen
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-join-room-screen.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch join-room screen
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text()
+
+          css = r'''
+
+    .join-room-stage {
+      background: #061b3a;
+    }
+
+    .join-room-hidden-input {
+      position: absolute;
+      left: 50%;
+      top: 56%;
+      width: 1px;
+      height: 1px;
+      opacity: 0.01;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: transparent;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .join-room-display-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      pointer-events: none;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .join-room-digit {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: var(--w);
+      height: var(--h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f8feff;
+      font-size: clamp(34px, 10.5vw, 70px);
+      font-weight: 1000;
+      line-height: 1;
+      letter-spacing: 0;
+      text-shadow:
+        0 2px 2px rgba(0, 10, 40, .95),
+        0 0 9px rgba(82, 227, 255, .95),
+        0 0 18px rgba(255, 255, 255, .45);
+    }
+
+    .join-room-error {
+      position: absolute;
+      left: 14%;
+      top: 69.2%;
+      width: 72%;
+      height: 3.2%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #ffe08a;
+      font-size: clamp(10px, 2.7vw, 18px);
+      font-weight: 1000;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 140ms ease;
+      text-shadow: 0 2px 2px rgba(30, 12, 0, .95), 0 0 8px rgba(255, 215, 90, .75);
+    }
+
+    .join-room-error.show {
+      opacity: 1;
+    }
+'''
+          if '.join-room-stage' not in text:
+              marker = '\n\n    .room-ready-stage {'
+              if marker not in text:
+                  raise SystemExit('CSS insertion marker not found')
+              text = text.replace(marker, css + marker, 1)
+
+          new_join_section = r'''  <section id="screenJoinRoom" class="screen" aria-label="Join room">
+    <div class="menu-screen-shell">
+      <div id="joinRoomStage" class="screen-stage join-room-stage">
+        <img class="screen-art" src="/assets/screens/join-room.png" alt="Join Room" />
+        <input
+          id="joinRoomCodeInput"
+          class="join-room-hidden-input"
+          inputmode="numeric"
+          maxlength="4"
+          autocomplete="one-time-code"
+          pattern="[0-9]*"
+          aria-label="4 digit room code"
+        />
+
+        <div class="join-room-display-layer" aria-hidden="true">
+          <div id="joinRoomDigit0" class="join-room-digit" style="--x:16.68%;--y:55.20%;--w:13.82%;--h:8.97%;"></div>
+          <div id="joinRoomDigit1" class="join-room-digit" style="--x:34.11%;--y:55.20%;--w:13.82%;--h:8.97%;"></div>
+          <div id="joinRoomDigit2" class="join-room-digit" style="--x:51.75%;--y:55.20%;--w:13.82%;--h:8.97%;"></div>
+          <div id="joinRoomDigit3" class="join-room-digit" style="--x:69.18%;--y:55.20%;--w:13.82%;--h:8.97%;"></div>
+          <div id="joinRoomError" class="join-room-error" aria-live="polite"></div>
+        </div>
+
+        <div class="hitbox-layer">
+          <button id="joinRoomCodeFocusBtn" class="hitbox" aria-label="Enter room code"></button>
+          <button id="joinRoomContinueBtn" class="hitbox" aria-label="Join room"></button>
+          <button id="joinRoomBackBtn" class="hitbox" aria-label="Back"></button>
+        </div>
+      </div>
+    </div>
+  </section>'''
+
+          text = re.sub(
+              r'  <section id="screenJoinRoom" class="screen" aria-label="Join room">.*?\n  </section>',
+              new_join_section,
+              text,
+              count=1,
+              flags=re.S,
+          )
+
+          if 'joinRoomCodeFocusBtn' not in text:
+              raise SystemExit('Join room section replacement failed')
+
+          if 'joinRoomContinueBtn: { left:' not in text:
+              old = '      onlineLobbyBackBtn: { left: "30.53%", top: "73.60%", width: "41.56%", height: "8.81%" },\n      readyToggleBtn:'
+              new = '      onlineLobbyBackBtn: { left: "30.53%", top: "73.60%", width: "41.56%", height: "8.81%" },\n      joinRoomCodeFocusBtn: { left: "12.50%", top: "50.90%", width: "75.00%", height: "18.50%" },\n      joinRoomContinueBtn: { left: "18.07%", top: "74.64%", width: "63.76%", height: "9.57%" },\n      joinRoomBackBtn: { left: "27.10%", top: "89.11%", width: "45.70%", height: "6.28%" },\n      readyToggleBtn:'
+              if old not in text:
+                  raise SystemExit('HITBOX insertion marker not found')
+              text = text.replace(old, new, 1)
+
+          text = text.replace('      roomCode: "ABCD",', '      roomCode: "",', 1)
+
+          old_ui = '      readyLobbyBackBtn: document.getElementById("readyLobbyBackBtn"),\n      joinRoomCodeInput: document.getElementById("joinRoomCodeInput")\n    };'
+          new_ui = '      readyLobbyBackBtn: document.getElementById("readyLobbyBackBtn"),\n      joinRoomCodeInput: document.getElementById("joinRoomCodeInput"),\n      joinRoomDigits: [\n        document.getElementById("joinRoomDigit0"),\n        document.getElementById("joinRoomDigit1"),\n        document.getElementById("joinRoomDigit2"),\n        document.getElementById("joinRoomDigit3")\n      ],\n      joinRoomError: document.getElementById("joinRoomError")\n    };'
+          if 'joinRoomDigits:' not in text:
+              if old_ui not in text:
+                  raise SystemExit('UI insertion marker not found')
+              text = text.replace(old_ui, new_ui, 1)
+
+          old_setscreen = '      if (name === "roomReadyLobby") renderReadyLobby();\n      if (name === "howToPlay") howPlayShowTeamSelect();'
+          new_setscreen = '      if (name === "roomReadyLobby") renderReadyLobby();\n      if (name === "joinRoom") {\n        renderJoinRoomCode();\n        setJoinRoomError("");\n        window.setTimeout(focusJoinRoomInput, 80);\n      }\n      if (name === "howToPlay") howPlayShowTeamSelect();'
+          if 'name === "joinRoom") {' not in text:
+              if old_setscreen not in text:
+                  raise SystemExit('setScreen insertion marker not found')
+              text = text.replace(old_setscreen, new_setscreen, 1)
+
+          join_helpers = r'''
+    function sanitizeJoinRoomCode(value) {
+      return String(value || "").replace(/\D/g, "").slice(0, 4);
+    }
+
+    function renderJoinRoomCode() {
+      const code = sanitizeJoinRoomCode(ui.joinRoomCodeInput?.value || setupState.roomCode);
+      ui.joinRoomDigits?.forEach((el, index) => {
+        if (el) el.textContent = code[index] || "";
+      });
+    }
+
+    function setJoinRoomCode(value) {
+      const code = sanitizeJoinRoomCode(value);
+      setupState.roomCode = code;
+      if (ui.joinRoomCodeInput && ui.joinRoomCodeInput.value !== code) ui.joinRoomCodeInput.value = code;
+      renderJoinRoomCode();
+      if (code.length === 4) setJoinRoomError("");
+    }
+
+    function setJoinRoomError(message) {
+      if (!ui.joinRoomError) return;
+      ui.joinRoomError.textContent = message || "";
+      ui.joinRoomError.classList.toggle("show", !!message);
+    }
+
+    function focusJoinRoomInput() {
+      if (!ui.joinRoomCodeInput) return;
+      ui.joinRoomCodeInput.focus({ preventScroll: true });
+    }
+
+'''
+          if 'function sanitizeJoinRoomCode(value)' not in text:
+              marker = '    async function continueJoinRoom() {'
+              if marker not in text:
+                  raise SystemExit('continueJoinRoom marker not found')
+              text = text.replace(marker, join_helpers + marker, 1)
+
+          old_continue = '''    async function continueJoinRoom() {
+      const code = ui.joinRoomCodeInput.value.trim().toUpperCase() || "ABCD";
+      const joined = await joinOnlineRoom(code);
+      if (!joined) return;
+      setScreen("teamSelect");
+    }
+'''
+          new_continue = '''    async function continueJoinRoom() {
+      const code = sanitizeJoinRoomCode(ui.joinRoomCodeInput?.value || setupState.roomCode);
+      setJoinRoomCode(code);
+      if (code.length !== 4) {
+        setJoinRoomError("Enter 4 digits");
+        focusJoinRoomInput();
+        return;
+      }
+      const joined = await joinOnlineRoom(code);
+      if (!joined) return;
+      setScreen("teamSelect");
+    }
+'''
+          if 'const code = sanitizeJoinRoomCode(ui.joinRoomCodeInput' not in text:
+              if old_continue not in text:
+                  raise SystemExit('continueJoinRoom replacement marker not found')
+              text = text.replace(old_continue, new_continue, 1)
+
+          old_make = '      const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";'
+          if old_make in text:
+              text = text.replace(old_make, '      const alphabet = "0123456789";', 1)
+
+          old_bind = '      document.getElementById("joinRoomContinueBtn").addEventListener("click", continueJoinRoom);\n      document.getElementById("joinRoomBackBtn").addEventListener("click", () => setScreen("onlineLobbyMenu"));'
+          new_bind = '      document.getElementById("joinRoomCodeFocusBtn").addEventListener("click", focusJoinRoomInput);\n      ui.screens.joinRoom.addEventListener("click", focusJoinRoomInput);\n      ui.joinRoomCodeInput.addEventListener("input", () => setJoinRoomCode(ui.joinRoomCodeInput.value));\n      ui.joinRoomCodeInput.addEventListener("keydown", event => {\n        if (event.key === "Enter") continueJoinRoom();\n      });\n      document.getElementById("joinRoomContinueBtn").addEventListener("click", event => {\n        event.stopPropagation();\n        continueJoinRoom();\n      });\n      document.getElementById("joinRoomBackBtn").addEventListener("click", event => {\n        event.stopPropagation();\n        setScreen("onlineLobbyMenu");\n      });'
+          if 'joinRoomCodeFocusBtn").addEventListener("click"' not in text:
+              if old_bind not in text:
+                  raise SystemExit('bindEvents insertion marker not found')
+              text = text.replace(old_bind, new_bind, 1)
+
+          path.write_text(text)
+          PY
+
+      - name: Commit patched index and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/patch-join-room-screen.yml
+          git add index.html .github/workflows/patch-join-room-screen.yml
+          git commit -m "Make join room screen functional" || exit 0
+          git push
