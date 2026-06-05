@@ -1309,7 +1309,10 @@
           tap: this.make("/assets/sounds/ui-tap.mp3", 0.45),
           confirm: this.make("/assets/sounds/ui-confirm.mp3", 0.7),
           back: this.make("/assets/sounds/ui-back.mp3", 0.55),
-          error: this.make("/assets/sounds/ui-error.mp3", 0.7)
+          error: this.make("/assets/sounds/ui-error.mp3", 0.7),
+          diceRoll: this.make("/assets/sounds/dice-roll.mp3", 0.72),
+          pieceMove: this.make("/assets/sounds/piece-move.mp3", 0.62),
+          capture: this.make("/assets/sounds/capture.mp3", 0.82)
         };
       },
 
@@ -2451,6 +2454,7 @@
       if (control === "bot" || control === "remote/bot") return;
       if (setupState.mode === "online" && !canCurrentClientControlTeam(team)) return;
       if (gameState.dice.rolled) return;
+      SFX.play("diceRoll", 0.72, 350);
       gameState.dice.values = [rollD6(), rollD6()];
       gameState.dice.used = [false, false];
       gameState.dice.rolled = true;
@@ -2658,7 +2662,10 @@
       gameState.legalMoves = [];
 
       if (captured) {
+        SFX.play("capture", 0.82, 120);
         gameState.moveLog.unshift(`${TEAM_LABEL[piece.team]} captured ${TEAM_LABEL[captured.team]} ${PIECE_NAME[captured.type]}`);
+      } else {
+        SFX.play("pieceMove", 0.62, 90);
       }
 
       maybePromotePawn(piece, move.toRow, move.toCol);
