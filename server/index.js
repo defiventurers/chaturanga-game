@@ -3,10 +3,15 @@ const WebSocket = require("ws");
 
 const PORT = process.env.PORT || 10000;
 const COUNTDOWN_DURATION_MS = 5000;
+const SERVER_TIME_OFFSET_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PLAYERS = ["red", "green", "blue", "yellow"];
 const rooms = new Map();
 const socketsByClientId = new Map();
 const roomCodesByClientId = new Map();
+
+function serverUpdatedAt() {
+  return Date.now() + SERVER_TIME_OFFSET_MS;
+}
 
 function normalizeRoomCode(roomCode) {
   return String(roomCode || "").trim().toUpperCase();
@@ -35,18 +40,16 @@ function rememberClientRoom(clientId, roomCode) {
   roomCodesByClientId.set(clientId, roomCode);
 }
 
-function rememberRoomSockets(room, wsByClient = null) {
+function rememberRoomSockets(room) {
   for (const player of getPlayers(room)) {
     if (!player?.clientId) continue;
     rememberClientRoom(player.clientId, room.roomCode);
-    if (wsByClient?.has(player.clientId)) {
-      socketsByClientId.set(player.clientId, wsByClient.get(player.clientId));
-    }
   }
 }
 
 function broadcastRoom(room) {
   if (!room?.roomCode) return;
+  room.updatedAt = serverUpdatedAt();
 
   const packet = {
     type: "room_state",
@@ -146,7 +149,12 @@ function isRoomReadyToStart(room) {
 }
 
 function maybeAdvanceRoomStart(room) {
-  if (!room || room.gameStarted) return room;
+  if (!room) return room;
+
+  if (room.gameStarted) {
+    if (!room.gameStateSnapshot) room.gameStateSnapshot = createGameStateSnapshot(room);
+    return room;
+  }
 
   if (!isRoomReadyToStart(room)) {
     if (room.countdownStartTime) room.countdownStartTime = null;
@@ -165,9 +173,7 @@ function maybeAdvanceRoomStart(room) {
   if (elapsed >= duration) {
     room.gameStarted = true;
     room.countdownStartTime = null;
-    if (!room.gameStateSnapshot) {
-      room.gameStateSnapshot = createGameStateSnapshot(room);
-    }
+    if (!room.gameStateSnapshot) room.gameStateSnapshot = createGameStateSnapshot(room);
   }
 
   return room;
@@ -180,7 +186,7 @@ function prepareRoom(room) {
     ...room,
     roomCode: normalizeRoomCode(room.roomCode),
     players: { ...(room.players || {}) },
-    updatedAt: Date.now()
+    updatedAt: serverUpdatedAt()
   };
 
   if (!prepared.countdownDurationMs) prepared.countdownDurationMs = COUNTDOWN_DURATION_MS;
@@ -197,6 +203,7 @@ function mergeRoomState(incomingRoom) {
   const existing = rooms.get(incoming.roomCode);
   if (!existing) {
     const advanced = maybeAdvanceRoomStart(incoming);
+    advanced.updatedAt = serverUpdatedAt();
     rooms.set(advanced.roomCode, advanced);
     rememberRoomSockets(advanced);
     return advanced;
@@ -217,10 +224,11 @@ function mergeRoomState(incomingRoom) {
     gameStateSnapshot: incoming.gameStateSnapshot || existing.gameStateSnapshot || null,
     countdownStartTime: incoming.countdownStartTime ?? existing.countdownStartTime ?? null,
     countdownDurationMs: incoming.countdownDurationMs || existing.countdownDurationMs || COUNTDOWN_DURATION_MS,
-    updatedAt: Date.now()
+    updatedAt: serverUpdatedAt()
   };
 
   const advanced = maybeAdvanceRoomStart(merged);
+  advanced.updatedAt = serverUpdatedAt();
   rooms.set(advanced.roomCode, advanced);
   rememberRoomSockets(advanced);
   return advanced;
@@ -324,7 +332,7 @@ function handleGetRoom(ws, requestId, payload) {
     payload: { room }
   });
 
-  if (room.gameStarted) broadcastRoom(room);
+  broadcastRoom(room);
 }
 
 function handleUpdateRoom(ws, requestId, payload) {
@@ -408,6 +416,18 @@ wss.on("connection", (ws) => {
     }
   });
 });
+
+setInterval(() => {
+  for (const room of rooms.values()) {
+    const beforeStarted = room.gameStarted;
+    const beforeCountdown = room.countdownStartTime;
+    maybeAdvanceRoomStart(room);
+    room.updatedAt = serverUpdatedAt();
+    if (isRoomReadyToStart(room) || room.gameStarted || beforeStarted !== room.gameStarted || beforeCountdown !== room.countdownStartTime) {
+      broadcastRoom(room);
+    }
+  }
+}, 500);
 
 setInterval(() => {
   for (const ws of wss.clients) {
