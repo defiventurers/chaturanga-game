@@ -266,81 +266,6 @@
     .waiting { color: #f7d56b; font-weight: 900; }
 
 
-    .join-room-stage {
-      background: #061b3a;
-    }
-
-    .join-room-hidden-input {
-      position: absolute;
-      left: 50%;
-      top: 56%;
-      width: 1px;
-      height: 1px;
-      opacity: 0.01;
-      border: 0;
-      padding: 0;
-      background: transparent;
-      color: transparent;
-      z-index: 1;
-      pointer-events: none;
-      text-transform: uppercase;
-    }
-
-    .join-room-display-layer {
-      position: absolute;
-      inset: 0;
-      z-index: 60;
-      pointer-events: none;
-      font-family: Georgia, "Times New Roman", serif;
-    }
-
-    .join-room-digit {
-      position: absolute;
-      left: var(--x);
-      top: var(--y);
-      width: var(--w);
-      height: var(--h);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #f8feff;
-      font-size: clamp(34px, 10.5vw, 70px);
-      font-weight: 1000;
-      line-height: 1;
-      letter-spacing: .02em;
-      text-shadow:
-        0 2px 2px rgba(0, 10, 40, .95),
-        0 0 9px rgba(82, 227, 255, .95),
-        0 0 18px rgba(255, 255, 255, .45);
-    }
-
-    .join-room-error {
-      position: absolute;
-      left: 14%;
-      top: 69.2%;
-      width: 72%;
-      height: 3.2%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      color: #ffe08a;
-      font-size: clamp(10px, 2.7vw, 18px);
-      font-weight: 1000;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      opacity: 0;
-      transition: opacity 140ms ease;
-      text-shadow:
-        0 2px 2px rgba(30, 12, 0, .95),
-        0 0 8px rgba(255, 215, 90, .75);
-    }
-
-    .join-room-error.show {
-      opacity: 1;
-    }
-
-
     .room-ready-stage {
       background: #061b3a;
     }
@@ -1033,7 +958,8 @@
   </style>
 </head>
 <body>
- 
+  <div class="top-dev-note">Missing base image: join room only. Ready lobby now uses /assets/screens/room-ready-lobby.png.</div>
+
   <section id="screenCover" class="screen active" aria-label="Cover screen">
     <div id="coverContinueArea" class="screen-shell" role="button" tabindex="0" aria-label="Tap or click to continue">
       <div class="screen-stage">
@@ -1121,33 +1047,16 @@
   </section>
 
   <section id="screenJoinRoom" class="screen" aria-label="Join room">
-    <div class="menu-screen-shell">
-      <div class="screen-stage join-room-stage">
-        <img class="screen-art" src="/assets/screens/join-room.png" alt="Join Room" />
-
-        <input
-          id="joinRoomCodeInput"
-          class="join-room-hidden-input"
-          maxlength="4"
-          autocomplete="off"
-          autocapitalize="characters"
-          spellcheck="false"
-          aria-label="4 character room code"
-        />
-
-        <div class="join-room-display-layer" aria-hidden="true">
-          <div id="joinRoomDigit0" class="join-room-digit" style="--x:16.68%;--y:55.20%;--w:13.82%;--h:8.97%;"></div>
-          <div id="joinRoomDigit1" class="join-room-digit" style="--x:34.11%;--y:55.20%;--w:13.82%;--h:8.97%;"></div>
-          <div id="joinRoomDigit2" class="join-room-digit" style="--x:51.75%;--y:55.20%;--w:13.82%;--h:8.97%;"></div>
-          <div id="joinRoomDigit3" class="join-room-digit" style="--x:69.18%;--y:55.20%;--w:13.82%;--h:8.97%;"></div>
-          <div id="joinRoomError" class="join-room-error" aria-live="polite"></div>
+    <div class="plain-screen">
+      <div class="plain-card">
+        <div class="screen-note">CREATE THIS IMAGE LATER: /assets/screens/join-room.png</div>
+        <h1>Join Room</h1>
+        <p>Temporary local-only join screen. Real networking comes later.</p>
+        <div class="room-code-box">
+          <input id="joinRoomCodeInput" maxlength="6" placeholder="ROOM" value="ABCD" />
+          <button id="joinRoomContinueBtn" class="ui-btn">Join</button>
         </div>
-
-        <div class="hitbox-layer">
-          <button id="joinRoomCodeFocusBtn" class="hitbox" aria-label="Enter room code"></button>
-          <button id="joinRoomContinueBtn" class="hitbox" aria-label="Join room"></button>
-          <button id="joinRoomBackBtn" class="hitbox" aria-label="Back"></button>
-        </div>
+        <button id="joinRoomBackBtn" class="ui-btn ghost">Back</button>
       </div>
     </div>
   </section>
@@ -1343,9 +1252,6 @@
       createRoomBtn: { left: "27.91%", top: "49.85%", width: "46.06%", height: "7.50%" },
       joinRoomBtn: { left: "29.79%", top: "62.27%", width: "41.74%", height: "8.28%" },
       onlineLobbyBackBtn: { left: "30.53%", top: "73.60%", width: "41.56%", height: "8.81%" },
-      joinRoomCodeFocusBtn: { left: "12.50%", top: "50.90%", width: "75.00%", height: "18.50%" },
-      joinRoomContinueBtn: { left: "18.07%", top: "74.64%", width: "63.76%", height: "9.57%" },
-      joinRoomBackBtn: { left: "27.10%", top: "89.11%", width: "45.70%", height: "6.28%" },
       readyToggleBtn: { left: "10.25%", top: "70.88%", width: "78.37%", height: "12.23%" },
       startOnlineGameBtn: { left: "11.38%", top: "85.18%", width: "75.00%", height: "6.00%" },
       readyLobbyBackBtn: { left: "22.81%", top: "92.31%", width: "52.69%", height: "6.76%" }
@@ -1390,6 +1296,59 @@
     let activeRoom = null;
     let roomTickTimer = null;
     let botTurnTimer = null;
+
+    const SFX = {
+      enabled: true,
+      unlocked: false,
+      volume: 0.8,
+      lastPlayed: {},
+      sounds: {},
+
+      load() {
+        this.sounds = {
+          tap: this.make("/assets/sounds/ui-tap.mp3", 0.45),
+          confirm: this.make("/assets/sounds/ui-confirm.mp3", 0.7),
+          back: this.make("/assets/sounds/ui-back.mp3", 0.55),
+          error: this.make("/assets/sounds/ui-error.mp3", 0.7)
+        };
+      },
+
+      make(src, volume) {
+        const audio = new Audio(src);
+        audio.preload = "auto";
+        audio.volume = volume;
+        return audio;
+      },
+
+      play(name, volume = null, cooldownMs = 60) {
+        if (!this.enabled) return;
+
+        const source = this.sounds[name];
+        if (!source) return;
+
+        const now = performance.now();
+        if (this.lastPlayed[name] && now - this.lastPlayed[name] < cooldownMs) return;
+        this.lastPlayed[name] = now;
+
+        const audio = source.cloneNode();
+        if (volume !== null) audio.volume = volume;
+        audio.play().catch(() => {});
+      },
+
+      unlock() {
+        if (this.unlocked) return;
+        this.unlocked = true;
+
+        Object.values(this.sounds).forEach(audio => {
+          audio.play()
+            .then(() => {
+              audio.pause();
+              audio.currentTime = 0;
+            })
+            .catch(() => {});
+        });
+      }
+    };
 
     const gameState = createInitialState();
     const RemoteRoomService = {
@@ -1894,14 +1853,7 @@
       startOnlineGameBtn: document.getElementById("startOnlineGameBtn"),
       readyToggleBtn: document.getElementById("readyToggleBtn"),
       readyLobbyBackBtn: document.getElementById("readyLobbyBackBtn"),
-      joinRoomCodeInput: document.getElementById("joinRoomCodeInput"),
-      joinRoomDigits: [
-        document.getElementById("joinRoomDigit0"),
-        document.getElementById("joinRoomDigit1"),
-        document.getElementById("joinRoomDigit2"),
-        document.getElementById("joinRoomDigit3")
-      ],
-      joinRoomError: document.getElementById("joinRoomError")
+      joinRoomCodeInput: document.getElementById("joinRoomCodeInput")
     };
 
     startRoomTicker();
@@ -1927,11 +1879,6 @@
       if (name === "playerCount") renderPlayerCountSelection();
       if (name === "teamSelect") renderTeamSelection();
       if (name === "roomReadyLobby") renderReadyLobby();
-      if (name === "joinRoom") {
-        renderJoinRoomCode();
-        setJoinRoomError("");
-        window.setTimeout(focusJoinRoomInput, 80);
-      }
       if (name === "howToPlay") howPlayShowTeamSelect();
       if (name === "game") startMatch();
     }
@@ -2072,50 +2019,12 @@
       setupState.mode = "online";
       setupState.onlineFlow = "join";
       setupState.ready = false;
-      setupState.roomCode = "";
       activeRoom = null;
-      if (ui.joinRoomCodeInput) ui.joinRoomCodeInput.value = "";
       setScreen("joinRoom");
     }
 
-    function sanitizeJoinRoomCode(value) {
-      return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
-    }
-
-    function renderJoinRoomCode() {
-      const code = sanitizeJoinRoomCode(ui.joinRoomCodeInput?.value || setupState.roomCode);
-      ui.joinRoomDigits?.forEach((el, index) => {
-        if (el) el.textContent = code[index] || "";
-      });
-    }
-
-    function setJoinRoomCode(value) {
-      const code = sanitizeJoinRoomCode(value);
-      setupState.roomCode = code;
-      if (ui.joinRoomCodeInput && ui.joinRoomCodeInput.value !== code) ui.joinRoomCodeInput.value = code;
-      renderJoinRoomCode();
-      if (code.length === 4) setJoinRoomError("");
-    }
-
-    function setJoinRoomError(message) {
-      if (!ui.joinRoomError) return;
-      ui.joinRoomError.textContent = message || "";
-      ui.joinRoomError.classList.toggle("show", !!message);
-    }
-
-    function focusJoinRoomInput() {
-      if (!ui.joinRoomCodeInput) return;
-      ui.joinRoomCodeInput.focus({ preventScroll: true });
-    }
-
     async function continueJoinRoom() {
-      const code = sanitizeJoinRoomCode(ui.joinRoomCodeInput?.value || setupState.roomCode);
-      setJoinRoomCode(code);
-      if (code.length !== 4) {
-        setJoinRoomError("Enter 4 characters");
-        focusJoinRoomInput();
-        return;
-      }
+      const code = ui.joinRoomCodeInput.value.trim().toUpperCase() || "ABCD";
       const joined = await joinOnlineRoom(code);
       if (!joined) return;
       setScreen("teamSelect");
@@ -3094,10 +3003,28 @@
       document.getElementById("howPlayCloseBtn").addEventListener("click", () => setScreen("menu"));
     }
 
+    function bindGlobalButtonSounds() {
+      document.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", () => {
+          SFX.play("tap", 0.45);
+        });
+      });
+    }
+
 
     function bindEvents() {
-      ui.coverContinueArea.addEventListener("click", () => setScreen("menu"));
-      ui.coverContinueArea.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") setScreen("menu"); });
+      ui.coverContinueArea.addEventListener("click", () => {
+        SFX.unlock();
+        SFX.play("confirm");
+        setScreen("menu");
+      });
+      ui.coverContinueArea.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") {
+          SFX.unlock();
+          SFX.play("confirm");
+          setScreen("menu");
+        }
+      });
 
       document.getElementById("menuPlayBtn").addEventListener("click", () => setScreen("mode"));
       document.getElementById("menuHowBtn").addEventListener("click", () => setScreen("howToPlay"));
@@ -3125,20 +3052,8 @@
       document.getElementById("createRoomBtn").addEventListener("click", createRoomFlow);
       document.getElementById("joinRoomBtn").addEventListener("click", joinRoomFlow);
       document.getElementById("onlineLobbyBackBtn").addEventListener("click", () => setScreen("mode"));
-      document.getElementById("joinRoomCodeFocusBtn").addEventListener("click", focusJoinRoomInput);
-      ui.screens.joinRoom.addEventListener("click", focusJoinRoomInput);
-      ui.joinRoomCodeInput.addEventListener("input", () => setJoinRoomCode(ui.joinRoomCodeInput.value));
-      ui.joinRoomCodeInput.addEventListener("keydown", event => {
-        if (event.key === "Enter") continueJoinRoom();
-      });
-      document.getElementById("joinRoomContinueBtn").addEventListener("click", event => {
-        event.stopPropagation();
-        continueJoinRoom();
-      });
-      document.getElementById("joinRoomBackBtn").addEventListener("click", event => {
-        event.stopPropagation();
-        setScreen("onlineLobbyMenu");
-      });
+      document.getElementById("joinRoomContinueBtn").addEventListener("click", continueJoinRoom);
+      document.getElementById("joinRoomBackBtn").addEventListener("click", () => setScreen("onlineLobbyMenu"));
       document.getElementById("readyToggleBtn").addEventListener("click", toggleReady);
       document.getElementById("startOnlineGameBtn").addEventListener("click", startOnlineGame);
       document.getElementById("readyLobbyBackBtn").addEventListener("click", () => setScreen("teamSelect"));
@@ -3148,7 +3063,9 @@
       document.getElementById("newGameBtn").addEventListener("click", () => setScreen("menu"));
     }
 
+    SFX.load();
     applyHitboxConfig();
+    bindGlobalButtonSounds();
     bindEvents();
     bindHowPlayEvents();
     renderPlayerCountSelection();
