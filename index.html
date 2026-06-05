@@ -1296,6 +1296,7 @@
     let activeRoom = null;
     let roomTickTimer = null;
     let botTurnTimer = null;
+    let lastAnnouncedTurnIndex = null;
 
     const SFX = {
       enabled: true,
@@ -1312,7 +1313,12 @@
           error: this.make("/assets/sounds/ui-error.mp3", 0.7),
           diceRoll: this.make("/assets/sounds/dice-roll.mp3", 0.72),
           pieceMove: this.make("/assets/sounds/piece-move.mp3", 0.62),
-          capture: this.make("/assets/sounds/capture.mp3", 0.82)
+          capture: this.make("/assets/sounds/capture.mp3", 0.82),
+          turnChange: this.make("/assets/sounds/turn-change.mp3", 0.55),
+          teamGreen: this.make("/assets/sounds/team-abster.mp3", 0.78),
+          teamRed: this.make("/assets/sounds/team-retsba.mp3", 0.78),
+          teamBlue: this.make("/assets/sounds/team-pengu.mp3", 0.78),
+          teamYellow: this.make("/assets/sounds/team-polly.mp3", 0.78)
         };
       },
 
@@ -1802,9 +1808,13 @@
       if (typeof ui !== "undefined" && ui.screens.roomReadyLobby.classList.contains("active")) renderReadyLobby();
       if (typeof ui !== "undefined" && ui.screens.teamSelect.classList.contains("active")) renderTeamSelection();
       if (room.gameStarted && room.gameStateSnapshot) {
+        const previousTurnIndex = gameState.currentPlayerIndex;
         loadGameStateSnapshot(room.gameStateSnapshot);
         if (typeof ui !== "undefined" && !ui.screens.game.classList.contains("active")) setScreen("game");
-        else if (typeof ui !== "undefined") renderGame();
+        else if (typeof ui !== "undefined") {
+          renderGame();
+          if (previousTurnIndex !== gameState.currentPlayerIndex) announceTurnIfChanged();
+        }
       }
     }
 
@@ -1883,7 +1893,11 @@
       if (name === "teamSelect") renderTeamSelection();
       if (name === "roomReadyLobby") renderReadyLobby();
       if (name === "howToPlay") howPlayShowTeamSelect();
-      if (name === "game") startMatch();
+      if (name === "game") {
+        lastAnnouncedTurnIndex = null;
+        startMatch();
+        window.setTimeout(() => announceTurnIfChanged(true), 120);
+      }
     }
 
     function showToast(text) {
@@ -2332,6 +2346,32 @@
       return PLAYERS[gameState.currentPlayerIndex];
     }
 
+    function getTeamSoundName(team) {
+      return {
+        green: "teamGreen",
+        red: "teamRed",
+        blue: "teamBlue",
+        yellow: "teamYellow"
+      }[team] || null;
+    }
+
+    function playTurnIntroSound(team = currentTeam()) {
+      if (gameState.gameOver) return;
+      SFX.play("turnChange", 0.55, 220);
+      const teamSound = getTeamSoundName(team);
+      if (teamSound) {
+        window.setTimeout(() => SFX.play(teamSound, 0.78, 500), 150);
+      }
+    }
+
+    function announceTurnIfChanged(force = false) {
+      if (gameState.gameOver) return;
+      if (!ui?.screens?.game?.classList.contains("active")) return;
+      if (!force && lastAnnouncedTurnIndex === gameState.currentPlayerIndex) return;
+      lastAnnouncedTurnIndex = gameState.currentPlayerIndex;
+      playTurnIntroSound(currentTeam());
+    }
+
     function renderGame() {
       renderStatus();
       renderBoard();
@@ -2701,6 +2741,7 @@
         if (teamHasKing(currentTeam())) break;
       }
       renderGame();
+      announceTurnIfChanged(true);
       syncGameStateToRoom();
     }
 
