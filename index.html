@@ -1318,7 +1318,12 @@
           teamGreen: this.make("/assets/sounds/team-abster.mp3", 0.78),
           teamRed: this.make("/assets/sounds/team-retsba.mp3", 0.78),
           teamBlue: this.make("/assets/sounds/team-pengu.mp3", 0.78),
-          teamYellow: this.make("/assets/sounds/team-polly.mp3", 0.78)
+          teamYellow: this.make("/assets/sounds/team-polly.mp3", 0.78),
+          moveKing: this.make("/assets/sounds/move-king.mp3", 0.68),
+          moveElephant: this.make("/assets/sounds/move-elephant.mp3", 0.72),
+          moveHorse: this.make("/assets/sounds/move-horse.mp3", 0.66),
+          moveShip: this.make("/assets/sounds/move-ship.mp3", 0.72),
+          movePawn: this.make("/assets/sounds/move-pawn.mp3", 0.58)
         };
       },
 
@@ -2355,6 +2360,20 @@
       }[team] || null;
     }
 
+    function getPieceMoveSoundName(piece) {
+      return {
+        king: "moveKing",
+        elephant: "moveElephant",
+        horse: "moveHorse",
+        ship: "moveShip",
+        pawn: "movePawn"
+      }[piece?.type] || "pieceMove";
+    }
+
+    function playPieceMoveSound(piece) {
+      SFX.play(getPieceMoveSoundName(piece), 0.68, 90);
+    }
+
     function playTurnIntroSound(team = currentTeam()) {
       if (gameState.gameOver) return;
       SFX.play("turnChange", 0.55, 220);
@@ -2705,7 +2724,7 @@
         SFX.play("capture", 0.82, 120);
         gameState.moveLog.unshift(`${TEAM_LABEL[piece.team]} captured ${TEAM_LABEL[captured.team]} ${PIECE_NAME[captured.type]}`);
       } else {
-        SFX.play("pieceMove", 0.62, 90);
+        playPieceMoveSound(piece);
       }
 
       maybePromotePawn(piece, move.toRow, move.toCol);
