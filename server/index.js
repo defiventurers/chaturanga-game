@@ -2,6 +2,8 @@ const http = require("http");
 const WebSocket = require("ws");
 
 const PORT = process.env.PORT || 10000;
+const COUNTDOWN_DURATION_MS = 5000;
+const PLAYERS = ["red", "green", "blue", "yellow"];
 const rooms = new Map();
 const socketsByClientId = new Map();
 const roomCodesByClientId = new Map();
@@ -57,6 +59,120 @@ function broadcastRoom(room) {
   }
 }
 
+function createEmptyBoard() {
+  return Array.from({ length: 8 }, () => Array(8).fill(null));
+}
+
+function makePiece(team, type, isRoyal = false) {
+  return { team, type, isRoyal };
+}
+
+function createInitialBoard() {
+  const board = createEmptyBoard();
+
+  board[0][0] = makePiece("yellow", "ship");
+  board[0][1] = makePiece("yellow", "horse");
+  board[0][2] = makePiece("yellow", "elephant");
+  board[0][3] = makePiece("yellow", "king", true);
+  board[1][0] = makePiece("yellow", "pawn");
+  board[1][1] = makePiece("yellow", "pawn");
+  board[1][2] = makePiece("yellow", "pawn");
+  board[1][3] = makePiece("yellow", "pawn");
+
+  board[7][0] = makePiece("red", "ship");
+  board[6][0] = makePiece("red", "horse");
+  board[5][0] = makePiece("red", "elephant");
+  board[4][0] = makePiece("red", "king", true);
+  board[7][1] = makePiece("red", "pawn");
+  board[6][1] = makePiece("red", "pawn");
+  board[5][1] = makePiece("red", "pawn");
+  board[4][1] = makePiece("red", "pawn");
+
+  board[7][4] = makePiece("green", "king", true);
+  board[7][5] = makePiece("green", "elephant");
+  board[7][6] = makePiece("green", "horse");
+  board[7][7] = makePiece("green", "ship");
+  board[6][4] = makePiece("green", "pawn");
+  board[6][5] = makePiece("green", "pawn");
+  board[6][6] = makePiece("green", "pawn");
+  board[6][7] = makePiece("green", "pawn");
+
+  board[3][7] = makePiece("blue", "king", true);
+  board[2][7] = makePiece("blue", "elephant");
+  board[1][7] = makePiece("blue", "horse");
+  board[0][7] = makePiece("blue", "ship");
+  board[3][6] = makePiece("blue", "pawn");
+  board[2][6] = makePiece("blue", "pawn");
+  board[1][6] = makePiece("blue", "pawn");
+  board[0][6] = makePiece("blue", "pawn");
+
+  return board;
+}
+
+function createControlMap(room) {
+  const humans = new Set(getPlayers(room).map(player => player.team).filter(Boolean));
+  const controlMap = {};
+  for (const team of PLAYERS) {
+    controlMap[team] = humans.has(team) ? "online-human" : "bot";
+  }
+  return controlMap;
+}
+
+function createGameStateSnapshot(room) {
+  return {
+    board: createInitialBoard(),
+    currentPlayerIndex: 0,
+    selected: null,
+    legalMoves: [],
+    dice: { values: [null, null], used: [false, false], rolled: false },
+    moveLog: [],
+    gameOver: false,
+    winner: null,
+    controlMap: createControlMap(room)
+  };
+}
+
+function isRoomReadyToStart(room) {
+  const players = getPlayers(room);
+  const required = Number(room?.playerCount || 0);
+  if (!room || required < 1) return false;
+  if (players.length !== required) return false;
+
+  const teams = players.map(player => player.team).filter(Boolean);
+  if (teams.length !== required) return false;
+  if (new Set(teams).size !== teams.length) return false;
+
+  return players.every(player => player.ready);
+}
+
+function maybeAdvanceRoomStart(room) {
+  if (!room || room.gameStarted) return room;
+
+  if (!isRoomReadyToStart(room)) {
+    if (room.countdownStartTime) room.countdownStartTime = null;
+    return room;
+  }
+
+  if (!room.countdownStartTime) {
+    room.countdownStartTime = Date.now();
+    room.countdownDurationMs = room.countdownDurationMs || COUNTDOWN_DURATION_MS;
+    return room;
+  }
+
+  const elapsed = Date.now() - room.countdownStartTime;
+  const duration = room.countdownDurationMs || COUNTDOWN_DURATION_MS;
+
+  if (elapsed >= duration) {
+    room.gameStarted = true;
+    room.countdownStartTime = null;
+    if (!room.gameStateSnapshot) {
+      room.gameStateSnapshot = createGameStateSnapshot(room);
+    }
+  }
+
+  return room;
+}
+
 function prepareRoom(room) {
   if (!room) return null;
 
@@ -67,7 +183,7 @@ function prepareRoom(room) {
     updatedAt: Date.now()
   };
 
-  if (!prepared.countdownDurationMs) prepared.countdownDurationMs = 5000;
+  if (!prepared.countdownDurationMs) prepared.countdownDurationMs = COUNTDOWN_DURATION_MS;
   if (typeof prepared.gameStarted !== "boolean") prepared.gameStarted = false;
   if (!("gameStateSnapshot" in prepared)) prepared.gameStateSnapshot = null;
 
@@ -80,9 +196,10 @@ function mergeRoomState(incomingRoom) {
 
   const existing = rooms.get(incoming.roomCode);
   if (!existing) {
-    rooms.set(incoming.roomCode, incoming);
-    rememberRoomSockets(incoming);
-    return incoming;
+    const advanced = maybeAdvanceRoomStart(incoming);
+    rooms.set(advanced.roomCode, advanced);
+    rememberRoomSockets(advanced);
+    return advanced;
   }
 
   const mergedPlayers = {
@@ -99,13 +216,14 @@ function mergeRoomState(incomingRoom) {
     gameStarted: Boolean(existing.gameStarted || incoming.gameStarted),
     gameStateSnapshot: incoming.gameStateSnapshot || existing.gameStateSnapshot || null,
     countdownStartTime: incoming.countdownStartTime ?? existing.countdownStartTime ?? null,
-    countdownDurationMs: incoming.countdownDurationMs || existing.countdownDurationMs || 5000,
+    countdownDurationMs: incoming.countdownDurationMs || existing.countdownDurationMs || COUNTDOWN_DURATION_MS,
     updatedAt: Date.now()
   };
 
-  rooms.set(merged.roomCode, merged);
-  rememberRoomSockets(merged);
-  return merged;
+  const advanced = maybeAdvanceRoomStart(merged);
+  rooms.set(advanced.roomCode, advanced);
+  rememberRoomSockets(advanced);
+  return advanced;
 }
 
 function handleCreateRoom(ws, requestId, payload) {
@@ -188,8 +306,10 @@ function handleGetRoom(ws, requestId, payload) {
 
   if (clientId) socketsByClientId.set(clientId, ws);
 
-  const room = rooms.get(roomCode);
-  if (!room) return sendError(ws, requestId, "Room not found.", "ROOM_NOT_FOUND");
+  const currentRoom = rooms.get(roomCode);
+  if (!currentRoom) return sendError(ws, requestId, "Room not found.", "ROOM_NOT_FOUND");
+
+  const room = mergeRoomState(currentRoom);
 
   if (clientId) rememberClientRoom(clientId, roomCode);
 
@@ -203,6 +323,8 @@ function handleGetRoom(ws, requestId, payload) {
     type: "room_state",
     payload: { room }
   });
+
+  if (room.gameStarted) broadcastRoom(room);
 }
 
 function handleUpdateRoom(ws, requestId, payload) {
