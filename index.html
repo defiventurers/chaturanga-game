@@ -1360,7 +1360,9 @@
           readyToggle: this.make("/assets/sounds/ready-toggle.mp3", 0.70),
           countdownTick: this.make("/assets/sounds/countdown-tick.mp3", 0.68),
           countdownGo: this.make("/assets/sounds/countdown-go.mp3", 0.82),
-          roomJoin: this.make("/assets/sounds/room-join.mp3", 0.72)
+          roomJoin: this.make("/assets/sounds/room-join.mp3", 0.72),
+          pieceSelect: this.make("/assets/sounds/piece-select.mp3", 0.56),
+          invalidAction: this.make("/assets/sounds/invalid-action.mp3", 0.70)
         };
         if (this.sounds.ambientIce) this.sounds.ambientIce.loop = true;
         this.applyStoredPreference();
@@ -1726,6 +1728,7 @@
         saveRoom(room, false);
         return true;
       } catch (error) {
+        SFX.play("invalidAction", 0.70, 300);
         alert(error.message || "Room not found. Check the room code and make sure the host is online.");
         return false;
       }
@@ -2100,6 +2103,7 @@
 
     function continueFromTeamSelect() {
       if (setupState.selectedTeams.length === 0) {
+        SFX.play("invalidAction", 0.70, 300);
         alert("Select at least one team.");
         return;
       }
@@ -2592,7 +2596,10 @@
       const control = gameState.controlMap[team];
       if (control === "bot" || control === "remote/bot") return;
       if (setupState.mode === "online" && !canCurrentClientControlTeam(team)) return;
-      if (!gameState.dice.rolled) return;
+      if (!gameState.dice.rolled) {
+        SFX.play("invalidAction", 0.70, 220);
+        return;
+      }
 
       const chosenMove = gameState.legalMoves.find(m => m.toRow === row && m.toCol === col);
       if (chosenMove) {
@@ -2602,6 +2609,7 @@
 
       const piece = gameState.board[row][col];
       if (!piece || piece.team !== team) {
+        SFX.play("invalidAction", 0.70, 220);
         gameState.selected = null;
         gameState.legalMoves = [];
         renderGame();
@@ -2609,7 +2617,11 @@
       }
 
       const moves = getLegalMovesForPiece(row, col);
-      if (moves.length === 0) return;
+      if (moves.length === 0) {
+        SFX.play("invalidAction", 0.70, 220);
+        return;
+      }
+      SFX.play("pieceSelect", 0.56, 120);
       gameState.selected = { row, col };
       gameState.legalMoves = moves;
       renderGame();
@@ -2621,7 +2633,10 @@
       const control = gameState.controlMap[team];
       if (control === "bot" || control === "remote/bot") return;
       if (setupState.mode === "online" && !canCurrentClientControlTeam(team)) return;
-      if (gameState.dice.rolled) return;
+      if (gameState.dice.rolled) {
+        SFX.play("invalidAction", 0.70, 220);
+        return;
+      }
       SFX.play("diceRoll", 0.72, 350);
       gameState.dice.values = [rollD6(), rollD6()];
       gameState.dice.used = [false, false];
