@@ -1323,6 +1323,8 @@
     let roomTickTimer = null;
     let botTurnTimer = null;
     let lastAnnouncedTurnIndex = null;
+    let lastReadyCountdownSecond = null;
+    let playedReadyCountdownGo = false;
 
     const SFX = {
       enabled: true,
@@ -1354,7 +1356,11 @@
           promotion: this.make("/assets/sounds/promotion.mp3", 0.78),
           teamEliminated: this.make("/assets/sounds/team-eliminated.mp3", 0.86),
           victory: this.make("/assets/sounds/victory.mp3", 0.88),
-          ambientIce: this.make("/assets/sounds/ambient-ice-loop.mp3", 0.20)
+          ambientIce: this.make("/assets/sounds/ambient-ice-loop.mp3", 0.20),
+          readyToggle: this.make("/assets/sounds/ready-toggle.mp3", 0.70),
+          countdownTick: this.make("/assets/sounds/countdown-tick.mp3", 0.68),
+          countdownGo: this.make("/assets/sounds/countdown-go.mp3", 0.82),
+          roomJoin: this.make("/assets/sounds/room-join.mp3", 0.72)
         };
         if (this.sounds.ambientIce) this.sounds.ambientIce.loop = true;
         this.applyStoredPreference();
@@ -1697,6 +1703,7 @@
 
       try {
         const remoteRoom = await RemoteRoomService.createRoom(room);
+        SFX.play("roomJoin", 0.72, 700);
         saveRoom(remoteRoom || room, false);
         return activeRoom;
       } catch (error) {
@@ -1714,6 +1721,7 @@
 
       try {
         const room = await RemoteRoomService.joinRoom(code);
+        SFX.play("roomJoin", 0.72, 700);
         setupState.roomCode = code;
         saveRoom(room, false);
         return true;
@@ -1741,6 +1749,7 @@
 
     function updateRoomReady(ready) {
       if (!activeRoom?.players?.[clientId]) return;
+      SFX.play("readyToggle", 0.70, 350);
       activeRoom.players[clientId].ready = !!ready;
       if (!isRoomReadyToCountdown(activeRoom)) activeRoom.countdownStartTime = null;
       saveRoom(activeRoom);
@@ -1773,6 +1782,25 @@
     function getCountdownRemainingMs(room = activeRoom) {
       if (!room?.countdownStartTime) return null;
       return Math.max(0, room.countdownDurationMs - (Date.now() - room.countdownStartTime));
+    }
+
+    function playReadyCountdownSound(remainingMs) {
+      if (remainingMs === null) {
+        lastReadyCountdownSecond = null;
+        playedReadyCountdownGo = false;
+        return;
+      }
+
+      const second = Math.ceil(remainingMs / 1000);
+      if (second > 0 && second !== lastReadyCountdownSecond) {
+        lastReadyCountdownSecond = second;
+        SFX.play("countdownTick", 0.68, 450);
+      }
+
+      if (remainingMs <= 120 && !playedReadyCountdownGo) {
+        playedReadyCountdownGo = true;
+        SFX.play("countdownGo", 0.82, 900);
+      }
     }
 
     function startRoomTicker() {
@@ -1969,6 +1997,7 @@
     }
 
     function setScreen(name) {
+      if (name !== "roomReadyLobby") playReadyCountdownSound(null);
       Object.values(ui.screens).forEach(screen => screen.classList.remove("active"));
       ui.screens[name].classList.add("active");
       if (name === "playerCount") renderPlayerCountSelection();
@@ -2156,6 +2185,7 @@
 
     function renderReadyLobby() {
       if (!activeRoom) {
+        playReadyCountdownSound(null);
         ui.roomSummaryText.textContent = "Room unavailable";
         ui.readyLobbyStatusText.textContent = "WAITING";
         setReadyLobbyStatusClass(ui.readyLobbyStatusText, "status-waiting");
@@ -2171,6 +2201,7 @@
       const players = getRoomPlayers();
       const me = getMyRoomPlayer();
       const remainingMs = getCountdownRemainingMs();
+      playReadyCountdownSound(remainingMs);
       const required = activeRoom.playerCount;
       const readyHumans = players.filter(player => player.ready).length;
       const humansReady = isRoomReadyToCountdown(activeRoom);
