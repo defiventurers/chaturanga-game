@@ -1323,7 +1323,11 @@
           moveElephant: this.make("/assets/sounds/move-elephant.mp3", 0.72),
           moveHorse: this.make("/assets/sounds/move-horse.mp3", 0.66),
           moveShip: this.make("/assets/sounds/move-ship.mp3", 0.72),
-          movePawn: this.make("/assets/sounds/move-pawn.mp3", 0.58)
+          movePawn: this.make("/assets/sounds/move-pawn.mp3", 0.58),
+          gameStart: this.make("/assets/sounds/game-start.mp3", 0.82),
+          promotion: this.make("/assets/sounds/promotion.mp3", 0.78),
+          teamEliminated: this.make("/assets/sounds/team-eliminated.mp3", 0.86),
+          victory: this.make("/assets/sounds/victory.mp3", 0.88)
         };
       },
 
@@ -1900,6 +1904,7 @@
       if (name === "howToPlay") howPlayShowTeamSelect();
       if (name === "game") {
         lastAnnouncedTurnIndex = null;
+        SFX.play("gameStart", 0.82, 1200);
         startMatch();
         window.setTimeout(() => announceTurnIfChanged(true), 120);
       }
@@ -2643,6 +2648,7 @@
         ? true
         : window.confirm(`${TEAM_LABEL[piece.team]} pawn reached promotion. Promote to ${label}?`);
       if (ok) {
+        SFX.play("promotion", 0.78, 500);
         piece.type = promotionType;
         piece.isRoyal = false;
         gameState.moveLog.unshift(`${TEAM_LABEL[piece.team]} pawn promoted to ${label}`);
@@ -2664,6 +2670,7 @@
     function checkEliminationAfterCapture(captured) {
       if (!captured || captured.type !== "king") return;
       if (!teamHasKing(captured.team)) {
+        SFX.play("teamEliminated", 0.86, 700);
         removeTeamPieces(captured.team);
         gameState.moveLog.unshift(`${TEAM_LABEL[captured.team]} eliminated`);
       }
@@ -2672,6 +2679,7 @@
     function checkWinner() {
       const alive = PLAYERS.filter(team => teamHasKing(team));
       if (alive.length <= 1) {
+        if (!gameState.gameOver) SFX.play("victory", 0.88, 1000);
         gameState.gameOver = true;
         gameState.winner = alive[0] || null;
       }
