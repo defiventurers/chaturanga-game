@@ -6,6 +6,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "share-preview.html",
+      "use": "@vercel/static"
+    },
+    {
       "src": "sw.js",
       "use": "@vercel/static"
     },
@@ -24,12 +28,27 @@
   ],
   "routes": [
     {
+      "src": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot).*"
+        }
+      ],
+      "dest": "/share-preview.html"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
     {
       "src": "/assets/(.*)",
       "dest": "/public/assets/$1"
+    },
+    {
+      "src": "/share-preview.html",
+      "dest": "/share-preview.html"
     },
     {
       "src": "/sw.js",
